@@ -1,0 +1,80 @@
+{
+  "python": [
+    {
+      "description": "List Comprehension Example",
+      "code": "squares = [x**2 for x in range(10)]\nprint(squares)  # [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]",
+      "explanation": "List comprehensions provide a concise way to create lists based on existing iterables."
+    },
+    {
+      "description": "Dictionary Comprehension",
+      "code": "word_lengths = {word: len(word) for word in ['python', 'code', 'bot']}\nprint(word_lengths)  # {'python': 6, 'code': 4, 'bot': 3}",
+      "explanation": "Dictionary comprehensions create dictionaries in a single line of code."
+    },
+    {
+      "description": "Context Manager for File Handling",
+      "code": "with open('file.txt', 'r') as f:\n    content = f.read()\n    # File automatically closed",
+      "explanation": "Context managers ensure proper resource cleanup, especially useful for file operations."
+    },
+    {
+      "description": "Enumerate Function",
+      "code": "items = ['apple', 'banana', 'cherry']\nfor index, item in enumerate(items):\n    print(f'{index}: {item}')",
+      "explanation": "Enumerate provides both index and value when iterating over sequences."
+    },
+    {
+      "description": "Lambda Functions",
+      "code": "numbers = [1, 2, 3, 4, 5]\nsquared = list(map(lambda x: x**2, numbers))\nprint(squared)  # [1, 4, 9, 16, 25]",
+      "explanation": "Lambda functions are anonymous functions useful for short, simple operations."
+    }
+  ],
+  "javascript": [
+    {
+      "description": "Array Destructuring",
+      "code": "const [first, second, ...rest] = [1, 2, 3, 4, 5];\nconsole.log(first, second, rest); // 1 2 [3, 4, 5]",
+      "explanation": "Destructuring allows unpacking values from arrays into distinct variables."
+    },
+    {
+      "description": "Object Destructuring",
+      "code": "const {name, age} = {name: 'John', age: 25, city: 'NYC'};\nconsole.log(name, age); // John 25",
+      "explanation": "Object destructuring extracts properties from objects into variables."
+    },
+    {
+      "description": "Arrow Functions",
+      "code": "const multiply = (a, b) => a * b;\nconst square = x => x * x;\nconsole.log(multiply(3, 4)); // 12",
+      "explanation": "Arrow functions provide a shorter syntax for writing functions."
+    },
+    {
+      "description": "Template Literals",
+      "code": "const name = 'World';\nconst greeting = `Hello, ${name}!`;\nconsole.log(greeting); // Hello, World!",
+      "explanation": "Template literals allow embedded expressions and multi-line strings."
+    },
+    {
+      "description": "Promise with Async/Await",
+      "code": "async function fetchData() {\n  try {\n    const response = await fetch('/api/data');\n    const data = await response.json();\n    return data;\n  } catch (error) {\n    console.error('Error:', error);\n  }\n}",
+      "explanation": "Async/await provides a cleaner way to handle asynchronous operations."
+    }
+  ],
+  "java": [
+    {
+      "description": "Stream API Example",
+      "code": "List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5);\nList<Integer> squared = numbers.stream()\n    .map(x -> x * x)\n    .collect(Collectors.toList());",
+      "explanation": "Java Streams provide functional-style operations on collections."
+    },
+    {
+      "description": "Optional for Null Safety",
+      "code": "Optional<String> optional = Optional.ofNullable(getString());\noptional.ifPresent(System.out::println);\nString result = optional.orElse(\"Default\");",
+      "explanation": "Optional helps avoid NullPointerExceptions by wrapping potentially null values."
+    }
+  ],
+  "react": [
+    {
+      "description": "useState Hook",
+      "code": "import React, { useState } from 'react';\n\nfunction Counter() {\n  const [count, setCount] = useState(0);\n  \n  return (\n    <div>\n      <p>Count: {count}</p>\n      <button onClick={() => setCount(count + 1)}>+</button>\n    </div>\n  );\n}",
+      "explanation": "useState is a Hook that lets you add state to functional components."
+    },
+    {
+      "description": "useEffect Hook",
+      "code": "import React, { useState, useEffect } from 'react';\n\nfunction Timer() {\n  const [seconds, setSeconds] = useState(0);\n  \n  useEffect(() => {\n    const interval = setInterval(() => {\n      setSeconds(s => s + 1);\n    }, 1000);\n    \n    return () => clearInterval(interval);\n  }, []);\n  \n  return <div>Seconds: {seconds}</div>;\n}",
+      "explanation": "useEffect lets you perform side effects in functional components."
+    }
+  ]
+}

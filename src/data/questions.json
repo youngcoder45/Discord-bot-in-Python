@@ -1,0 +1,161 @@
+[
+    {
+        "question": "What is your favorite programming language and why?",
+        "difficulty": "Easy",
+        "category": "General Programming"
+    },
+    {
+        "question": "Explain the difference between == and === in JavaScript",
+        "difficulty": "Beginner",
+        "category": "JavaScript",
+        "hint": "Think about type coercion"
+    },
+    {
+        "question": "What are the four pillars of Object-Oriented Programming?",
+        "difficulty": "Beginner",
+        "category": "OOP"
+    },
+    {
+        "question": "How would you implement a stack using two queues?",
+        "difficulty": "Medium",
+        "category": "Data Structures",
+        "hint": "Think about how stack and queue operations differ"
+    },
+    {
+        "question": "What is the time complexity of binary search and why?",
+        "difficulty": "Medium",
+        "category": "Algorithms"
+    },
+    {
+        "question": "Explain the concept of closures in programming",
+        "difficulty": "Medium",
+        "category": "Programming Concepts",
+        "hint": "Think about scope and function contexts"
+    },
+    {
+        "question": "What is the difference between SQL and NoSQL databases?",
+        "difficulty": "Medium",
+        "category": "Databases"
+    },
+    {
+        "question": "How does garbage collection work in programming languages?",
+        "difficulty": "Hard",
+        "category": "Memory Management"
+    },
+    {
+        "question": "What is Big O notation and why is it important?",
+        "difficulty": "Medium",
+        "category": "Algorithms",
+        "hint": "Think about algorithm efficiency"
+    },
+    {
+        "question": "Explain the difference between synchronous and asynchronous programming",
+        "difficulty": "Medium",
+        "category": "Programming Concepts"
+    },
+    {
+        "question": "What is the most challenging bug you have ever encountered?",
+        "difficulty": "Easy",
+        "category": "Personal Experience"
+    },
+    {
+        "question": "How do you stay updated with the latest programming trends?",
+        "difficulty": "Easy",
+        "category": "Learning"
+    },
+    {
+        "question": "What is recursion and when would you use it?",
+        "difficulty": "Medium",
+        "category": "Programming Concepts",
+        "hint": "A function that calls itself"
+    },
+    {
+        "question": "Explain the MVC (Model-View-Controller) pattern",
+        "difficulty": "Medium",
+        "category": "Software Architecture"
+    },
+    {
+        "question": "What are APIs and how do they work?",
+        "difficulty": "Beginner",
+        "category": "Web Development"
+    },
+    {
+        "question": "What is the difference between a compiler and an interpreter?",
+        "difficulty": "Medium",
+        "category": "Programming Languages"
+    },
+    {
+        "question": "How would you optimize a slow-running SQL query?",
+        "difficulty": "Hard",
+        "category": "Database Optimization",
+        "hint": "Think about indexes, query structure, and execution plans"
+    },
+    {
+        "question": "What is the difference between HTTP and HTTPS?",
+        "difficulty": "Beginner",
+        "category": "Web Security"
+    },
+    {
+        "question": "Explain the concept of polymorphism in OOP",
+        "difficulty": "Medium",
+        "category": "OOP",
+        "hint": "One interface, multiple implementations"
+    },
+    {
+        "question": "What are design patterns and name three common ones",
+        "difficulty": "Hard",
+        "category": "Software Design"
+    },
+    {
+        "question": "How would you implement a LRU (Least Recently Used) cache?",
+        "difficulty": "Hard",
+        "category": "Data Structures",
+        "hint": "Think about combining hash map with doubly linked list"
+    },
+    {
+        "question": "What is version control and why is it important?",
+        "difficulty": "Beginner",
+        "category": "Development Tools"
+    },
+    {
+        "question": "Explain the difference between unit testing and integration testing",
+        "difficulty": "Medium",
+        "category": "Testing"
+    },
+    {
+        "question": "What is the CAP theorem in distributed systems?",
+        "difficulty": "Hard",
+        "category": "Distributed Systems",
+        "hint": "Consistency, Availability, Partition tolerance"
+    },
+    {
+        "question": "How would you handle a situation where your code works on your machine but not in production?",
+        "difficulty": "Medium",
+        "category": "Debugging"
+    },
+    {
+        "question": "What is the difference between machine learning and artificial intelligence?",
+        "difficulty": "Medium",
+        "category": "AI/ML"
+    },
+    {
+        "question": "Explain what happens when you type a URL in your browser and press Enter",
+        "difficulty": "Hard",
+        "category": "Web Development"
+    },
+    {
+        "question": "What is the purpose of virtual environments in Python?",
+        "difficulty": "Beginner",
+        "category": "Python"
+    },
+    {
+        "question": "How do you ensure your code is secure?",
+        "difficulty": "Medium",
+        "category": "Security"
+    },
+    {
+        "question": "What advice would you give to someone just starting their programming journey?",
+        "difficulty": "Easy",
+        "category": "Learning"
+    }
+]
