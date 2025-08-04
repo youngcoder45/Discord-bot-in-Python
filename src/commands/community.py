@@ -17,6 +17,15 @@ from utils.helpers import (
     sanitize_input
 )
 
+async def respond_to_user(ctx, embed):
+    """Helper function to respond to both slash commands and regular commands"""
+    if hasattr(ctx, 'response'):
+        # It's an interaction (slash command)
+        await ctx.response.send_message(embed=embed)
+    else:
+        # It's a regular command
+        await ctx.send(embed=embed)
+
 class CommunityCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -42,13 +51,12 @@ class CommunityCommands(commands.Cog):
         except FileNotFoundError:
             self.quotes = []
 
-    @commands.command(name='quote', help='Get a random motivational/programming quote')
-    @app_commands.command(name='quote', description='Get a random motivational/programming quote')
+    @commands.hybrid_command(name='quote', description='Get a random motivational/programming quote')
     async def quote(self, ctx):
         """Send a random motivational or programming quote"""
         if not self.quotes:
             embed = create_error_embed("No Quotes", "No quotes available at the moment!")
-            await ctx.send(embed=embed)
+            await respond_to_user(ctx, embed)
             return
         
         quote_text = get_random_quote(self.quotes)
@@ -61,7 +69,7 @@ class CommunityCommands(commands.Cog):
         )
         embed.set_footer(text="Stay motivated, keep coding! 🚀")
         
-        await ctx.send(embed=embed)
+        await respond_to_user(ctx, embed)
 
     @commands.command(name='question', help='Get a random programming question')
     async def question(self, ctx):
