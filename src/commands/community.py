@@ -71,12 +71,12 @@ class CommunityCommands(commands.Cog):
         
         await respond_to_user(ctx, embed)
 
-    @commands.command(name='question', help='Get a random programming question')
+    @commands.hybrid_command(name='question', description='Get a random programming question')
     async def question(self, ctx):
         """Get a random programming question"""
         if not self.questions:
             embed = create_error_embed("No Questions", "No questions available at the moment!")
-            await ctx.send(embed=embed)
+            await respond_to_user(ctx, embed)
             return
         
         question_data = get_random_question(self.questions)
@@ -114,13 +114,19 @@ class CommunityCommands(commands.Cog):
         
         embed.set_footer(text="Think you know the answer? Share it in the thread! 💭")
         
-        await ctx.send(embed=embed)
+        await respond_to_user(ctx, embed)
 
-    @commands.command(name='meme', help='Get a random programming meme')
+    @commands.hybrid_command(name='meme', description='Get a random programming meme')
     async def meme(self, ctx):
         """Get a random programming meme"""
-        async with ctx.typing():
-            meme = await fetch_programming_meme()
+        # Show typing indicator for both slash and regular commands
+        if hasattr(ctx, 'response'):
+            await ctx.response.defer()
+        else:
+            async with ctx.typing():
+                pass
+        
+        meme = await fetch_programming_meme()
         
         if meme.startswith('http'):
             # It's an image URL
@@ -141,7 +147,10 @@ class CommunityCommands(commands.Cog):
             )
             embed.set_footer(text="Hope this made you smile! 😊")
         
-        await ctx.send(embed=embed)
+        if hasattr(ctx, 'response'):
+            await ctx.followup.send(embed=embed)
+        else:
+            await ctx.send(embed=embed)
 
     @commands.command(name='submit-challenge', aliases=['submit'], help='Submit a link for the current coding challenge')
     async def submit_challenge(self, ctx, *, submission_link: str):
@@ -186,7 +195,8 @@ class CommunityCommands(commands.Cog):
         # Give XP for submission
         await db.update_user_activity(ctx.author.id, str(ctx.author), 25)  # Bonus XP for submissions
 
-    @commands.command(name='suggest', help='Submit a suggestion for the server')
+    @commands.hybrid_command(name='suggest', description='Submit a suggestion for the server')
+    @app_commands.describe(suggestion="Your suggestion for improving the server")
     async def suggest(self, ctx, *, suggestion: str):
         """Submit a suggestion for the server"""
         # Sanitize input
@@ -197,7 +207,7 @@ class CommunityCommands(commands.Cog):
                 "Suggestion Too Short",
                 "Please provide a suggestion with at least 10 characters!"
             )
-            await ctx.send(embed=embed)
+            await respond_to_user(ctx, embed)
             return
         
         # Add to database
@@ -210,7 +220,7 @@ class CommunityCommands(commands.Cog):
             f"**Your suggestion:** {suggestion[:200]}{'...' if len(suggestion) > 200 else ''}"
         )
         
-        await ctx.send(embed=embed)
+        await respond_to_user(ctx, embed)
         
         # Send to suggestions channel
         suggestions_channel_id = int(os.getenv('SUGGESTIONS_CHANNEL_ID', 0))
