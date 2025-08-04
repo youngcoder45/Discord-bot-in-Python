@@ -34,15 +34,31 @@ intents.members = True
 intents.guilds = True
 intents.reactions = True
 
-bot = commands.Bot(
-    command_prefix=['!', '/'],
-    intents=intents,
-    help_command=None,
-    case_insensitive=True
-)
+class CodeVerseBot(commands.Bot):
+    def __init__(self):
+        super().__init__(
+            command_prefix=['!', '/'],
+            intents=intents,
+            help_command=None,
+            case_insensitive=True
+        )
+        self.start_time = datetime.now(timezone.utc)
 
-# Store bot start time
-bot.start_time = datetime.now(timezone.utc)
+    async def setup_hook(self):
+        """This is called when the bot is started, after login"""
+        # Load cogs first
+        await load_cogs(self)
+        
+        # Then sync commands
+        if GUILD_ID:
+            guild = discord.Object(id=GUILD_ID)
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+        else:
+            await self.tree.sync()
+
+# Create bot instance
+bot = CodeVerseBot()
 
 @bot.event
 async def on_ready():
@@ -54,37 +70,9 @@ async def on_ready():
     await init_database()
     logger.info('Database initialized')
     
-    # Load cogs first (they contain the slash commands)
-    await load_cogs()
-    
     # Log available commands for debugging
     logger.info(f'Available commands: {[cmd.name for cmd in bot.commands]}')
     logger.info(f'Available app commands: {[cmd.name for cmd in bot.tree.get_commands()]}')
-    
-    # Then sync slash commands after cogs are loaded
-    try:
-        logger.info('Syncing slash commands...')
-        
-        # Copy hybrid commands to the command tree
-        for cmd in bot.commands:
-            if isinstance(cmd, commands.HybridCommand):
-                try:
-                    # Skip if command already exists
-                    if not any(tree_cmd.name == cmd.name for tree_cmd in bot.tree.get_commands()):
-                        bot.tree.add_command(cmd.app_command)
-                        logger.info(f'Added hybrid command: {cmd.name}')
-                except Exception as e:
-                    logger.error(f'Error adding command {cmd.name}: {e}')
-        
-        if GUILD_ID:
-            guild = discord.Object(id=GUILD_ID)
-            synced = await bot.tree.sync(guild=guild)
-            logger.info(f'Synced {len(synced)} slash commands to guild {GUILD_ID}')
-        else:
-            synced = await bot.tree.sync()
-            logger.info(f'Synced {len(synced)} slash commands globally')
-    except Exception as e:
-        logger.error(f'Failed to sync slash commands: {e}')
     
     # Start background tasks
     if not daily_qotd.is_running():
@@ -100,7 +88,7 @@ async def on_ready():
         )
     )
 
-async def load_cogs():
+async def load_cogs(bot_instance):
     """Load all command cogs"""
     cogs = [
         'commands.moderation',
@@ -116,7 +104,7 @@ async def load_cogs():
     
     for cog in cogs:
         try:
-            await bot.load_extension(cog)
+            await bot_instance.load_extension(cog)
             logger.info(f'Loaded {cog}')
         except Exception as e:
             logger.error(f'Failed to load {cog}: {e}')

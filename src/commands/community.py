@@ -29,14 +29,16 @@ async def respond_to_user(ctx, embed):
 class CommunityCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self._init_commands()
         self.load_data()
         
-    def _init_commands(self):
-        """Initialize commands with app_commands decorators"""
-        for cmd in self.__cog_commands__:
-            if isinstance(cmd, commands.HybridCommand):
-                cmd.app_command.guild_ids = [int(os.getenv('GUILD_ID', 0))]
+    async def cog_load(self):
+        """This is called when the cog is loaded"""
+        # Set guild_ids for all commands in this cog
+        guild_id = int(os.getenv('GUILD_ID', 0))
+        if guild_id:
+            for cmd in self.__cog_commands__:
+                if isinstance(cmd, commands.HybridCommand):
+                    cmd.app_command._guild_ids = {guild_id}
 
     def load_data(self):
         """Load data from JSON files"""
