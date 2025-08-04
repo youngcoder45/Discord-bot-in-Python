@@ -56,9 +56,11 @@ async def on_ready():
     
     # Load cogs first (they contain the slash commands)
     await load_cogs()
-    
+    # Give Discord a moment to register cogs before syncing commands
+    await asyncio.sleep(2)
     # Then sync slash commands after cogs are loaded
     try:
+        logger.info('Syncing slash commands...')
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
             synced = await bot.tree.sync(guild=guild)
