@@ -23,7 +23,7 @@ class MemberEvents(commands.Cog):
                 embed = discord.Embed(
                     title="👋 Welcome to The CodeVerse Hub!",
                     description=f"Welcome {member.mention}! We're excited to have you join our coding community.\n\n"
-                               f"🔹 Please read our rules in <#rules>\n"
+                               f"🔹 Please read our rules in <#📜｜rules>\n"
                                f"🔹 Introduce yourself in <#lobby>\n"
                                f"🔹 Ask questions in <#ask-for-help>\n"
                                f"🔹 Share your projects in <#projects-showcase>\n"
@@ -33,8 +33,8 @@ class MemberEvents(commands.Cog):
                     timestamp=datetime.utcnow()
                 )
                 embed.set_thumbnail(url=member.display_avatar.url)
-                embed.set_footer(text="Happy coding! 🚀")
-                
+                embed.set_footer(text="Happy coding New Friend !!🚀")
+
                 await channel.send(embed=embed)
         
         # Try to send welcome DM
@@ -78,14 +78,14 @@ class MemberEvents(commands.Cog):
                 embed = discord.Embed(
                     title="👋 Member Left",
                     description=f"**{member.display_name}** has left the server.\n"
-                               f"We'll miss you! 😢",
+                               f"We'll miss you!\n\n",
                     color=discord.Color.red(),
                     timestamp=datetime.utcnow()
                 )
                 
                 if stats:
                     embed.add_field(
-                        name="📊 Final Stats",
+                        name="📊 Final Stats 🫡 ",
                         value=f"**Level:** {stats['level']}\n"
                               f"**XP:** {stats['xp']:,}\n"
                               f"**Messages:** {stats['message_count']:,}",
