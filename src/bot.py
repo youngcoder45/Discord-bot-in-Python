@@ -61,10 +61,8 @@ async def on_ready():
     # Then sync slash commands after cogs are loaded
     try:
         logger.info('Syncing slash commands...')
-        # Copy commands to command tree
-        for cmd in bot.commands:
-            if isinstance(cmd, commands.HybridCommand):
-                bot.tree.add_command(cmd.app_command)
+        # Clear existing commands before syncing
+        bot.tree.clear_commands(guild=None)
         
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
