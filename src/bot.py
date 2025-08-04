@@ -56,13 +56,25 @@ async def on_ready():
     
     # Load cogs first (they contain the slash commands)
     await load_cogs()
-    # Give Discord a moment to register cogs before syncing commands
-    await asyncio.sleep(2)
+    
+    # Log available commands for debugging
+    logger.info(f'Available commands: {[cmd.name for cmd in bot.commands]}')
+    logger.info(f'Available app commands: {[cmd.name for cmd in bot.tree.get_commands()]}')
+    
     # Then sync slash commands after cogs are loaded
     try:
         logger.info('Syncing slash commands...')
-        # Clear existing commands before syncing
-        bot.tree.clear_commands(guild=None)
+        
+        # Copy hybrid commands to the command tree
+        for cmd in bot.commands:
+            if isinstance(cmd, commands.HybridCommand):
+                try:
+                    # Skip if command already exists
+                    if not any(tree_cmd.name == cmd.name for tree_cmd in bot.tree.get_commands()):
+                        bot.tree.add_command(cmd.app_command)
+                        logger.info(f'Added hybrid command: {cmd.name}')
+                except Exception as e:
+                    logger.error(f'Error adding command {cmd.name}: {e}')
         
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
