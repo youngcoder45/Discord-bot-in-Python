@@ -43,6 +43,7 @@ class CommunityCommands(commands.Cog):
             self.quotes = []
 
     @commands.command(name='quote', help='Get a random motivational/programming quote')
+    @app_commands.command(name='quote', description='Get a random motivational/programming quote')
     async def quote(self, ctx):
         """Send a random motivational or programming quote"""
         if not self.quotes:

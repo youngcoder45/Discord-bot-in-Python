@@ -61,21 +61,9 @@ async def on_ready():
     try:
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
-            # Clear existing commands first
-            bot.tree.clear_commands(guild=guild)
-            # Copy all cog commands to the tree
-            for cog_name, cog in bot.cogs.items():
-                for command in cog.walk_app_commands():
-                    bot.tree.add_command(command, guild=guild)
             synced = await bot.tree.sync(guild=guild)
             logger.info(f'Synced {len(synced)} slash commands to guild {GUILD_ID}')
         else:
-            # Clear existing commands first
-            bot.tree.clear_commands()
-            # Copy all cog commands to the tree
-            for cog_name, cog in bot.cogs.items():
-                for command in cog.walk_app_commands():
-                    bot.tree.add_command(command)
             synced = await bot.tree.sync()
             logger.info(f'Synced {len(synced)} slash commands globally')
     except Exception as e:
@@ -173,14 +161,44 @@ async def keep_alive():
     logger.info(f"Health server started on port {os.getenv('PORT', 8080)}")
 
 # Main execution
+# Global slash commands (always available)
+@bot.tree.command(name="ping", description="Check if the bot is working")
+async def ping(interaction: discord.Interaction):
+    """Test command to check bot connectivity"""
+    latency = round(bot.latency * 1000)
+    embed = discord.Embed(
+        title="🏓 Pong!",
+        description=f"Bot is working! Latency: {latency}ms",
+        color=0x00ff00
+    )
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="info", description="Get information about the bot")
+async def info(interaction: discord.Interaction):
+    """Display bot information"""
+    embed = discord.Embed(
+        title="🤖 CodeVerse Bot",
+        description="A feature-rich Discord bot for programming communities!",
+        color=0x00ff00
+    )
+    embed.add_field(name="📊 Servers", value=len(bot.guilds), inline=True)
+    embed.add_field(name="👥 Users", value=len(bot.users), inline=True)
+    embed.add_field(name="⏰ Uptime", value=f"<t:{int(bot.start_time.timestamp())}:R>", inline=True)
+    embed.add_field(name="🔧 Commands", value="Use `/help` to see all commands", inline=False)
+    await interaction.response.send_message(embed=embed)
+
 async def main():
-    async with bot:
-        # Start keep-alive server for hosting platforms
-        if os.getenv('HOSTING_PLATFORM') in ['production', 'railway', 'render', 'heroku']:
-            await keep_alive()
-        
-        # Start the bot
-        await bot.start(TOKEN)
+    """Main function to start the bot"""
+    if not TOKEN:
+        logger.error("Discord token not found! Please check your .env file.")
+        return
+    
+    # Start keep-alive server for hosting
+    from utils.keep_alive import keep_alive
+    keep_alive()
+    
+    # Start the bot
+    await bot.start(TOKEN)
 
 if __name__ == "__main__":
     try:
