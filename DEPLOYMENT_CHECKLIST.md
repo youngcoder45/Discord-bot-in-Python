@@ -16,9 +16,9 @@ git add .
 git commit -m "Initial Discord bot commit"
 
 # Create GitHub repository and push
-git remote add origin https://github.com/yourusername/codeverse-bot.git
-git branch -M main
-git push -u origin main
+git remote add origin https://github.com/youngcoder45/Discord-bot-in-Python.git
+git branch -M master
+git push -u origin master
 ```
 
 ---

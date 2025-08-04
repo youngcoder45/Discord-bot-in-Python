@@ -14,8 +14,8 @@
    git init
    git add .
    git commit -m "Initial commit"
-   git remote add origin YOUR_GITHUB_REPO_URL
-   git push -u origin main
+   git remote add origin https://github.com/youngcoder45/Discord-bot-in-Python.git
+   git push -u origin master
    ```
 
 3. **Connect to Railway**
