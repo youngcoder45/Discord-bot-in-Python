@@ -1,13 +1,11 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 import random
 import asyncio
 import json
 import re
 import typing
 from datetime import datetime, timedelta, timezone
-from utils.database import db
 from utils.helpers import create_success_embed, create_error_embed, create_info_embed
 
 class Fun(commands.Cog):
@@ -19,7 +17,7 @@ class Fun(commands.Cog):
         self.would_you_rather_cooldowns = {}
         self.active_games = {}
 
-    @commands.hybrid_command(name="compliment", description="Get a random compliment")
+    @commands.command(name="compliment", help="Get a random compliment")
     async def compliment(self, ctx, member: discord.Member = None):
         """Send a random compliment to yourself or another member"""
         target = member or ctx.author
@@ -31,7 +29,7 @@ class Fun(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="dadjoke", description="Get a random dad joke")
+    @commands.command(name="dadjoke", help="Get a random dad joke")
     async def dadjoke(self, ctx):
         """Get a random dad joke"""
         joke = random.choice(DAD_JOKES)
@@ -42,7 +40,7 @@ class Fun(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="fortune", description="Get your programming fortune")
+    @commands.command(name="fortune", help="Get your programming fortune")
     async def fortune(self, ctx):
         """Get a programming-themed fortune cookie message"""
         fortune = random.choice(FORTUNE_COOKIES)
@@ -53,7 +51,7 @@ class Fun(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="wyr", description="Would you rather...?")
+    @commands.command(name="wyr", help="Would you rather...? (cooldown 30s per channel)")
     @commands.cooldown(1, 30, commands.BucketType.channel)
     async def would_you_rather(self, ctx):
         """Start a would you rather game"""
@@ -68,7 +66,7 @@ class Fun(commands.Cog):
         await message.add_reaction("1️⃣")
         await message.add_reaction("2️⃣")
 
-    @commands.hybrid_command(name="hangman", description="Play hangman with programming words")
+    @commands.command(name="hangman", help="Play hangman with programming words")
     async def hangman(self, ctx):
         """Start a game of hangman"""
         if ctx.channel.id in self.hangman_games:
@@ -126,7 +124,7 @@ class Fun(commands.Cog):
                     del self.hangman_games[message.channel.id]
                 elif "_" not in display.replace(" ", ""):
                     await message.channel.send(f"🎉 Congratulations! You got it: {word}")
-                    await db.update_user_activity(message.author.id, str(message.author), 20)
+                    # XP system removed
                     del self.hangman_games[message.channel.id]
                 else:
                     embed = discord.Embed(
@@ -312,7 +310,7 @@ class FunCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         
-    @commands.hybrid_command(name="joke", description="Get a random programming joke")
+    @commands.command(name="joke", help="Get a random programming joke")
     async def joke(self, ctx):
         """Get a random programming joke"""
         joke = random.choice(PROGRAMMING_JOKES)
@@ -323,7 +321,7 @@ class FunCommands(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="riddle", description="Get a random riddle to solve")
+    @commands.command(name="riddle", help="Get a random riddle to solve")
     async def riddle(self, ctx):
         """Start a riddle game"""
         riddle = random.choice(RIDDLES)
@@ -342,13 +340,13 @@ class FunCommands(commands.Cog):
             guess = await self.bot.wait_for('message', check=check, timeout=30.0)
             if guess.content.lower() == riddle["answer"]:
                 await ctx.send(f"🎉 Correct, {ctx.author.mention}! Well done!")
-                await db.update_user_activity(ctx.author.id, str(ctx.author), 10)
+                # XP system removed
             else:
                 await ctx.send(f"❌ Sorry, that's not correct. The answer was: {riddle['answer']}")
         except asyncio.TimeoutError:
             await ctx.send("⏰ Time's up! Better luck next time!")
 
-    @commands.hybrid_command(name="trivia", description="Start a trivia question")
+    @commands.command(name="trivia", help="Start a trivia question")
     async def trivia(self, ctx):
         """Start a trivia game"""
         question = random.choice(TRIVIA_QUESTIONS)
@@ -377,14 +375,13 @@ class FunCommands(commands.Cog):
             guess = await self.bot.wait_for('message', check=check, timeout=30.0)
             if options[int(guess.content)-1] == question["answer"]:
                 await ctx.send(f"✨ Correct, {ctx.author.mention}! You're a genius!")
-                await db.update_user_activity(ctx.author.id, str(ctx.author), 15)
+                # XP system removed
             else:
                 await ctx.send(f"❌ Not quite! The correct answer was: {question['answer']}")
         except asyncio.TimeoutError:
             await ctx.send("⏰ Time's up! The answer was: " + question["answer"])
 
-    @commands.hybrid_command(name="rps", description="Play Rock, Paper, Scissors")
-    @app_commands.describe(choice="Your choice: rock, paper, or scissors")
+    @commands.command(name="rps", help="Play Rock, Paper, Scissors: ?rps <rock|paper|scissors>")
     async def rps(self, ctx, choice: str):
         """Play Rock, Paper, Scissors"""
         choice = choice.lower()
@@ -408,14 +405,14 @@ class FunCommands(commands.Cog):
               (choice == "paper" and bot_choice == "rock") or 
               (choice == "scissors" and bot_choice == "paper")):
             result = f"You win! 🎉"
-            await db.update_user_activity(ctx.author.id, str(ctx.author), 5)
+            # XP system removed
         else:
             result = "Bot wins! 🤖"
         
         embed.add_field(name="Result", value=result, inline=False)
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="flip", description="Flip a coin")
+    @commands.command(name="flip", help="Flip a coin")
     async def flip(self, ctx):
         """Flip a coin"""
         result = random.choice(["Heads", "Tails"])
@@ -426,8 +423,7 @@ class FunCommands(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="roll", description="Roll some dice")
-    @app_commands.describe(dice="The dice to roll (e.g., 2d6 for two six-sided dice)")
+    @commands.command(name="roll", help="Roll dice in NdN format, e.g. 2d6")
     async def roll(self, ctx, dice: str = "1d6"):
         """Roll dice in NdN format"""
         try:
@@ -459,92 +455,55 @@ class FunCommands(commands.Cog):
         except Exception as e:
             await ctx.send(f"Error: {str(e)}")
 
-    @app_commands.command(name="8ball", description="Ask the magic 8-ball a question")
-    @app_commands.describe(question="Your yes/no question")
-    async def eight_ball(self, interaction: discord.Interaction, question: str):
-        """Magic 8-ball command"""
+    @commands.command(name="8ball", help="Ask the magic 8-ball a question: ?8ball <question>")
+    async def eight_ball(self, ctx: commands.Context, *, question: str):
         responses = [
-            "🎱 It is certain", "🎱 Without a doubt", "🎱 Yes definitely",
-            "🎱 You may rely on it", "🎱 As I see it, yes", "🎱 Most likely",
-            "🎱 Outlook good", "🎱 Yes", "🎱 Signs point to yes",
-            "🎱 Reply hazy, try again", "🎱 Ask again later", "🎱 Better not tell you now",
-            "🎱 Cannot predict now", "🎱 Concentrate and ask again",
-            "🎱 Don't count on it", "🎱 My reply is no", "🎱 My sources say no",
-            "🎱 Outlook not so good", "🎱 Very doubtful"
+            "It is certain", "Without a doubt", "Yes definitely",
+            "You may rely on it", "As I see it, yes", "Most likely",
+            "Outlook good", "Yes", "Signs point to yes",
+            "Reply hazy, try again", "Ask again later", "Better not tell you now",
+            "Cannot predict now", "Concentrate and ask again",
+            "Don't count on it", "My reply is no", "My sources say no",
+            "Outlook not so good", "Very doubtful"
         ]
-        
-        embed = discord.Embed(
-            title="🎱 Magic 8-Ball",
-            color=discord.Color.purple(),
-            timestamp=datetime.now(tz=timezone.utc)
-        )
+        embed = discord.Embed(title="🎱 Magic 8-Ball", color=discord.Color.purple(), timestamp=datetime.now(tz=timezone.utc))
         embed.add_field(name="Question", value=question, inline=False)
         embed.add_field(name="Answer", value=random.choice(responses), inline=False)
-        
-        await interaction.response.send_message(embed=embed)
+        await ctx.send(embed=embed)
     
-    @app_commands.command(name="poll", description="Create a poll with custom options")
-    @app_commands.describe(
-        question="The poll question",
-        option1="First option",
-        option2="Second option", 
-        option3="Third option (optional)",
-        option4="Fourth option (optional)"
-    )
-    async def poll(self, interaction: discord.Interaction, question: str, option1: str, option2: str, option3: str = None, option4: str = None):
-        """Create a poll with reactions"""
-        options = [option1, option2]
-        if option3:
-            options.append(option3)
-        if option4:
-            options.append(option4)
-        
+    @commands.command(name="poll", help="Create a poll: ?poll <question> | <opt1> | <opt2> [| opt3 | opt4]")
+    async def poll(self, ctx: commands.Context, *, spec: str):
+        parts = [p.strip() for p in spec.split('|') if p.strip()]
+        if len(parts) < 3:
+            await ctx.send("Format: ?poll Question text | Option 1 | Option 2 [| Option 3 | Option 4]")
+            return
+        question, *options = parts
+        if len(options) > 4:
+            options = options[:4]
         emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
-        
-        embed = discord.Embed(
-            title="📊 Poll",
-            description=question,
-            color=discord.Color.blue(),
-            timestamp=datetime.now(tz=timezone.utc)
-        )
-        
+        embed = discord.Embed(title="📊 Poll", description=question, color=discord.Color.blue(), timestamp=datetime.now(tz=timezone.utc))
         for i, option in enumerate(options):
-            embed.add_field(
-                name=f"{emojis[i]} Option {i+1}",
-                value=option,
-                inline=False
-            )
-        
-        embed.set_footer(text=f"Poll by {interaction.user.display_name}")
-        
-        await interaction.response.send_message(embed=embed)
-        message = await interaction.original_response()
-        
+            embed.add_field(name=f"{emojis[i]} Option {i+1}", value=option, inline=False)
+        embed.set_footer(text=f"Poll by {ctx.author.display_name}")
+        message = await ctx.send(embed=embed)
         for i in range(len(options)):
             await message.add_reaction(emojis[i])
     
-    @app_commands.command(name="guess", description="Start a number guessing game")
-    @app_commands.describe(max_number="Maximum number to guess (default: 100)")
-    async def guess_game(self, interaction: discord.Interaction, max_number: int = 100):
+    @commands.command(name="guess", help="Start a number guessing game: ?guess [max_number]")
+    async def guess_game(self, ctx: commands.Context, max_number: int = 100):
         """Number guessing game"""
         if max_number < 2 or max_number > 1000:
-            await interaction.response.send_message("❌ Please choose a number between 2 and 1000!", ephemeral=True)
+            await ctx.send("❌ Please choose a number between 2 and 1000!")
             return
-            
+        
         number = random.randint(1, max_number)
         attempts = 0
         max_attempts = min(10, max(3, max_number // 10))
-        
-        embed = discord.Embed(
-            title="🎯 Number Guessing Game",
-            description=f"I'm thinking of a number between 1 and {max_number}!\nYou have {max_attempts} attempts to guess it.",
-            color=discord.Color.green()
-        )
-        
-        await interaction.response.send_message(embed=embed)
-        
+        embed = discord.Embed(title="🎯 Number Guessing Game", description=f"I'm thinking of a number between 1 and {max_number}!\nYou have {max_attempts} attempts.", color=discord.Color.green())
+        await ctx.send(embed=embed)
+
         def check(message):
-            return message.author == interaction.user and message.channel == interaction.channel
+            return message.author == ctx.author and message.channel == ctx.channel
         
         while attempts < max_attempts:
             try:
@@ -560,7 +519,7 @@ class FunCommands(commands.Cog):
                 if guess == number:
                     await msg.reply(f"🎉 Congratulations! You guessed it in {attempts} attempts! The number was {number}.")
                     # Give XP for winning
-                    await db.update_user_activity(interaction.user.id, str(interaction.user), 15)
+                    # XP system removed
                     return
                 elif guess < number:
                     remaining = max_attempts - attempts
@@ -576,13 +535,12 @@ class FunCommands(commands.Cog):
                         await msg.reply(f"📉 Too high! Game over! The number was {number}.")
                         
             except asyncio.TimeoutError:
-                await interaction.followup.send(f"⏰ Time's up! The number was {number}.")
+                await ctx.send(f"⏰ Time's up! The number was {number}.")
                 return
-        
-        await interaction.followup.send(f"💔 Game over! The number was {number}. Better luck next time!")
 
-async def setup(bot):
-    await bot.add_cog(FunCommands(bot))
+        # Ran out of attempts
+        await ctx.send(f"💔 Game over! The number was {number}. Better luck next time!")
+
 async def setup(bot):
     await bot.add_cog(Fun(bot))
     await bot.add_cog(FunCommands(bot))

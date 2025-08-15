@@ -2,56 +2,63 @@
 
 # 🤖 CodeVerse Bot
 
-Lightweight, modular Discord bot for programming & learning communities. Prefix **`?`**. Built with **discord.py**.
+Lightweight, modular Discord bot for programming & learning communities. **Prefix-only (`?`)**. Built with **discord.py**.
 
 ![Status](https://img.shields.io/badge/status-active-success) ![License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
 
 ## 📌 Current State
-The project was recently simplified: the old XP / leveling / leaderboard system and AFK / suggestion tracking internals were removed or are being reworked. The codebase now focuses on a minimal core (startup, slash `/ping`, `/info`, basic join/leave handlers) with placeholders for future feature packs.
+The project has been aggressively simplified. Removed: XP / leveling / leaderboard, challenges, QOTD, slash & hybrid commands, database layer, AFK, persistent suggestions. Only fast prefix commands and lightweight JSON resources remain.
 
-If you pulled a previous revision that still exposed XP commands, note that they are deprecated and no longer loaded. This README documents both what exists **now** and what is **planned** (marked Planned).
+If you pulled a previous revision with slash commands or XP features, those are gone; everything is prefix-only now.
 
 
 ## ✨ Feature Overview
 
 | Category | Status | Description |
 |----------|--------|-------------|
-| Core Presence | ✅ | Startup, health keep‑alive, global `/ping`, `/info` |
-| Community (quotes, memes, questions) | Planned | Random content & engagement commands |
-| Learning (snippets, algorithms, quiz) | Planned | Educational helpers / prompts |
-| Moderation (warn/mute/etc.) | Planned | Basic moderation utilities |
-| Analytics / Stats | Planned | Activity & channel stats (non‑XP) |
-| Challenges / QOTD | Planned | Scheduled content tasks |
+| Core Presence | ✅ | Startup, keep‑alive, ?ping, ?info, ?diag |
+| Community (quotes, memes, questions) | ✅ | Random content & engagement (quote, question, meme, suggest) |
+| Fun (games, jokes, etc.) | ✅ | Compliment, dadjoke, fortune, wyr, hangman, joke, riddle, trivia, rps, flip, roll, 8ball, poll, guess |
+| Challenges / QOTD | ❌ Removed | Removed per simplification |
 | XP / Levels / Leaderboard | ❌ Removed | Removed per request |
+| Slash Commands | ❌ Removed | Prefix-only interface |
 
-## 🧪 Implemented Commands (Current)
+## 🧪 Implemented Commands (Prefix Only)
 
-| Command | Type | Description |
-|---------|------|-------------|
-| `/ping` | Slash/Hybrid | Latency check (ephemeral) |
-| `/info` | Slash/Hybrid | Bot info + uptime + prefix |
-| `/diag` | Slash/Hybrid | Diagnostics snapshot (instance, latency, users) |
+| Command | Description |
+|---------|-------------|
+| ?ping | Latency check |
+| ?info | Bot info + uptime + prefix |
+| ?diag | Diagnostics snapshot |
+| ?quote | Random quote |
+| ?question | Random programming question |
+| ?meme | Random programming meme or text joke |
+| ?suggest <text> | Ephemeral suggestion acknowledgement |
+| ?compliment [@user] | Random compliment |
+| ?dadjoke | Dad joke |
+| ?fortune | Programming fortune |
+| ?wyr | Would you rather (30s cooldown / channel) |
+| ?hangman | Start hangman game (per-channel) |
+| ?joke | Programming joke |
+| ?riddle | Riddle mini-game |
+| ?trivia | Trivia question |
+| ?rps <choice> | Rock Paper Scissors |
+| ?flip | Coin flip |
+| ?roll [NdN] | Dice roll (e.g. 2d6) |
+| ?8ball <question> | Magic 8-ball |
+| ?poll Q | Opt1 | Opt2 [| Opt3 | Opt4] | Reaction poll |
+| ?guess [max] | Number guessing game |
+| ?help | Custom help menu |
+## 📖 Roadmap (Post-Simplification)
 
-Prefix (`?`) equivalents for `ping`, `info`, `diag` also work because they are hybrid commands. No other prefix commands are currently active.
-## 📖 Command Reference (Living Section)
-
-| Name | Slash / Prefix | Args | Status | Notes |
-|------|----------------|------|--------|-------|
-| ping | Slash | – | ✅ | Ephemeral Pong reply |
-| info | Slash | – | ✅ | Uptime + prefix |
-| diag | Slash | – | ✅ | Diagnostics (instance, latency, uptime, JSON store) |
-| quote | Hybrid | – | Planned | Random motivational / coding quote |
-| question | Hybrid | – | Planned | Programming practice question |
-| meme | Hybrid | – | Planned | Programming meme fetch |
-| suggest | Hybrid | suggestion (str) | Planned | Store suggestion (DB table) |
-| code-snippet | Slash | language? | Planned | Random / filtered snippet |
-| algorithm | Slash | topic? | Planned | Explanation + example |
-| quiz | Slash | topic? | Planned | Interactive multi‑Q quiz |
-| serverinfo | Slash | – | Planned | Guild stats summary |
-| avatar | Slash | member? | Planned | Large avatar embed |
-| roleinfo | Prefix | role | Planned | Role details (permissions, members) |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Moderation basics | Planned | warn, purge, simple logging |
+| Educational snippets | Planned | code snippets / explanations |
+| Lightweight reminders | Planned | JSON scheduled reminders |
+| Optional slash re-intro | Deferred | Only if needed; design clean layer |
 
 ## 🏗️ Project Structure
 ```
@@ -122,26 +129,19 @@ python -m venv .venv; .\.venv\Scripts\Activate.ps1; pip install -r requirements.
 | Add prefix command | Use `@commands.command()` inside a Cog |
 | Hot reload (dev) | Stop & restart; dynamic reload command can be added later |
 
-### Minimal Hybrid Cog Template
+### Minimal Prefix Cog Template
 ```python
 from discord.ext import commands
-from discord import app_commands
 
 class MyCog(commands.Cog):
    def __init__(self, bot):
       self.bot = bot
 
-   @commands.hybrid_command(name="hello", description="Say hello")
+   @commands.command(name="hello", help="Say hello")
    async def hello(self, ctx: commands.Context):
-      if getattr(ctx, 'interaction', None) and not ctx.interaction.response.is_done():
-         await ctx.interaction.response.defer(ephemeral=True)
-      message = "Hey there!"
-      if getattr(ctx, 'interaction', None):
-         await ctx.interaction.followup.send(message, ephemeral=True)
-      else:
-         await ctx.reply(message)
+      await ctx.reply("Hey there!", mention_author=False)
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
    await bot.add_cog(MyCog(bot))
 ```
 
