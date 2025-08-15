@@ -19,13 +19,14 @@ intents.guilds = True
 intents.reactions = True
 
 COGS_TO_LOAD = [
+    'commands.core',          # New core hybrid commands (ping, info)
     'commands.utility',
-    'commands.analytics',  # May be partial
+    'commands.analytics',      # May be partial / placeholder
     'commands.community',
     'commands.learning',
     'commands.fun',
     'events.member_events',
-    'events.message_handler'  # Simplified; XP system removed
+    'events.message_handler'   # Simplified; XP system removed
 ]
 
 class CodeVerseBot(commands.Bot):
@@ -54,19 +55,8 @@ async def on_ready():
     except Exception as e:
         logger.warning(f"Slash command sync failed: {e}")
 
-# Basic global slash commands (kept minimal)
-@bot.tree.command(name="ping", description="Check if the bot is working")
-async def ping_cmd(interaction: discord.Interaction):
-    await interaction.response.send_message("🏓 Pong!", ephemeral=True)
-
-@bot.tree.command(name="info", description="Get information about the bot")
-async def info_cmd(interaction: discord.Interaction):
-    uptime = datetime.now(timezone.utc) - bot.start_time
-    embed = discord.Embed(title="CodeVerse Bot", color=discord.Color.blue())
-    embed.add_field(name="Uptime", value=str(uptime).split('.')[0], inline=False)
-    embed.add_field(name="Prefix", value="?", inline=True)
-    embed.set_footer(text="Leveling system removed.")
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+# NOTE: ping & info have been moved to a hybrid Cog at commands/core.py so they work
+#       both as slash commands (/ping, /info) and prefix commands (?ping, ?info).
 
 async def main():
     if not TOKEN:
