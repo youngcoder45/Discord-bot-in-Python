@@ -80,9 +80,9 @@ async def post_daily_qotd(bot, channel_id):
     
     embed.add_field(
         name="🎁 How to Participate",
-        value="• Answer in this thread to submit your response\n"
-              "• Use `!qotd-answer <your answer>` for recorded submission\n"
-              "• Winners get bonus XP and recognition!\n"
+      value="• Answer in this thread to submit your response\n"
+          "• Use `?qotd-answer <your answer>` for recorded submission\n"
+          "• Winners get community recognition!\n"
               "• Best answer will be selected by staff",
         inline=False
     )
@@ -109,7 +109,7 @@ async def post_daily_qotd(bot, channel_id):
             "🔹 Share your thoughts and solutions here\n"
             "🔹 Help others understand concepts\n"
             "🔹 Learn from different approaches\n"
-            "🔹 Use `!qotd-answer` in the main channel for official submission"
+            "🔹 Use `?qotd-answer` in the main channel for official submission"
         )
         
         await thread.send(embed=thread_embed)

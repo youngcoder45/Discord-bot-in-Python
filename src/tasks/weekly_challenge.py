@@ -139,7 +139,7 @@ async def announce_weekly_challenge(bot, channel_id):
         value="• Review the challenge details above\n"
               "• Decide if any modifications are needed\n"
               "• Post the challenge in #coding-challenges when ready\n"
-              "• Use `!post-challenge` to announce to the community",
+              "• Use `?post-challenge` to announce to the community",
         inline=False
     )
     
@@ -240,9 +240,9 @@ async def post_challenge_to_community(bot, challenge_data, coding_challenges_cha
     
     embed.add_field(
         name="🎯 How to Submit",
-        value="• Work on your solution\n"
-              "• Upload to GitHub/GitLab or coding platform\n"
-              "• Use `!submit-challenge <link>` to submit\n"
+      value="• Work on your solution\n"
+          "• Upload to GitHub/GitLab or coding platform\n"
+          "• Use `?submit-challenge <link>` to submit\n"
               "• Submit in this thread for discussion\n"
               "• Get feedback from the community!",
         inline=False
@@ -279,7 +279,7 @@ async def post_challenge_to_community(bot, challenge_data, coding_challenges_cha
             "🔹 Share your solutions and approaches here\n"
             "🔹 Ask questions and get help from the community\n"
             "🔹 Provide feedback on others' solutions\n"
-            "🔹 Use `!submit-challenge <link>` for official submission\n"
+            "🔹 Use `?submit-challenge <link>` for official submission\n"
             "🔹 Remember: learning is more important than winning!"
         )
         

@@ -23,7 +23,7 @@ async def sync_commands():
     
     # Create bot with minimal intents for syncing
     intents = discord.Intents.default()
-    bot = commands.Bot(command_prefix='!', intents=intents)
+    bot = commands.Bot(command_prefix='?', intents=intents)
     
     @bot.event
     async def on_ready():
