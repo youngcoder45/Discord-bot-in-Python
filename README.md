@@ -28,32 +28,13 @@ If you pulled a previous revision that still exposed XP commands, note that they
 
 ## 🧪 Implemented Commands (Current)
 
-### Slash Commands
-1. Clone
-   ```bash
-   git clone https://github.com/<your-user>/codeverse-bot.git
-   cd codeverse-bot
-   ```
-2. Install deps
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
-   ```
-3. Create `.env`
-   ```env
-   DISCORD_TOKEN=REPLACE_ME
-   GUILD_ID=123456789012345678
-   PORT=8080
-   HOSTING_PLATFORM=local
-   # Optional
-   JOINS_LEAVES_CHANNEL_ID=
-   SERVER_LOGS_CHANNEL_ID=
-   ```
-4. Run locally
-   ```bash
-   python src/bot.py
-   ```
+| Command | Type | Description |
+|---------|------|-------------|
+| `/ping` | Slash/Hybrid | Latency check (ephemeral) |
+| `/info` | Slash/Hybrid | Bot info + uptime + prefix |
+| `/diag` | Slash/Hybrid | Diagnostics snapshot (instance, latency, users) |
+
+Prefix (`?`) equivalents for `ping`, `info`, `diag` also work because they are hybrid commands. No other prefix commands are currently active.
 ## 📖 Command Reference (Living Section)
 
 | Name | Slash / Prefix | Args | Status | Notes |
@@ -69,21 +50,7 @@ If you pulled a previous revision that still exposed XP commands, note that they
 | algorithm | Slash | topic? | Planned | Explanation + example |
 | quiz | Slash | topic? | Planned | Interactive multi‑Q quiz |
 | serverinfo | Slash | – | Planned | Guild stats summary |
-   def __init__(self, bot):
-      self.bot = bot
 | avatar | Slash | member? | Planned | Large avatar embed |
-   @commands.hybrid_command(name="hello", description="Say hello")
-   async def hello(self, ctx: commands.Context):
-      if getattr(ctx, 'interaction', None) and not ctx.interaction.response.is_done():
-         await ctx.interaction.response.defer(ephemeral=True)
-      msg = "Hey there!"
-      if getattr(ctx, 'interaction', None):
-         await ctx.interaction.followup.send(msg, ephemeral=True)
-      else:
-         await ctx.reply(msg)
-
-async def setup(bot):
-   await bot.add_cog(MyCog(bot))
 | roleinfo | Prefix | role | Planned | Role details (permissions, members) |
 
 ## 🏗️ Project Structure
@@ -112,21 +79,26 @@ codeverse-bot/
    ```
 2. Install deps
    ```bash
+   python -m venv .venv
+   # Windows PowerShell
+   .venv\Scripts\Activate.ps1
+   # Linux/macOS
+   # source .venv/bin/activate
    pip install -r requirements.txt
    ```
 3. Create `.env`
    ```env
-   DISCORD_TOKEN=REGENERATE_THIS_TOKEN
+   DISCORD_TOKEN=REPLACE_ME
    GUILD_ID=123456789012345678
    PORT=8080
    HOSTING_PLATFORM=local
-   # Optional channel IDs (set only what you use)
-   JOINS_LEAVES_CHANNEL_ID=...
-   SERVER_LOGS_CHANNEL_ID=...
+   # Optional
+   JOINS_LEAVES_CHANNEL_ID=
+   SERVER_LOGS_CHANNEL_ID=
    ```
 4. Run locally
    ```bash
-   python main.py
+   python src/bot.py
    ```
 
 ### Windows PowerShell One‑liner
@@ -150,7 +122,7 @@ python -m venv .venv; .\.venv\Scripts\Activate.ps1; pip install -r requirements.
 | Add prefix command | Use `@commands.command()` inside a Cog |
 | Hot reload (dev) | Stop & restart; dynamic reload command can be added later |
 
-### Minimal Cog Template
+### Minimal Hybrid Cog Template
 ```python
 from discord.ext import commands
 from discord import app_commands
@@ -159,9 +131,15 @@ class MyCog(commands.Cog):
    def __init__(self, bot):
       self.bot = bot
 
-   @app_commands.command(name="example", description="Example slash command")
-   async def example(self, interaction):
-      await interaction.response.send_message("Example works!")
+   @commands.hybrid_command(name="hello", description="Say hello")
+   async def hello(self, ctx: commands.Context):
+      if getattr(ctx, 'interaction', None) and not ctx.interaction.response.is_done():
+         await ctx.interaction.response.defer(ephemeral=True)
+      message = "Hey there!"
+      if getattr(ctx, 'interaction', None):
+         await ctx.interaction.followup.send(message, ephemeral=True)
+      else:
+         await ctx.reply(message)
 
 async def setup(bot):
    await bot.add_cog(MyCog(bot))
@@ -170,10 +148,11 @@ async def setup(bot):
 ## 🧩 Extending Features
 | Feature | Implementation Hint |
 |---------|---------------------|
-| Suggestions | Create DB table `suggestions(user_id INTEGER, content TEXT, ts TEXT)` |
-| Quotes | Load JSON into memory once in Cog `__init__` |
-| Memes | Use `requests` or `aiohttp` to fetch from a safe meme API |
-| Reminders | Store scheduled jobs in memory or DB; use `asyncio.create_task` & timestamps |
+| Quotes | Use `utils.helpers.get_random_quote` on preloaded list |
+| Questions | Similar to quotes via `get_random_question` |
+| Memes | Implement `fetch_programming_meme` (API call) |
+| Suggestions | Store suggestions in a JSON list (new file) with timestamp |
+| Reminders | Track with in‑memory tasks; persist schedule JSON if needed |
 | Weather | Integrate OpenWeatherMap (store API key as `WEATHER_API_KEY`) |
 
 ## 🧪 Testing

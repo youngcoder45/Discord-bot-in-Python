@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands, Member, TextChannel
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 from utils.database import db
 from utils.helpers import (
@@ -116,7 +116,7 @@ class Moderation(commands.Cog):
         embed = discord.Embed(
             title=f"⚠️ Warnings for {member.display_name}",
             color=discord.Color.orange(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         for i, (mod_id, reason, date) in enumerate(warnings[:10], 1):  # Show last 10 warnings
@@ -311,7 +311,7 @@ class Moderation(commands.Cog):
             return
         
         # Calculate timeout until
-        timeout_until = datetime.utcnow() + timedelta(seconds=duration_seconds)
+        timeout_until = datetime.now(tz=timezone.utc) + timedelta(seconds=duration_seconds)
         
         try:
             await member.timeout(timeout_until, reason=f"{ctx.author}: {reason}")

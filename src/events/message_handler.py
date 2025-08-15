@@ -1,6 +1,6 @@
 from discord.ext import commands
 import logging, discord, os
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -9,13 +9,13 @@ class MessageHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        # Ignore bot messages or DMs
-        if message.author.bot or not message.guild:
-            return
-        # Allow other cogs / commands to process
-        await self.bot.process_commands(message)
+    # @commands.Cog.listener()
+    # async def on_message(self, message):
+    #     # Ignore bot messages or DMs
+    #     if message.author.bot or not message.guild:
+    #         return
+    #     # Allow other cogs / commands to process
+    #     await self.bot.process_commands(message)
 
 async def setup(bot):
     await bot.add_cog(MessageHandler(bot))
@@ -34,7 +34,7 @@ async def setup(bot):
             title="👋 Welcome!",
             description=f"Welcome {member.mention} to **{member.guild.name}**!",
             color=discord.Color.green(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         await channel.send(embed=embed)
@@ -52,7 +52,7 @@ async def setup(bot):
             title="👋 Member Left",
             description=f"{member.display_name} has left the server.",
             color=discord.Color.red(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         await channel.send(embed=embed)
 

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from datetime import datetime
+from datetime import datetime, timezone
 from utils.database import db
 from utils.helpers import (
     create_info_embed,
@@ -41,7 +41,7 @@ class Leaderboard(commands.Cog):
         embed = discord.Embed(
             title="🏆 The CodeVerse Hub Leaderboard",
             color=discord.Color.gold(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         medal_emojis = ["🥇", "🥈", "🥉"]
@@ -115,7 +115,7 @@ class Leaderboard(commands.Cog):
         embed = discord.Embed(
             title=f"📊 Stats for {target.display_name}",
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         # Set user avatar
@@ -189,7 +189,7 @@ class Leaderboard(commands.Cog):
         embed = discord.Embed(
             title="🔥 XP Leaderboard",
             color=discord.Color.orange(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         leaderboard_text = ""
@@ -212,7 +212,7 @@ class Leaderboard(commands.Cog):
             title="🎭 Level-Based Roles",
             description="Here are the roles you can earn by being active in the server!",
             color=discord.Color.purple(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         roles_info = [
@@ -349,7 +349,7 @@ class Leaderboard(commands.Cog):
         embed = discord.Embed(
             title=f"📊 Rank & Stats - {target_member.display_name}",
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         embed.set_thumbnail(url=target_member.display_avatar.url)
@@ -422,7 +422,7 @@ class Leaderboard(commands.Cog):
             title="🏆 CodeVerse Hub Leaderboard",
             description=f"Top members by XP (Page {page}/{total_pages})",
             color=discord.Color.gold(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         leaderboard_text = ""
@@ -495,7 +495,7 @@ class Leaderboard(commands.Cog):
         embed = discord.Embed(
             title=f"⭐ Level Information - {target_member.display_name}",
             color=discord.Color.purple(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         embed.set_thumbnail(url=target_member.display_avatar.url)

@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import discord
 from discord.ext import commands
 from utils.json_store import add_or_update_user
@@ -24,7 +24,7 @@ class MemberEvents(commands.Cog):
                         "Share what you're building and have fun coding."
                     ),
                     color=discord.Color.green(),
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.now(tz=timezone.utc)
                 )
                 embed.set_thumbnail(url=member.display_avatar.url)
                 embed.set_footer(text=f"Member #{len(member.guild.members)} • Enjoy your stay")
@@ -42,7 +42,7 @@ class MemberEvents(commands.Cog):
                     title="👋 Member Left",
                     description=f"{member.display_name} has left the server.",
                     color=discord.Color.red(),
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.now(tz=timezone.utc)
                 )
                 embed.set_thumbnail(url=member.display_avatar.url)
                 embed.set_footer(text=f"Members remaining: {len(member.guild.members)}")
@@ -150,7 +150,7 @@ class MemberEvents(commands.Cog):
             embed = discord.Embed(
                 title="👤 Username Update",
                 color=discord.Color.purple(),
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(tz=timezone.utc)
             )
             embed.set_thumbnail(url=after.display_avatar.url)
             
@@ -181,7 +181,7 @@ class MemberEvents(commands.Cog):
                 title="🖼️ Avatar Update",
                 description=f"{after.mention} changed their avatar",
                 color=discord.Color.green(),
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(tz=timezone.utc)
             )
             
             if before.avatar:
@@ -205,7 +205,7 @@ class MemberEvents(commands.Cog):
                     title="🔨 Member Banned",
                     description=f"**{user}** ({user.id}) has been banned from the server.",
                     color=discord.Color.dark_red(),
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.now(tz=timezone.utc)
                 )
                 embed.set_thumbnail(url=user.display_avatar.url)
                 
@@ -224,7 +224,7 @@ class MemberEvents(commands.Cog):
                     title="🔓 Member Unbanned",
                     description=f"**{user}** ({user.id}) has been unbanned from the server.",
                     color=discord.Color.green(),
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.now(tz=timezone.utc)
                 )
                 embed.set_thumbnail(url=user.display_avatar.url)
                 

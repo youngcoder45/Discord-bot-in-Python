@@ -4,7 +4,7 @@ from discord import app_commands
 import random
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from utils.database import db
 from utils.helpers import (
     create_success_embed,
@@ -74,7 +74,7 @@ class CommunityCommands(commands.Cog):
             title="💡 Daily Inspiration",
             description=f"*{quote_text}*",
             color=discord.Color.gold(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         embed.set_footer(text="Stay motivated, keep coding! 🚀")
         
@@ -93,7 +93,7 @@ class CommunityCommands(commands.Cog):
         embed = discord.Embed(
             title="🧠 Random Programming Question",
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         if isinstance(question_data, dict):
@@ -142,7 +142,7 @@ class CommunityCommands(commands.Cog):
             embed = discord.Embed(
                 title="😄 Programming Meme",
                 color=discord.Color.orange(),
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(tz=timezone.utc)
             )
             embed.set_image(url=meme)
             embed.set_footer(text="Hope this made you smile! 😊")
@@ -152,7 +152,7 @@ class CommunityCommands(commands.Cog):
                 title="😄 Programming Meme",
                 description=meme,
                 color=discord.Color.orange(),
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(tz=timezone.utc)
             )
             embed.set_footer(text="Hope this made you smile! 😊")
         
@@ -173,7 +173,7 @@ class CommunityCommands(commands.Cog):
             return
         
         # Get current challenge ID (you might want to implement a way to track current challenge)
-        current_challenge_id = f"challenge_{datetime.utcnow().strftime('%Y_%W')}"  # Weekly challenge ID
+        current_challenge_id = f"challenge_{datetime.now(tz=timezone.utc).strftime('%Y_%W')}"  # Weekly challenge ID
         
         # Add submission to database
         await db.add_challenge_submission(ctx.author.id, current_challenge_id, submission_link)
@@ -183,7 +183,7 @@ class CommunityCommands(commands.Cog):
             "🎯 Challenge Submission Received!",
             f"**Participant:** {ctx.author.mention}\n"
             f"**Submission:** [View Submission]({submission_link})\n"
-            f"**Submitted:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+            f"**Submitted:** {datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC"
         )
         
         await ctx.send(embed=embed)
@@ -240,7 +240,7 @@ class CommunityCommands(commands.Cog):
                     title="💡 New Suggestion",
                     description=suggestion,
                     color=discord.Color.purple(),
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.now(tz=timezone.utc)
                 )
                 suggestion_embed.set_author(
                     name=f"{ctx.author.display_name}",
@@ -269,7 +269,7 @@ class CommunityCommands(commands.Cog):
             return
         
         # Get current QOTD ID (daily)
-        current_qotd_id = f"qotd_{datetime.utcnow().strftime('%Y_%m_%d')}"
+        current_qotd_id = f"qotd_{datetime.now(tz=timezone.utc).strftime('%Y_%m_%d')}"
         
         # Add answer to database
         await db.add_qotd_submission(ctx.author.id, current_qotd_id, answer)
@@ -289,7 +289,7 @@ class CommunityCommands(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def challenge_submissions(self, ctx):
         """View submissions for the current challenge (Moderator only)"""
-        current_challenge_id = f"challenge_{datetime.utcnow().strftime('%Y_%W')}"
+        current_challenge_id = f"challenge_{datetime.now(tz=timezone.utc).strftime('%Y_%W')}"
         submissions = await db.get_challenge_submissions(current_challenge_id)
         
         if not submissions:
@@ -303,7 +303,7 @@ class CommunityCommands(commands.Cog):
         embed = discord.Embed(
             title="📋 Current Challenge Submissions",
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         for i, (user_id, link, date, status) in enumerate(submissions[:10], 1):
@@ -326,7 +326,7 @@ class CommunityCommands(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def set_qotd_winner(self, ctx, member: discord.Member):
         """Set the QOTD winner (Moderator only)"""
-        current_qotd_id = f"qotd_{datetime.utcnow().strftime('%Y_%m_%d')}"
+        current_qotd_id = f"qotd_{datetime.now(tz=timezone.utc).strftime('%Y_%m_%d')}"
         
         await db.set_qotd_winner(member.id, current_qotd_id)
         

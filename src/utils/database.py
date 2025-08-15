@@ -2,7 +2,7 @@ import aiosqlite
 import asyncio
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
 
 class Database:
@@ -105,7 +105,7 @@ class Database:
             await db.execute('''
                 INSERT OR IGNORE INTO users (user_id, username, join_date)
                 VALUES (?, ?, ?)
-            ''', (user_id, username, datetime.utcnow().isoformat()))
+            ''', (user_id, username, datetime.now(tz=timezone.utc).isoformat()))
             await db.commit()
     
     async def update_user_activity(self, user_id: int, username: str, xp_gain: int = 5):
@@ -117,7 +117,7 @@ class Database:
             ''', (user_id,))
             result = await cursor.fetchone()
             
-            now = datetime.utcnow()
+            now = datetime.now(tz=timezone.utc)
             can_gain_xp = True
             
             if result and result[0]:
@@ -130,6 +130,7 @@ class Database:
                         user_id, username, xp, level, message_count, last_xp_gain, join_date, total_warnings
                     ) VALUES (
                         ?, ?,
+<<<<<<< HEAD
                         """Deprecated database layer.
 
                         The original SQLite / XP system was removed in favor of lightweight JSON
@@ -160,12 +161,43 @@ class Database:
 
                         async def init_database():  # Legacy entry point
                             await db.init_db()
+=======
+                        COALESCE((SELECT xp FROM users WHERE user_id = ?), 0) + ?,
+                        """Deprecated database layer (stub).
+
+                        The original SQLite-based XP / activity system has been removed. This stub
+                        is kept so legacy imports (`from utils.database import db`) do not break.
+                        All operations are no-ops. Use `utils.json_store` for persistence.
+                        """
+
+                        import warnings
+
+                        class Database:
+                            def __init__(self):
+                                warnings.warn(
+                                    "utils.database is deprecated – use utils.json_store instead.",
+                                    DeprecationWarning,
+                                    stacklevel=2
+                                )
+
+                            async def init_db(self):  # legacy entry point
+                                return
+
+                            def __getattr__(self, name):
+                                async def _noop(*args, **kwargs):
+                                    return None
+                                return _noop
+
+                        db = Database()
+
+                        async def init_database():
+                            await db.init_db()
             ''', (user_id,))
             result = await cursor.fetchone()
             
             if result:
                 muted_until = datetime.fromisoformat(result[0])
-                if datetime.utcnow() < muted_until:
+                if datetime.now(tz=timezone.utc) < muted_until:
                     return True
                 else:
                     await self.remove_mute(user_id)
@@ -178,7 +210,7 @@ class Database:
             await db.execute('''
                 INSERT INTO suggestions (user_id, suggestion, suggestion_date)
                 VALUES (?, ?, ?)
-            ''', (user_id, suggestion, datetime.utcnow().isoformat()))
+            ''', (user_id, suggestion, datetime.now(tz=timezone.utc).isoformat()))
             await db.commit()
     
     # AFK System
