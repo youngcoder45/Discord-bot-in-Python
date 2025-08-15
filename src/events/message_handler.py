@@ -9,13 +9,13 @@ class MessageHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        # Ignore bot messages or DMs
-        if message.author.bot or not message.guild:
-            return
-        # Allow other cogs / commands to process
-        await self.bot.process_commands(message)
+    # @commands.Cog.listener()
+    # async def on_message(self, message):
+    #     # Ignore bot messages or DMs
+    #     if message.author.bot or not message.guild:
+    #         return
+    #     # Allow other cogs / commands to process
+    #     await self.bot.process_commands(message)
 
 async def setup(bot):
     await bot.add_cog(MessageHandler(bot))
