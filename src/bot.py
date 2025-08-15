@@ -28,6 +28,7 @@ intents.reactions = True
 COGS_TO_LOAD = [
     'commands.core',          # Stable hybrid commands (ping, info)
     'commands.diagnostics',   # New diagnostics (/diag)
+    'commands.utility',       # Utility commands (afk, reminders, serverinfo, etc.) - Now using Hybrid Commands
     'events.member_events',
     'events.message_handler'  # Simplified
 ]

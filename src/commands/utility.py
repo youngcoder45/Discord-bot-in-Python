@@ -1,3 +1,4 @@
+import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -10,11 +11,19 @@ from utils.helpers import create_success_embed, create_error_embed, create_info_
 class UtilityCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        # I assume codeverse is a configured root logger for the bot
+        self.logger = logging.getLogger("codeverse").getChild(__name__)
 
-    @app_commands.command(name="serverinfo", description="Get information about the server")
-    async def server_info(self, interaction: discord.Interaction):
+    @commands.hybrid_command(name="serverinfo", description="Get information about the server")
+    @commands.guild_only()
+    async def server_info(self, ctx: commands.Context):
         """Display server information"""
-        guild = interaction.guild
+        await ctx.defer()
+        guild: discord.Guild | None = ctx.guild
+
+        if guild is None:
+            # This should never happen and is here purely to shut pyright up
+            return
         
         embed = discord.Embed(
             title=f"📊 {guild.name} Server Info",
@@ -31,13 +40,22 @@ class UtilityCommands(commands.Cog):
         embed.add_field(name="📅 Created", value=guild.created_at.strftime("%B %d, %Y"), inline=True)
         
         # Member counts
-        total_members = guild.member_count
-        bots = sum(1 for member in guild.members if member.bot)
-        humans = total_members - bots
+        total_members = 0
+        bots = 0
+        humans = 0
+        for member in guild.members:
+            if member.bot:
+                bots += 1
+            else:
+                humans += 1
+            total_members += 0
+        
+        bans = len([i async for i in guild.bans(limit=1000)]) # Potentially expensive, if we hit rate limits often, add a cache
         
         embed.add_field(name="👥 Total Members", value=total_members, inline=True)
         embed.add_field(name="👨‍👩‍👧‍👦 Humans", value=humans, inline=True)
         embed.add_field(name="🤖 Bots", value=bots, inline=True)
+        embed.add_field(name="⛔ Bans", value="999+" if bans > 999 else bans, inline=True)
         
         # Channel counts
         text_channels = len(guild.text_channels)
@@ -56,31 +74,32 @@ class UtilityCommands(commands.Cog):
         if guild.description:
             embed.add_field(name="📝 Description", value=guild.description, inline=False)
         
-        await interaction.response.send_message(embed=embed)
+        await ctx.reply(embed=embed)
 
-    @app_commands.command(name="userinfo", description="Get information about a user")
+    @commands.hybrid_command(name="userinfo", description="Get information about a user")
     @app_commands.describe(member="The member to get info about (defaults to you)")
-    async def user_info(self, interaction: discord.Interaction, member: discord.Member = None):
+    async def user_info(self, ctx: commands.Context, member: discord.Member | None = None):
         """Display user information"""
-        if member is None:
-            member = interaction.user
-        
+        user: discord.User | discord.Member = member or ctx.author
+            
         embed = discord.Embed(
-            title=f"👤 {member.display_name}",
-            color=member.color if member.color != discord.Color.default() else discord.Color.blue(),
+            title=f"👤 {user.display_name}",
+            color=user.color if user.color != discord.Color.default() else discord.Color.blue(),
             timestamp=datetime.now(tz=timezone.utc)
         )
         
-        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_thumbnail(url=user.display_avatar.url)
         
         # Basic info
-        embed.add_field(name="🏷️ Username", value=f"{member.name}#{member.discriminator}", inline=True)
-        embed.add_field(name="🆔 User ID", value=member.id, inline=True)
-        embed.add_field(name="🤖 Bot", value="Yes" if member.bot else "No", inline=True)
+        embed.add_field(name="🏷️ Username", value=f"{user.name}#{user.discriminator}" if user.discriminator else user.name, inline=True)
+        embed.add_field(name="🆔 User ID", value=user.id, inline=True)
+        embed.add_field(name="🤖 Bot", value="Yes" if user.bot else "No", inline=True)
         
         # Dates
-        embed.add_field(name="📅 Account Created", value=member.created_at.strftime("%B %d, %Y"), inline=True)
-        embed.add_field(name="📥 Joined Server", value=member.joined_at.strftime("%B %d, %Y") if member.joined_at else "Unknown", inline=True)
+        embed.add_field(name="📅 Account Created", value=user.created_at.strftime("%B %d, %Y"), inline=True)
+        if isinstance(user, discord.Member):
+            # Only applicable when the command is ran in a guild
+            embed.add_field(name="📥 Joined Server", value=user.joined_at.strftime("%B %d, %Y") if user.joined_at else "Unknown", inline=True)
         
         # Status
         status_emojis = {
@@ -89,55 +108,57 @@ class UtilityCommands(commands.Cog):
             discord.Status.dnd: "🔴 Do Not Disturb",
             discord.Status.offline: "⚫ Offline"
         }
-        embed.add_field(name="📶 Status", value=status_emojis.get(member.status, "❓ Unknown"), inline=True)
+        if isinstance(user, discord.Member):
+            embed.add_field(name="📶 Status", value=status_emojis.get(user.status, "❓ Unknown"), inline=True)
+        embed.add_field(name="📶 Status", value="❓ Unknown", inline=True)
         
-        # Roles (excluding @everyone)
-        roles = [role.mention for role in member.roles[1:]]
-        if roles:
-            roles_text = ", ".join(roles[:10])  # Limit to first 10 roles
-            if len(member.roles) > 11:
-                roles_text += f" (+{len(member.roles) - 11} more)"
-            embed.add_field(name="🎭 Roles", value=roles_text, inline=False)
+        if isinstance(user, discord.Member):
+            # Roles (excluding @everyone)
+            roles = [role.mention for role in user.roles[1:]]
+            if roles:
+                roles_text = ", ".join(roles[:10])  # Limit to first 10 roles
+                if len(user.roles) > 11:
+                    roles_text += f" (+{len(user.roles) - 11} more)"
+                embed.add_field(name="🎭 Roles", value=roles_text, inline=False)
         
-        # Permissions
-        if member.guild_permissions.administrator:
-            embed.add_field(name="⚡ Permissions", value="Administrator", inline=True)
-        elif member.guild_permissions.manage_guild:
-            embed.add_field(name="⚡ Permissions", value="Manage Server", inline=True)
-        elif member.guild_permissions.manage_messages:
-            embed.add_field(name="⚡ Permissions", value="Moderator", inline=True)
+            # Permissions
+            if user.guild_permissions.administrator:
+                embed.add_field(name="⚡ Permissions", value="Administrator", inline=True)
+            elif user.guild_permissions.manage_guild:
+                embed.add_field(name="⚡ Permissions", value="Manage Server", inline=True)
+            elif user.guild_permissions.manage_messages:
+                embed.add_field(name="⚡ Permissions", value="Moderator", inline=True)
         
-        await interaction.response.send_message(embed=embed)
+        await ctx.reply(embed=embed)
 
-    @app_commands.command(name="avatar", description="Get a user's avatar")
+    @commands.hybrid_command(name="avatar", description="Get a user's avatar")
     @app_commands.describe(member="The member to get avatar of (defaults to you)")
-    async def avatar(self, interaction: discord.Interaction, member: discord.Member = None):
+    async def avatar(self, ctx: commands.Context, member: discord.Member | None = None):
         """Display user's avatar"""
-        if member is None:
-            member = interaction.user
+        user: discord.User | discord.Member = member or ctx.author
         
         embed = discord.Embed(
-            title=f"🖼️ {member.display_name}'s Avatar",
-            color=member.color if member.color != discord.Color.default() else discord.Color.blue()
+            title=f"🖼️ {user.display_name}'s Avatar",
+            color=user.color if user.color != discord.Color.default() else discord.Color.blue()
         )
-        embed.set_image(url=member.display_avatar.url)
-        embed.add_field(name="🔗 Avatar URL", value=f"[Click here]({member.display_avatar.url})", inline=False)
+        embed.set_image(url=user.display_avatar.url)
+        embed.add_field(name="🔗 Avatar URL", value=f"[Click here]({user.display_avatar.url})", inline=False)
         
-        await interaction.response.send_message(embed=embed)
+        await ctx.reply(embed=embed)
 
-    @app_commands.command(name="reminder", description="Set a reminder")
+    @commands.hybrid_command(name="reminder", description="Set a reminder")
     @app_commands.describe(
         time="Time until reminder (e.g., 1h, 30m, 2d)",
         message="What to remind you about"
     )
-    async def reminder(self, interaction: discord.Interaction, time: str, message: str):
+    async def reminder(self, ctx: commands.Context, time: str, message: str):
         """Set a personal reminder"""
         # Parse time
         time_regex = re.compile(r'(\d+)([smhd])')
         matches = time_regex.findall(time.lower())
         
         if not matches:
-            await interaction.response.send_message(
+            await ctx.reply(
                 "❌ Invalid time format! Use: `1h` (hours), `30m` (minutes), `2d` (days), `45s` (seconds)",
                 ephemeral=True
             )
@@ -156,11 +177,11 @@ class UtilityCommands(commands.Cog):
                 total_seconds += amount * 86400
         
         if total_seconds < 10:
-            await interaction.response.send_message("❌ Minimum reminder time is 10 seconds!", ephemeral=True)
+            await ctx.reply("❌ Minimum reminder time is 10 seconds!", ephemeral=True)
             return
         
         if total_seconds > 7 * 86400:  # 7 days
-            await interaction.response.send_message("❌ Maximum reminder time is 7 days!", ephemeral=True)
+            await ctx.reply("❌ Maximum reminder time is 7 days!", ephemeral=True)
             return
         
         # Set reminder
@@ -173,8 +194,11 @@ class UtilityCommands(commands.Cog):
             f"📅 At: <t:{int(reminder_time.timestamp())}:F>"
         )
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await ctx.reply(embed=embed, ephemeral=True)
         
+        # TODO: This sucks. Save reminders to DB and have a background task check for passed reminders or reminders that are about to expire.
+        # The way this is done right now will throw away all reminders when a restart happens.
+
         # Wait and send reminder
         await asyncio.sleep(total_seconds)
         
@@ -186,35 +210,36 @@ class UtilityCommands(commands.Cog):
         )
         
         try:
-            await interaction.user.send(embed=reminder_embed)
+            await ctx.author.send(embed=reminder_embed)
         except discord.Forbidden:
             # If DM fails, try to send in the channel
             try:
-                await interaction.followup.send(f"{interaction.user.mention}", embed=reminder_embed)
-            except:
-                pass
+                await ctx.channel.send(f"{ctx.author.mention}", embed=reminder_embed)
+            except (discord.Forbidden, discord.NotFound):
+                self.logger.warning(f"Failed to send reminder to {ctx.author} (Requested in {ctx.channel}) due to either missing permissions or the channel being deleted. Reminder will be discarded.")
 
-    @app_commands.command(name="weather", description="Get weather information")
+    @commands.hybrid_command(name="weather", description="Get weather information")
     @app_commands.describe(location="City name or location")
-    async def weather(self, interaction: discord.Interaction, location: str):
+    async def weather(self, ctx: commands.Context, location: str):
         """Get weather information (placeholder for API integration)"""
         # This is a placeholder - you would integrate with a weather API
         embed = create_info_embed(
             "🌤️ Weather Command",
             f"Weather feature for **{location}** is coming soon!\n\n"
-            "To enable this feature:\n"
+            "To enable this feature once it is implemented:\n"
             "1. Get an API key from OpenWeatherMap\n"
             "2. Add `WEATHER_API_KEY` to your .env file\n"
             "3. The bot will automatically fetch real weather data!"
         )
-        await interaction.response.send_message(embed=embed)
+        await ctx.reply(embed=embed)
 
-    @app_commands.command(name="afk", description="Set your AFK status")
+    @commands.hybrid_command(name="afk", description="Set your AFK status")
     @app_commands.describe(reason="Reason for being AFK (optional)")
-    async def afk(self, interaction: discord.Interaction, reason: str = "No reason provided"):
+    async def afk(self, ctx: commands.Context, reason: str = "No reason provided"):
         """Set AFK status"""
+        await ctx.defer(ephemeral=True)
         # Store AFK status in database
-        await db.set_user_afk(interaction.user.id, reason, datetime.now(tz=timezone.utc).isoformat())
+        await db.set_user_afk(ctx.author.id, reason, datetime.now(tz=timezone.utc).isoformat())
         
         embed = create_success_embed(
             "😴 AFK Status Set",
@@ -222,10 +247,12 @@ class UtilityCommands(commands.Cog):
             "I'll notify others when they mention you!"
         )
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await ctx.reply(embed=embed, ephemeral=True)
 
-    @commands.command(name='roleinfo', help='Get information about a role')
-    async def role_info(self, ctx, *, role: discord.Role):
+    @commands.hybrid_command(name='roleinfo', help='Get information about a role')
+    @commands.guild_only()
+    @app_commands.describe(role='The role to get information about')
+    async def role_info(self, ctx, role: discord.Role):
         """Display role information"""
         embed = discord.Embed(
             title=f"🎭 Role: {role.name}",
