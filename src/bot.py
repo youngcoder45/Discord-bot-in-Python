@@ -26,14 +26,10 @@ intents.guilds = True
 intents.reactions = True
 
 COGS_TO_LOAD = [
-    'commands.core',          # New core hybrid commands (ping, info)
-    'commands.utility',
-    'commands.analytics',      # May be partial / placeholder
-    'commands.community',
-    'commands.learning',
-    'commands.fun',
+    'commands.core',          # Stable hybrid commands (ping, info)
+    'commands.diagnostics',   # New diagnostics (/diag)
     'events.member_events',
-    'events.message_handler'   # Simplified; XP system removed
+    'events.message_handler'  # Simplified
 ]
 
 class CodeVerseBot(commands.Bot):

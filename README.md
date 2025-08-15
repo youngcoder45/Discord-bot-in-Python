@@ -33,6 +33,7 @@ If you pulled a previous revision that still exposed XP commands, note that they
 |---------|------|-------------|
 | `/ping` | Global | Quick latency / availability check (ephemeral) |
 | `/info` | Global | Bot info + uptime + prefix |
+| `/diag` | Global | Lightweight diagnostics snapshot (uptime, latency, tracked users) |
 
 ### Prefix Commands (`?`)
 Currently none are active (all prior `!` commands removed). You can add new ones by creating Cogs in `src/commands/` and registering with the existing bot loader.
@@ -57,6 +58,7 @@ These modules exist with skeleton code or are intended for re‑implementation:
 |------|----------------|------|--------|-------|
 | ping | Slash | – | ✅ | Ephemeral Pong reply |
 | info | Slash | – | ✅ | Uptime + prefix |
+| diag | Slash | – | ✅ | Diagnostics (instance, latency, uptime, JSON store) |
 | quote | Hybrid | – | Planned | Random motivational / coding quote |
 | question | Hybrid | – | Planned | Programming practice question |
 | meme | Hybrid | – | Planned | Programming meme fetch |

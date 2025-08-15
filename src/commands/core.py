@@ -31,10 +31,10 @@ class Core(commands.Cog):
         uptime = datetime.now(timezone.utc) - self.start_time
         embed = discord.Embed(title="CodeVerse Bot", color=discord.Color.blue())
         embed.add_field(name="Uptime", value=str(uptime).split('.')[0], inline=False)
-        embed.add_field(name="Prefix", value=self.bot.command_prefix, inline=True)
-        embed.set_footer(text="Hybrid commands enabled (4a1 use / or prefix ?)")
+        embed.add_field(name="Prefix", value=str(self.bot.command_prefix), inline=True)
         instance_id = os.getenv('INSTANCE_ID', 'unknown')
-        embed.set_footer(text=f"Hybrid commands enabled • Instance: {instance_id}")
+        embed.add_field(name="Instance", value=instance_id, inline=True)
+        embed.set_footer(text=f"Hybrid commands • Instance: {instance_id}")
         if getattr(ctx, 'interaction', None):
             await ctx.interaction.followup.send(embed=embed, ephemeral=True)
         else:
