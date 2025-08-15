@@ -40,5 +40,42 @@ class Core(commands.Cog):
         else:
             await ctx.reply(embed=embed)
 
+    @commands.command(name="help", help="Show this help message")
+    async def help_cmd(self, ctx: commands.Context):
+        """Custom help command listing prefix & hybrid commands.
+
+        Only invoked via prefix (?help). Lists:
+          • Hybrid commands (work as slash and prefix)
+          • Prefix-only commands
+        Hidden commands are excluded.
+        """
+        embed = discord.Embed(title="📖 Help", color=discord.Color.teal())
+        embed.description = "Available commands. Slash equivalents exist for hybrid commands (use / in Discord)."
+
+        hybrids = []
+        prefix_only = []
+        for cmd in sorted(self.bot.commands, key=lambda c: c.name):
+            if cmd.hidden:
+                continue
+            # Skip this help if will be added later; we'll format manually
+            if cmd.name == 'help':
+                continue
+            is_hybrid = isinstance(cmd, commands.HybridCommand)
+            entry = f"`{self.bot.command_prefix}{cmd.name}` - {cmd.help or cmd.description or 'No description'}"
+            if is_hybrid:
+                hybrids.append(entry + " (hybrid)")
+            else:
+                prefix_only.append(entry)
+
+        if hybrids:
+            embed.add_field(name="Hybrid", value="\n".join(hybrids), inline=False)
+        if prefix_only:
+            embed.add_field(name="Prefix Only", value="\n".join(prefix_only), inline=False)
+
+        # Add the help command itself at bottom
+        embed.add_field(name="Meta", value=f"`{self.bot.command_prefix}help` - Show this message", inline=False)
+        embed.set_footer(text="CodeVerse Bot • Help")
+        await ctx.reply(embed=embed, mention_author=False)
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Core(bot))

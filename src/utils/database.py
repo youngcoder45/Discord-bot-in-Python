@@ -130,7 +130,7 @@ class Database:
                         user_id, username, xp, level, message_count, last_xp_gain, join_date, total_warnings
                     ) VALUES (
                         ?, ?,
-<<<<<<< HEAD
+
                         """Deprecated database layer.
 
                         The original SQLite / XP system was removed in favor of lightweight JSON
@@ -161,7 +161,7 @@ class Database:
 
                         async def init_database():  # Legacy entry point
                             await db.init_db()
-=======
+
                         COALESCE((SELECT xp FROM users WHERE user_id = ?), 0) + ?,
                         """Deprecated database layer (stub).
 
