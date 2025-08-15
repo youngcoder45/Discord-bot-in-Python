@@ -26,10 +26,12 @@ intents.guilds = True
 intents.reactions = True
 
 COGS_TO_LOAD = [
-    'commands.core',          # Stable hybrid commands (ping, info)
-    'commands.diagnostics',   # New diagnostics (/diag)
+    'commands.core',          # Core prefix commands (ping, info, help)
+    'commands.diagnostics',   # Diagnostics (?diag)
+    'commands.community',     # quote, question, meme, suggest
+    'commands.fun',           # fun & game commands
     'events.member_events',
-    'events.message_handler'  # Simplified
+    'events.message_handler'  # Simplified message handler
 ]
 
 class CodeVerseBot(commands.Bot):
@@ -54,14 +56,10 @@ bot = CodeVerseBot()
 @bot.event
 async def on_ready():
     logger.info(f"Logged in as {bot.user} (ID: {bot.user.id}) [Instance: {INSTANCE_ID}]")
-    try:
-        synced = await bot.tree.sync(guild=None)  # Global sync
-        logger.info(f"Synced {len(synced)} global application commands")
-    except Exception as e:
-        logger.warning(f"Slash command sync failed: {e}")
-
-# NOTE: ping & info have been moved to a hybrid Cog at commands/core.py so they work
-#       both as slash commands (/ping, /info) and prefix commands (?ping, ?info).
+    # Slash/hybrid commands have been intentionally removed. If old slash commands
+    # still appear in the client, they'll disappear after Discord cache refresh
+    # (can take up to ~1 hour) or you can manually clear them via Developer Portal.
+    # Use prefix commands with '?' (e.g. ?ping, ?dadjoke).
 
 async def main():
     if not TOKEN:
