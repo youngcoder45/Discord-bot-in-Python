@@ -1,76 +1,52 @@
-import discord
-from discord.ext import commands
 import os
 from datetime import datetime
-from utils.database import db
-from utils.helpers import create_success_embed, create_info_embed, log_action
+import discord
+from discord.ext import commands
+from utils.json_store import add_or_update_user
+from utils.helpers import log_action
 
 class MemberEvents(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
-        """Handle member join events"""
-        # Add user to database
-        await db.add_user(member.id, str(member))
-        # Send welcome message to joins-n-leaves channel
+    async def on_member_join(self, member: discord.Member):
+        """Handle member join: track user and post welcome (if channel configured)."""
+        await add_or_update_user(member.id, str(member))
         joins_channel_id = int(os.getenv('JOINS_LEAVES_CHANNEL_ID', 0))
         if joins_channel_id:
             channel = self.bot.get_channel(joins_channel_id)
             if channel:
                 embed = discord.Embed(
-                    title="👋 Welcome to The CodeVerse Hub!",
-                    description=f"Welcome {member.mention}! We're excited to have you join our coding community.\n\n"
-                               f"🔹 Please read our rules in <#📜｜rules>\n"
-                               f"🔹 Introduce yourself in <#lobby>\n"
-                               f"🔹 Ask questions in <#ask-for-help>\n"
-                               f"🔹 Share your projects in <#projects-showcase>\n\n"
-                               f"**You are member #{len(member.guild.members)}**",
+                    title="👋 Welcome!",
+                    description=(
+                        f"{member.mention} joined **{member.guild.name}**!\n"
+                        "Share what you're building and have fun coding."
+                    ),
                     color=discord.Color.green(),
                     timestamp=datetime.utcnow()
                 )
                 embed.set_thumbnail(url=member.display_avatar.url)
-                embed.set_footer(text="Happy coding New Friend !!🚀")
+                embed.set_footer(text=f"Member #{len(member.guild.members)} • Enjoy your stay")
                 await channel.send(embed=embed)
-        # DM welcome removed
-        # Log the join
         await log_action("MEMBER_JOIN", member.id, f"Username: {member}")
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member):
-        """Handle member leave events"""
-        # Send goodbye message to joins-n-leaves channel
+    async def on_member_remove(self, member: discord.Member):
+        """Handle member leaving the guild."""
         joins_channel_id = int(os.getenv('JOINS_LEAVES_CHANNEL_ID', 0))
         if joins_channel_id:
             channel = self.bot.get_channel(joins_channel_id)
             if channel:
-                # Get user stats before they leave
-                stats = await db.get_user_stats(member.id)
-                
                 embed = discord.Embed(
                     title="👋 Member Left",
-                    description=f"**{member.display_name}** has left the server.\n"
-                               f"We'll miss you!\n\n",
+                    description=f"{member.display_name} has left the server.",
                     color=discord.Color.red(),
                     timestamp=datetime.utcnow()
                 )
-                
-                if stats:
-                    embed.add_field(
-                        name="📊 Final Stats 🫡 ",
-                        value=f"**Level:** {stats['level']}\n"
-                              f"**XP:** {stats['xp']:,}\n"
-                              f"**Messages:** {stats['message_count']:,}",
-                        inline=True
-                    )
-                
                 embed.set_thumbnail(url=member.display_avatar.url)
-                embed.set_footer(text=f"Member count: {len(member.guild.members)}")
-                
+                embed.set_footer(text=f"Members remaining: {len(member.guild.members)}")
                 await channel.send(embed=embed)
-        
-        # Log the leave
         await log_action("MEMBER_LEAVE", member.id, f"Username: {member}")
 
     @commands.Cog.listener()
@@ -196,8 +172,8 @@ class MemberEvents(commands.Cog):
             
             await log_channel.send(embed=embed)
             
-            # Update username in database
-            await db.add_user(after.id, str(after))
+            # Update cached username
+            await add_or_update_user(after.id, str(after))
 
         # Check for avatar changes
         if before.avatar != after.avatar:
