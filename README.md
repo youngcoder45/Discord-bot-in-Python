@@ -180,8 +180,8 @@ Add unit tests (e.g., for helper functions) under a `tests/` folder (not yet pre
 ## 👤 Author & Credits
 | Role | Person |
 |------|--------|
-| Original Creator | <Your Name / Handle> |
-| Maintainer | <Your Name / Handle> |
+| Original Creator | @Youngcoder45 |
+| Maintainer | @youngcoder45 and @hyscript7|
 | Library | discord.py |
 
 Community contributions welcome—submit PRs or issues.
@@ -195,8 +195,7 @@ Community contributions welcome—submit PRs or issues.
 Coding Style: Keep functions small, prefer async IO, avoid blocking calls.
 
 ## 📄 License
-MIT License – see `LICENSE` (add one if missing).
-
+MIT License – see `LICENSE` 
 ## 🆘 Support
 | Need | Where |
 |------|-------|

@@ -1,4 +1,8 @@
-import os, logging, asyncio, discord
+import os
+import logging
+import asyncio
+import discord
+import time
 from discord.ext import commands
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -11,6 +15,8 @@ logger = logging.getLogger("codeverse.bot")
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD_ID = int(os.getenv('GUILD_ID', 0))
+INSTANCE_ID = os.getenv('INSTANCE_ID', f"pid-{os.getpid()}")
+LOCK_FILE = os.getenv('BOT_LOCK_FILE', '.bot_instance.lock')
 
 intents = discord.Intents.default()
 intents.message_content = True  # Needed for legacy text commands
@@ -31,12 +37,14 @@ COGS_TO_LOAD = [
 
 class CodeVerseBot(commands.Bot):
     def __init__(self):
+        """Initialize the bot with desired prefix and intents."""
         # Prefix changed from '!' to '?' per request and intents configured
         super().__init__(command_prefix='?', intents=intents, help_command=None)
         self.start_time = datetime.now(timezone.utc)
+        self.instance_id = INSTANCE_ID
 
     async def setup_hook(self):
-        # Load cogs
+        """Async setup tasks (load cogs, etc.)."""
         for cog in COGS_TO_LOAD:
             try:
                 await self.load_extension(cog)
@@ -48,7 +56,7 @@ bot = CodeVerseBot()
 
 @bot.event
 async def on_ready():
-    logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
+    logger.info(f"Logged in as {bot.user} (ID: {bot.user.id}) [Instance: {INSTANCE_ID}]")
     try:
         synced = await bot.tree.sync(guild=None)  # Global sync
         logger.info(f"Synced {len(synced)} global application commands")
@@ -62,6 +70,20 @@ async def main():
     if not TOKEN:
         logger.error("DISCORD_TOKEN not set.")
         return
+    # Single-instance guard (avoid duplicate handlers)
+    if os.getenv('ALLOW_MULTIPLE_INSTANCES', '0') != '1':
+        try:
+            if os.path.exists(LOCK_FILE):
+                prev_data = open(LOCK_FILE,'r',encoding='utf-8').read().strip().split('|')
+                if len(prev_data) == 3:
+                    prev_pid, prev_ts, prev_id = prev_data
+                    if (time.time() - float(prev_ts)) < 300 and prev_id != INSTANCE_ID:
+                        logger.error("Another bot instance detected (%s). Set ALLOW_MULTIPLE_INSTANCES=1 to override.", prev_id)
+                        return
+            with open(LOCK_FILE,'w',encoding='utf-8') as f:
+                f.write(f"{os.getpid()}|{time.time()}|{INSTANCE_ID}")
+        except Exception as e:
+            logger.warning(f"Instance lock handling failed: {e}")
     # Start lightweight keep-alive server (optional)
     try:
         from utils.keep_alive import keep_alive

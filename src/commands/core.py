@@ -1,4 +1,5 @@
 import discord
+import os
 from discord.ext import commands
 from datetime import datetime, timezone
 
@@ -32,6 +33,8 @@ class Core(commands.Cog):
         embed.add_field(name="Uptime", value=str(uptime).split('.')[0], inline=False)
         embed.add_field(name="Prefix", value=self.bot.command_prefix, inline=True)
         embed.set_footer(text="Hybrid commands enabled (4a1 use / or prefix ?)")
+        instance_id = os.getenv('INSTANCE_ID', 'unknown')
+        embed.set_footer(text=f"Hybrid commands enabled • Instance: {instance_id}")
         if getattr(ctx, 'interaction', None):
             await ctx.interaction.followup.send(embed=embed, ephemeral=True)
         else:
