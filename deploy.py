@@ -64,7 +64,7 @@ def main():
     print("   - Type / and you should see:")
     print("     • /ping - Test bot connectivity")
     print("     • /info - Bot information")
-    print("     • /quote - Random motivational quote")
+    print("     • prefix changed to '?' (e.g., ?help)")
     
     print("\n4. 🔍 If slash commands still don't appear:")
     print("   - Wait 5-10 minutes for Discord to sync")
@@ -77,7 +77,7 @@ def main():
     print("   - Look for 'Synced X slash commands' message")
     
     print("\n🎯 Your bot should now support both:")
-    print("   • Prefix commands: !ping, !quote, !help")
+    print("   • Prefix commands: ?ping, ?quote, ?help")
     print("   • Slash commands: /ping, /quote, /info")
 
 if __name__ == "__main__":
