@@ -13,9 +13,6 @@ The project was recently simplified: the old XP / leveling / leaderboard system 
 
 If you pulled a previous revision that still exposed XP commands, note that they are deprecated and no longer loaded. This README documents both what exists **now** and what is **planned** (marked Planned).
 
-> SECURITY: A Discord bot token was previously committed. Immediately regenerate a new token in the Discord Developer Portal and update your environment (`DISCORD_TOKEN`). Never commit `.env`.
-
----
 
 ## ✨ Feature Overview
 
