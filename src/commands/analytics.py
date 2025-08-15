@@ -6,7 +6,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from utils.database import db
 from utils.helpers import create_success_embed, create_error_embed, create_info_embed
@@ -24,7 +24,7 @@ class AnalyticsCommands(commands.Cog):
             return
         
         # Calculate time range
-        now = datetime.utcnow()
+        now = datetime.now(tz=timezone.utc)
         if timeframe == "day":
             start_time = now - timedelta(days=1)
             title = "📊 Last 24 Hours"
@@ -38,7 +38,7 @@ class AnalyticsCommands(commands.Cog):
         embed = discord.Embed(
             title=f"{title} - Server Statistics",
             color=discord.Color.green(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         # Get basic stats
@@ -84,7 +84,7 @@ class AnalyticsCommands(commands.Cog):
         
         try:
             # Generate sample data (you'd replace with real database queries)
-            dates = [(datetime.utcnow() - timedelta(days=i)).strftime("%m/%d") for i in range(days-1, -1, -1)]
+            dates = [(datetime.now(tz=timezone.utc) - timedelta(days=i)).strftime("%m/%d") for i in range(days-1, -1, -1)]
             
             # Sample activity data - replace with real data from your database
             messages = [random.randint(50, 200) for _ in range(days)]
@@ -132,7 +132,7 @@ class AnalyticsCommands(commands.Cog):
                 title="📈 Server Activity Graph",
                 description=f"Activity analysis for the last {days} days",
                 color=discord.Color.blue(),
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(tz=timezone.utc)
             )
             embed.set_image(url="attachment://activity_graph.png")
             
@@ -204,7 +204,7 @@ class AnalyticsCommands(commands.Cog):
                 title="🏆 XP Leaderboard Chart",
                 description="Visual representation of top server members",
                 color=discord.Color.gold(),
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(tz=timezone.utc)
             )
             embed.set_image(url="attachment://leaderboard_chart.png")
             
@@ -223,7 +223,7 @@ class AnalyticsCommands(commands.Cog):
         embed = discord.Embed(
             title=f"📊 {channel.name} Statistics",
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         # Basic channel info

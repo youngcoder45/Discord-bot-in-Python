@@ -2,7 +2,7 @@ import discord
 import random
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from utils.helpers import get_random_question, create_info_embed
 
 async def post_daily_qotd(bot, channel_id):
@@ -35,13 +35,13 @@ async def post_daily_qotd(bot, channel_id):
     question_data = get_random_question(questions)
     
     # Generate QOTD ID for tracking
-    qotd_id = f"qotd_{datetime.utcnow().strftime('%Y_%m_%d')}"
+    qotd_id = f"qotd_{datetime.now(tz=timezone.utc).strftime('%Y_%m_%d')}"
     
     # Create embed
     embed = discord.Embed(
         title="🧠 Question of the Day",
         color=discord.Color.blue(),
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(tz=timezone.utc)
     )
     
     if isinstance(question_data, dict):
@@ -88,7 +88,7 @@ async def post_daily_qotd(bot, channel_id):
     )
     
     embed.set_footer(
-        text=f"QOTD #{datetime.utcnow().strftime('%j')} • Good luck! 🍀",
+        text=f"QOTD #{datetime.now(tz=timezone.utc).strftime('%j')} • Good luck! 🍀",
         icon_url=bot.user.display_avatar.url if bot.user else None
     )
     
@@ -98,7 +98,7 @@ async def post_daily_qotd(bot, channel_id):
         
         # Create a thread for discussions
         thread = await qotd_message.create_thread(
-            name=f"QOTD Discussion - {datetime.utcnow().strftime('%B %d, %Y')}",
+            name=f"QOTD Discussion - {datetime.now(tz=timezone.utc).strftime('%B %d, %Y')}",
             auto_archive_duration=1440  # 24 hours
         )
         
@@ -141,7 +141,7 @@ async def announce_qotd_winner(bot, channel_id, winner_user, question_text):
         title="🏆 QOTD Winner Announcement!",
         description=f"Congratulations to {winner_user.mention} for the best answer to today's QOTD!",
         color=discord.Color.gold(),
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(tz=timezone.utc)
     )
     
     embed.add_field(

@@ -2,7 +2,7 @@ import aiosqlite
 import asyncio
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
 
 class Database:
@@ -105,7 +105,7 @@ class Database:
             await db.execute('''
                 INSERT OR IGNORE INTO users (user_id, username, join_date)
                 VALUES (?, ?, ?)
-            ''', (user_id, username, datetime.utcnow().isoformat()))
+            ''', (user_id, username, datetime.now(tz=timezone.utc).isoformat()))
             await db.commit()
     
     async def update_user_activity(self, user_id: int, username: str, xp_gain: int = 5):
@@ -117,7 +117,7 @@ class Database:
             ''', (user_id,))
             result = await cursor.fetchone()
             
-            now = datetime.utcnow()
+            now = datetime.now(tz=timezone.utc)
             can_gain_xp = True
             
             if result and result[0]:
@@ -192,7 +192,7 @@ class Database:
             await db.execute('''
                 INSERT INTO challenge_submissions (user_id, challenge_id, submission_link, submission_date)
                 VALUES (?, ?, ?, ?)
-            ''', (user_id, challenge_id, submission_link, datetime.utcnow().isoformat()))
+            ''', (user_id, challenge_id, submission_link, datetime.now(tz=timezone.utc).isoformat()))
             await db.commit()
     
     async def get_challenge_submissions(self, challenge_id: str) -> List[Tuple]:
@@ -213,7 +213,7 @@ class Database:
             await db.execute('''
                 INSERT OR REPLACE INTO qotd_submissions (user_id, question_id, answer, submission_date)
                 VALUES (?, ?, ?, ?)
-            ''', (user_id, question_id, answer, datetime.utcnow().isoformat()))
+            ''', (user_id, question_id, answer, datetime.now(tz=timezone.utc).isoformat()))
             await db.commit()
     
     async def set_qotd_winner(self, user_id: int, question_id: str):
@@ -243,7 +243,7 @@ class Database:
             await db.execute('''
                 INSERT INTO warnings (user_id, moderator_id, reason, warning_date)
                 VALUES (?, ?, ?, ?)
-            ''', (user_id, moderator_id, reason, datetime.utcnow().isoformat()))
+            ''', (user_id, moderator_id, reason, datetime.now(tz=timezone.utc).isoformat()))
             
             # Update user's total warnings count
             await db.execute('''
@@ -266,7 +266,7 @@ class Database:
     
     async def add_mute(self, user_id: int, duration_minutes: int, reason: str, moderator_id: int):
         """Add a mute to a user"""
-        muted_until = datetime.utcnow() + timedelta(minutes=duration_minutes)
+        muted_until = datetime.now(tz=timezone.utc) + timedelta(minutes=duration_minutes)
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute('''
                 INSERT OR REPLACE INTO mutes (user_id, muted_until, reason, moderator_id)
@@ -290,7 +290,7 @@ class Database:
             
             if result:
                 muted_until = datetime.fromisoformat(result[0])
-                if datetime.utcnow() < muted_until:
+                if datetime.now(tz=timezone.utc) < muted_until:
                     return True
                 else:
                     await self.remove_mute(user_id)
@@ -303,7 +303,7 @@ class Database:
             await db.execute('''
                 INSERT INTO suggestions (user_id, suggestion, suggestion_date)
                 VALUES (?, ?, ?)
-            ''', (user_id, suggestion, datetime.utcnow().isoformat()))
+            ''', (user_id, suggestion, datetime.now(tz=timezone.utc).isoformat()))
             await db.commit()
     
     # AFK System

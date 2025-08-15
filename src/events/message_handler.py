@@ -1,6 +1,6 @@
 from discord.ext import commands
 import logging, discord, os
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ async def setup(bot):
             title="👋 Welcome!",
             description=f"Welcome {member.mention} to **{member.guild.name}**!",
             color=discord.Color.green(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         await channel.send(embed=embed)
@@ -52,7 +52,7 @@ async def setup(bot):
             title="👋 Member Left",
             description=f"{member.display_name} has left the server.",
             color=discord.Color.red(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         await channel.send(embed=embed)
 

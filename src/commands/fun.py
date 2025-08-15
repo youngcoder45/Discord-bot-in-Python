@@ -6,7 +6,7 @@ import asyncio
 import json
 import re
 import typing
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from utils.database import db
 from utils.helpers import create_success_embed, create_error_embed, create_info_embed
 
@@ -476,7 +476,7 @@ class FunCommands(commands.Cog):
         embed = discord.Embed(
             title="🎱 Magic 8-Ball",
             color=discord.Color.purple(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         embed.add_field(name="Question", value=question, inline=False)
         embed.add_field(name="Answer", value=random.choice(responses), inline=False)
@@ -505,7 +505,7 @@ class FunCommands(commands.Cog):
             title="📊 Poll",
             description=question,
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         for i, option in enumerate(options):

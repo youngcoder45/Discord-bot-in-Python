@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import asyncio
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from utils.database import db
 from utils.helpers import create_success_embed, create_error_embed, create_info_embed
 
@@ -19,7 +19,7 @@ class UtilityCommands(commands.Cog):
         embed = discord.Embed(
             title=f"📊 {guild.name} Server Info",
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         if guild.icon:
@@ -68,7 +68,7 @@ class UtilityCommands(commands.Cog):
         embed = discord.Embed(
             title=f"👤 {member.display_name}",
             color=member.color if member.color != discord.Color.default() else discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -164,7 +164,7 @@ class UtilityCommands(commands.Cog):
             return
         
         # Set reminder
-        reminder_time = datetime.utcnow() + timedelta(seconds=total_seconds)
+        reminder_time = datetime.now(tz=timezone.utc) + timedelta(seconds=total_seconds)
         
         embed = create_success_embed(
             "⏰ Reminder Set!",
@@ -182,7 +182,7 @@ class UtilityCommands(commands.Cog):
             title="⏰ Reminder!",
             description=message,
             color=discord.Color.orange(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         try:
@@ -214,7 +214,7 @@ class UtilityCommands(commands.Cog):
     async def afk(self, interaction: discord.Interaction, reason: str = "No reason provided"):
         """Set AFK status"""
         # Store AFK status in database
-        await db.set_user_afk(interaction.user.id, reason, datetime.utcnow().isoformat())
+        await db.set_user_afk(interaction.user.id, reason, datetime.now(tz=timezone.utc).isoformat())
         
         embed = create_success_embed(
             "😴 AFK Status Set",
@@ -230,7 +230,7 @@ class UtilityCommands(commands.Cog):
         embed = discord.Embed(
             title=f"🎭 Role: {role.name}",
             color=role.color if role.color != discord.Color.default() else discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         embed.add_field(name="🆔 Role ID", value=role.id, inline=True)

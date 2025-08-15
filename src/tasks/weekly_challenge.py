@@ -1,7 +1,7 @@
 import discord
 import json
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from utils.helpers import create_info_embed, create_success_embed
 
 async def announce_weekly_challenge(bot, channel_id):
@@ -34,12 +34,12 @@ async def announce_weekly_challenge(bot, channel_id):
     challenge_data = random.choice(challenges)
     
     # Generate challenge ID for tracking
-    week_number = datetime.utcnow().isocalendar()[1]
-    year = datetime.utcnow().year
+    week_number = datetime.now(tz=timezone.utc).isocalendar()[1]
+    year = datetime.now(tz=timezone.utc).year
     challenge_id = f"challenge_{year}_W{week_number:02d}"
     
     # Calculate deadline (next Sunday 11:59 PM UTC)
-    today = datetime.utcnow()
+    today = datetime.now(tz=timezone.utc)
     days_until_sunday = (6 - today.weekday()) % 7
     if days_until_sunday == 0:
         days_until_sunday = 7  # If today is Sunday, set deadline to next Sunday
@@ -51,7 +51,7 @@ async def announce_weekly_challenge(bot, channel_id):
         title="📋 Weekly Challenge - Staff Review",
         description="A new weekly coding challenge is ready to be announced!",
         color=discord.Color.orange(),
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(tz=timezone.utc)
     )
     
     if isinstance(challenge_data, dict):
@@ -171,12 +171,12 @@ async def post_challenge_to_community(bot, challenge_data, coding_challenges_cha
         return
     
     # Generate challenge info
-    week_number = datetime.utcnow().isocalendar()[1]
-    year = datetime.utcnow().year
+    week_number = datetime.now(tz=timezone.utc).isocalendar()[1]
+    year = datetime.now(tz=timezone.utc).year
     challenge_id = f"challenge_{year}_W{week_number:02d}"
     
     # Calculate deadline
-    today = datetime.utcnow()
+    today = datetime.now(tz=timezone.utc)
     days_until_sunday = (6 - today.weekday()) % 7
     if days_until_sunday == 0:
         days_until_sunday = 7
@@ -188,7 +188,7 @@ async def post_challenge_to_community(bot, challenge_data, coding_challenges_cha
         title="🚀 Weekly Coding Challenge",
         description="Time for this week's coding challenge! Show off your skills and compete with the community!",
         color=discord.Color.blue(),
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(tz=timezone.utc)
     )
     
     if isinstance(challenge_data, dict):

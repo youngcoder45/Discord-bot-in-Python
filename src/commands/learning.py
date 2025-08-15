@@ -4,7 +4,7 @@ from discord import app_commands
 import json
 import random
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from utils.database import db
 from utils.helpers import create_success_embed, create_error_embed, create_info_embed
 
@@ -55,7 +55,7 @@ class LearningCommands(commands.Cog):
             title=f"💻 {language.title()} Code Snippet",
             description=snippet.get('description', 'Useful code snippet'),
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         if 'code' in snippet:
@@ -146,7 +146,7 @@ class LearningCommands(commands.Cog):
             title=f"🧮 {algo['name']}",
             description=algo['description'],
             color=discord.Color.green(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         embed.add_field(
@@ -236,7 +236,7 @@ class LearningCommands(commands.Cog):
             title=f"🧠 {topic.title()} Quiz",
             description=question["question"],
             color=discord.Color.orange(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(tz=timezone.utc)
         )
         
         options_text = "\n".join([f"{i+1}. {option}" for i, option in enumerate(question["options"])])

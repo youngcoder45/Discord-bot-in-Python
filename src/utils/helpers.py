@@ -2,7 +2,7 @@ import random
 import re
 import requests
 import discord
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict
 import asyncio
 
@@ -62,7 +62,7 @@ def create_embed(title: str, description: str = "", color: discord.Color = disco
         title=title,
         description=description,
         color=color,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(tz=timezone.utc)
     )
     embed.set_footer(text="The CodeVerse Hub", icon_url="https://cdn.discordapp.com/icons/your-server-id/your-icon.png")
     return embed
@@ -170,7 +170,7 @@ def sanitize_input(text: str, max_length: int = 1000) -> str:
 
 async def log_action(action: str, user_id: int, details: str = ""):
     """Log moderation actions (placeholder for future logging system)"""
-    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     log_entry = f"[{timestamp}] {action} - User: {user_id} - {details}"
     print(log_entry)  # For now, just print. Later can be saved to file or database
 
@@ -183,7 +183,7 @@ def create_progress_bar(current: int, maximum: int, length: int = 10) -> str:
 
 def get_relative_time(timestamp: datetime) -> str:
     """Get relative time string (e.g., '2 hours ago')"""
-    now = datetime.utcnow()
+    now = datetime.now(tz=timezone.utc)
     diff = now - timestamp
     
     if diff.days > 0:
