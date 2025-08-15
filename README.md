@@ -29,29 +29,31 @@ If you pulled a previous revision that still exposed XP commands, note that they
 ## 🧪 Implemented Commands (Current)
 
 ### Slash Commands
-| Command | Type | Description |
-|---------|------|-------------|
-| `/ping` | Global | Quick latency / availability check (ephemeral) |
-| `/info` | Global | Bot info + uptime + prefix |
-| `/diag` | Global | Lightweight diagnostics snapshot (uptime, latency, tracked users) |
-
-### Prefix Commands (`?`)
-Currently none are active (all prior `!` commands removed). You can add new ones by creating Cogs in `src/commands/` and registering with the existing bot loader.
-
-## 🗺️ Planned / Placeholder Command Sets
-These modules exist with skeleton code or are intended for re‑implementation:
-
-| Module | Planned Commands (Examples) |
-|--------|------------------------------|
-| `community` | `?quote`, `?question`, `?meme`, `/suggest` |
-| `learning` | `/code-snippet`, `/algorithm`, `/quiz` |
-| `utility` | `/serverinfo`, `/userinfo`, `/avatar`, `/reminder`, `/weather` (placeholder) |
-| `analytics` | `/stats`, `/activity-graph`, `/leaderboard-chart` (non‑XP charts) |
-| `fun` | Compliments, jokes, fortune responses (to be wired to commands) |
-| `member_events` | Join/leave embeds (already simplified) |
-
-> When you implement these, update the Command Reference section below.
-
+1. Clone
+   ```bash
+   git clone https://github.com/<your-user>/codeverse-bot.git
+   cd codeverse-bot
+   ```
+2. Install deps
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   ```
+3. Create `.env`
+   ```env
+   DISCORD_TOKEN=REPLACE_ME
+   GUILD_ID=123456789012345678
+   PORT=8080
+   HOSTING_PLATFORM=local
+   # Optional
+   JOINS_LEAVES_CHANNEL_ID=
+   SERVER_LOGS_CHANNEL_ID=
+   ```
+4. Run locally
+   ```bash
+   python src/bot.py
+   ```
 ## 📖 Command Reference (Living Section)
 
 | Name | Slash / Prefix | Args | Status | Notes |
@@ -67,10 +69,21 @@ These modules exist with skeleton code or are intended for re‑implementation:
 | algorithm | Slash | topic? | Planned | Explanation + example |
 | quiz | Slash | topic? | Planned | Interactive multi‑Q quiz |
 | serverinfo | Slash | – | Planned | Guild stats summary |
-| userinfo | Slash | member? | Planned | Member profile embed |
+   def __init__(self, bot):
+      self.bot = bot
 | avatar | Slash | member? | Planned | Large avatar embed |
-| reminder | Slash | time, message | Planned | Schedule DM/channel reminder |
-| weather | Slash | location | Planned | Placeholder for API integration |
+   @commands.hybrid_command(name="hello", description="Say hello")
+   async def hello(self, ctx: commands.Context):
+      if getattr(ctx, 'interaction', None) and not ctx.interaction.response.is_done():
+         await ctx.interaction.response.defer(ephemeral=True)
+      msg = "Hey there!"
+      if getattr(ctx, 'interaction', None):
+         await ctx.interaction.followup.send(msg, ephemeral=True)
+      else:
+         await ctx.reply(msg)
+
+async def setup(bot):
+   await bot.add_cog(MyCog(bot))
 | roleinfo | Prefix | role | Planned | Role details (permissions, members) |
 
 ## 🏗️ Project Structure
