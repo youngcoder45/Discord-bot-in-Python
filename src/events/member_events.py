@@ -14,7 +14,6 @@ class MemberEvents(commands.Cog):
         """Handle member join events"""
         # Add user to database
         await db.add_user(member.id, str(member))
-        
         # Send welcome message to joins-n-leaves channel
         joins_channel_id = int(os.getenv('JOINS_LEAVES_CHANNEL_ID', 0))
         if joins_channel_id:
@@ -26,41 +25,15 @@ class MemberEvents(commands.Cog):
                                f"🔹 Please read our rules in <#📜｜rules>\n"
                                f"🔹 Introduce yourself in <#lobby>\n"
                                f"🔹 Ask questions in <#ask-for-help>\n"
-                               f"🔹 Share your projects in <#projects-showcase>\n"
-                               f"🔹 Start chatting to earn XP and climb the leaderboard!\n\n"
+                               f"🔹 Share your projects in <#projects-showcase>\n\n"
                                f"**You are member #{len(member.guild.members)}**",
                     color=discord.Color.green(),
                     timestamp=datetime.utcnow()
                 )
                 embed.set_thumbnail(url=member.display_avatar.url)
                 embed.set_footer(text="Happy coding New Friend !!🚀")
-
                 await channel.send(embed=embed)
-        
-        # Try to send welcome DM
-        try:
-            dm_embed = discord.Embed(
-                title="🎉 Welcome to The CodeVerse Hub!",
-                description=f"Hi {member.display_name}! Welcome to our amazing coding community!\n\n"
-                           f"Here are some tips to get started:\n"
-                           f"• Check out our rules to understand our community guidelines\n"
-                           f"• Introduce yourself in the lobby\n"
-                           f"• Join discussions in our programming channels\n"
-                           f"• Participate in our daily QOTD and weekly challenges\n"
-                           f"• Earn XP by being active and unlock special roles!\n\n"
-                           f"If you have any questions, feel free to ask in <#ask-for-help> or reach out to our staff.\n\n"
-                           f"We're thrilled to have you here! 🚀",
-                color=discord.Color.blue(),
-                timestamp=datetime.utcnow()
-            )
-            
-            if member.guild.icon:
-                dm_embed.set_thumbnail(url=member.guild.icon.url)
-            
-            await member.send(embed=dm_embed)
-        except discord.Forbidden:
-            pass  # User has DMs disabled
-        
+        # DM welcome removed
         # Log the join
         await log_action("MEMBER_JOIN", member.id, f"Username: {member}")
 
