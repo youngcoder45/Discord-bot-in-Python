@@ -115,6 +115,8 @@ def check_cog_files():
     cog_files = [
         'src/commands/core.py',
         'src/commands/diagnostics.py',
+        'src/commands/community.py',
+        'src/commands/fun.py',
         'src/events/member_events.py',
         'src/events/message_handler.py',
         'src/utils/helpers.py',

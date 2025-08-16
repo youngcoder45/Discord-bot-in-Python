@@ -2,11 +2,106 @@ import discord
 from discord.ext import commands
 import random
 import asyncio
-import json
 import re
-import typing
-from datetime import datetime, timedelta, timezone
-from utils.helpers import create_success_embed, create_error_embed, create_info_embed
+from datetime import datetime, timezone
+from utils.helpers import create_success_embed, create_error_embed
+
+# Data for fun commands
+COMPLIMENTS = [
+    "You're coding like a pro! 🚀",
+    "Your problem-solving skills are impressive! 🧠",
+    "You're crushing it today! 💪",
+    "You make debugging look easy! 🔍",
+    "Your code is cleaner than my cache! ✨",
+    "You're the exception to null pointer errors! ⭐",
+    "You're the semicolon to my statement! 😊",
+]
+
+DAD_JOKES = [
+    "Why don't programmers like nature? It has too many bugs!",
+    "What do you call a bear with no teeth? A gummy bear!",
+    "Why don't skeletons fight each other? They don't have the guts!",
+    "What do you call a fake noodle? An impasta!",
+    "Why did the scarecrow win an award? Because he was outstanding in his field!",
+    "Why don't scientists trust atoms? Because they make up everything!",
+    "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+]
+
+FORTUNE_COOKIES = [
+    "A beautiful, smart, and loving person will be coming into your code base.",
+    "Your commit will bring you good luck.",
+    "Now is the time to try something new with your code.",
+    "The bug you're looking for is in another file.",
+    "You will soon be the center of a git merge conflict.",
+    "Your code will compile on the first try today.",
+    "A mysterious pull request will bring unexpected joy.",
+    "Don't worry about the bugs of tomorrow, deal with the exceptions of today.",
+]
+
+WOULD_YOU_RATHER = [
+    {"option1": "Only be able to write Python", "option2": "Only be able to write JavaScript"},
+    {"option1": "Have perfect code but no comments", "option2": "Buggy code with perfect documentation"},
+    {"option1": "Be able to predict all runtime errors", "option2": "Be able to predict all compilation errors"},
+    {"option1": "Always have to code in light mode", "option2": "Always have to code without auto-complete"},
+    {"option1": "Write code that no one can understand but works perfectly", "option2": "Write code everyone understands but takes twice as long to run"},
+]
+
+HANGMAN_WORDS = [
+    "python", "javascript", "programming", "database", "algorithm",
+    "function", "variable", "debugging", "framework", "developer",
+    "compiler", "frontend", "backend", "fullstack", "docker",
+    "github", "linux", "server", "cloud", "agile"
+]
+
+PROGRAMMING_JOKES = [
+    "Why do programmers prefer dark mode? Because light attracts bugs!",
+    "Why did the programmer quit his job? Because he didn't get arrays!",
+    "What's a programmer's favorite hangout spot? The Foo Bar!",
+    "Why do programmers always mix up Christmas and Halloween? Because Oct 31 == Dec 25!",
+    "Why do Java developers wear glasses? Because they don't C#",
+    "Why did the developer go broke? Because he used up all his cache!",
+    "What do you call a programmer from Finland? Nerdic!",
+    "Why was the JavaScript developer sad? Because he didn't Node how to Express himself!",
+    "What's a pirate's favorite programming language? R!",
+    "Why do programmers hate nature? It has too many bugs!",
+    "What's a programmer's favorite place in New York? Boolean Manhattan!",
+]
+
+RIDDLES = [
+    {"question": "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", "answer": "an echo"},
+    {"question": "What has keys, but no locks; space, but no room; and you can enter, but not go in?", "answer": "a keyboard"},
+    {"question": "What gets bigger when more is taken away?", "answer": "a hole"},
+    {"question": "I am taken from a mine and shut up in a wooden case, from which I am never released, and yet I am used by everyone. What am I?", "answer": "a pencil lead"},
+    {"question": "What kind of tree can you carry in your hand?", "answer": "a palm"},
+    {"question": "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. I have roads, but no cars. What am I?", "answer": "a map"},
+    {"question": "The more you code, the more of me there is. I may be gone for now but you can't get rid of me forever. What am I?", "answer": "a bug"},
+]
+
+TRIVIA_QUESTIONS = [
+    {
+        "question": "What does API stand for?",
+        "options": [
+            "Application Programming Interface",
+            "Advanced Programming Interface", 
+            "Automated Programming Interface",
+            "Application Protocol Interface"
+        ],
+        "answer": "Application Programming Interface",
+        "category": "basics"
+    },
+    {
+        "question": "Which data structure uses LIFO?",
+        "options": ["Queue", "Stack", "Tree", "Linked List"],
+        "answer": "Stack",
+        "category": "data_structures"
+    },
+    {
+        "question": "What is the time complexity of binary search?",
+        "options": ["O(n)", "O(log n)", "O(n²)", "O(n log n)"],
+        "answer": "O(log n)",
+        "category": "algorithms"
+    }
+]
 
 class Fun(commands.Cog):
     """Fun commands for entertainment and engagement"""
@@ -14,135 +109,6 @@ class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.hangman_games = {}
-
-    COMPLIMENTS = [
-        "You're coding like a pro! 🚀",
-        "Your problem-solving skills are impressive! 🧠",
-        "You're crushing it today! 💪",
-        "You make debugging look easy! 🔍",
-        "Your code is cleaner than my cache! ✨",
-        "You're the exception to null pointer errors! ⭐",
-        "You're the semicolon to my statement! 😊",
-    ]
-
-    DAD_JOKES = [
-        "Why don't programmers like nature? It has too many bugs!",
-        "What do you call a bear with no teeth? A gummy bear!",
-        "Why don't skeletons fight each other? They don't have the guts!",
-        "What do you call a fake noodle? An impasta!",
-        "Why did the scarecrow win an award? Because he was outstanding in his field!",
-    ]
-
-    FORTUNE_COOKIES = [
-        "A beautiful, smart, and loving person will be coming into your code base.",
-        "Your commit will bring you good luck.",
-        "Now is the time to try something new with your code.",
-        "The bug you're looking for is in another file.",
-        "You will soon be the center of a git merge conflict.",
-        "Your code will compile on the first try today.",
-        "A mysterious pull request will bring unexpected joy.",
-        "Don't worry about the bugs of tomorrow, deal with the exceptions of today.",
-    ]
-
-    WOULD_YOU_RATHER = [
-        {"option1": "Only be able to write Python", "option2": "Only be able to write JavaScript"},
-        {"option1": "Have perfect code but no comments", "option2": "Buggy code with perfect documentation"},
-        {"option1": "Be able to predict all runtime errors", "option2": "Be able to predict all compilation errors"},
-        {"option1": "Always have to code in light mode", "option2": "Always have to code without auto-complete"},
-        {"option1": "Write code that no one can understand but works perfectly", "option2": "Write code everyone understands but takes twice as long to run"},
-    ]
-
-    HANGMAN_WORDS = [
-        "python", "javascript", "programming", "database", "algorithm",
-        "function", "variable", "debugging", "framework", "developer",
-        "compiler", "frontend", "backend", "fullstack", "docker",
-        "github", "linux", "server", "cloud", "agile"
-    ]
-
-    PROGRAMMING_JOKES = [
-        "Why do programmers prefer dark mode? Because light attracts bugs!",
-        "Why did the programmer quit his job? Because he didn't get arrays!",
-        "What's a programmer's favorite hangout spot? The Foo Bar!",
-        "Why do programmers always mix up Christmas and Halloween? Because Oct 31 == Dec 25!",
-        "Why do Java developers wear glasses? Because they don't C#",
-        "Why did the developer go broke? Because he used up all his cache!",
-        "What do you call a programmer from Finland? Nerdic!",
-        "Why was the JavaScript developer sad? Because he didn't Node how to Express himself!",
-        "What's a pirate's favorite programming language? R!",
-        "Why do programmers hate nature? It has too many bugs!",
-        "What's a programmer's favorite place in New York? Boolean Manhattan!",
-    ]
-
-    RIDDLES = [
-        {"question": "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", "answer": "an echo"},
-        {"question": "What has keys, but no locks; space, but no room; and you can enter, but not go in?", "answer": "a keyboard"},
-        {"question": "What gets bigger when more is taken away?", "answer": "a hole"},
-        {"question": "I am taken from a mine and shut up in a wooden case, from which I am never released, and yet I am used by everyone. What am I?", "answer": "a pencil lead"},
-        {"question": "What kind of tree can you carry in your hand?", "answer": "a palm"},
-        {"question": "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. I have roads, but no cars. What am I?", "answer": "a map"},
-        {"question": "The more you code, the more of me there is. I may be gone for now but you can't get rid of me forever. What am I?", "answer": "a bug"},
-    ]
-
-    RPS_RESPONSES = {
-        "win": [
-            "Amazing victory! 🎉",
-            "You're unbeatable! 🏆",
-            "Skillful play! ⭐",
-            "Champion move! 🌟",
-        ],
-        "lose": [
-            "Better luck next time! 🎲",
-            "Close game! 🎮",
-            "Don't give up! 💫",
-            "Practice makes perfect! 🎯",
-        ],
-        "tie": [
-            "Great minds think alike! 🤝",
-            "It's a tie! ⚖️",
-            "Perfect balance! ☯️",
-            "Let's go again! 🔄",
-        ]
-    }
-
-    TRIVIA_QUESTIONS = [
-        {
-            "question": "What does API stand for?",
-            "options": [
-                "Application Programming Interface",
-                "Advanced Programming Interface",
-                "Automated Programming Interface",
-                "Application Protocol Interface"
-            ],
-            "answer": "Application Programming Interface",
-            "category": "basics"
-        },
-        {
-            "question": "Which data structure uses LIFO?",
-            "options": [
-                "Queue",
-                "Stack",
-                "Tree",
-                "Linked List"
-            ],
-            "answer": "Stack",
-            "category": "data_structures"
-        },
-        {
-            "question": "What is the time complexity of binary search?",
-            "options": [
-                "O(n)",
-                "O(log n)",
-                "O(n²)",
-                "O(n log n)"
-            ],
-            "answer": "O(log n)",
-            "category": "algorithms"
-        }
-    ]
-
-    async def setup(bot):
-        await bot.add_cog(Fun(bot))
-        await bot.add_cog(FunCommands(bot))
 
     @commands.command(name="compliment", help="Get a random compliment")
     async def compliment(self, ctx, member: discord.Member = None):
@@ -220,223 +186,6 @@ class Fun(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        """Handle hangman game responses"""
-        if message.author.bot:
-            return
-
-        if message.channel.id in self.hangman_games:
-            game = self.hangman_games[message.channel.id]
-            
-            content = message.content.upper()
-            if len(content) == 1 and content.isalpha():
-                if content in game["guessed"]:
-                    await message.channel.send("You already guessed that letter!")
-                    return
-
-                game["guessed"].add(content)
-                
-                if content not in game["word"]:
-                    game["tries"] -= 1
-
-                word = game["word"]
-                guessed = game["guessed"]
-                tries = game["tries"]
-
-                display = " ".join(letter if letter in guessed else "_" for letter in word)
-                
-                if tries == 0:
-                    await message.channel.send(f"Game Over! The word was: {word}")
-                    del self.hangman_games[message.channel.id]
-                elif "_" not in display.replace(" ", ""):
-                    await message.channel.send(f"🎉 Congratulations! You got it: {word}")
-                    # XP system removed
-                    del self.hangman_games[message.channel.id]
-                else:
-                    embed = discord.Embed(
-                        title="🎯 Hangman - Programming Edition",
-                        description=f"```\n{display}\n```\nTries left: {tries}",
-                        color=discord.Color.green()
-                    )
-                    await message.channel.send(embed=embed)
-
-COMPLIMENTS = [
-    "You're coding like a pro! 🚀",
-    "Your problem-solving skills are impressive! 🧠",
-    "You're crushing it today! 💪",
-    "You make debugging look easy! 🔍",
-    "Your code is cleaner than my cache! ✨",
-    "You're the exception to null pointer errors! ⭐",
-    "You're the semicolon to my statement! 😊",
-]
-
-DAD_JOKES = [
-    "Why don't programmers like nature? It has too many bugs!",
-    "What do you call a bear with no teeth? A gummy bear!",
-    "Why don't skeletons fight each other? They don't have the guts!",
-    "What do you call a fake noodle? An impasta!",
-    "Why did the scarecrow win an award? Because he was outstanding in his field!",
-]
-
-FORTUNE_COOKIES = [
-    "A beautiful, smart, and loving person will be coming into your code base.",
-    "Your commit will bring you good luck.",
-    "Now is the time to try something new with your code.",
-    "The bug you're looking for is in another file.",
-    "You will soon be the center of a git merge conflict.",
-    "Your code will compile on the first try today.",
-    "A mysterious pull request will bring unexpected joy.",
-    "Don't worry about the bugs of tomorrow, deal with the exceptions of today.",
-]
-
-WOULD_YOU_RATHER = [
-    {"option1": "Only be able to write Python", "option2": "Only be able to write JavaScript"},
-    {"option1": "Have perfect code but no comments", "option2": "Buggy code with perfect documentation"},
-    {"option1": "Be able to predict all runtime errors", "option2": "Be able to predict all compilation errors"},
-    {"option1": "Always have to code in light mode", "option2": "Always have to code without auto-complete"},
-    {"option1": "Write code that no one can understand but works perfectly", "option2": "Write code everyone understands but takes twice as long to run"},
-]
-
-HANGMAN_WORDS = [
-    "python", "javascript", "programming", "database", "algorithm",
-    "function", "variable", "debugging", "framework", "developer",
-    "compiler", "frontend", "backend", "fullstack", "docker",
-    "github", "linux", "server", "cloud", "agile"
-]
-
-PROGRAMMING_JOKES = [
-    "Why do programmers prefer dark mode? Because light attracts bugs!",
-    "Why did the programmer quit his job? Because he didn't get arrays!",
-    "What's a programmer's favorite hangout spot? The Foo Bar!",
-    "Why do programmers always mix up Christmas and Halloween? Because Oct 31 == Dec 25!",
-    "Why do Java developers wear glasses? Because they don't C#",
-    "Why did the developer go broke? Because he used up all his cache!",
-    "What do you call a programmer from Finland? Nerdic!",
-    "Why was the JavaScript developer sad? Because he didn't Node how to Express himself!",
-    "What's a pirate's favorite programming language? R!",
-    "Why do programmers hate nature? It has too many bugs!",
-    "What's a programmer's favorite place in New York? Boolean Manhattan!",
-]
-
-RIDDLES = [
-    {"question": "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", "answer": "an echo"},
-    {"question": "What has keys, but no locks; space, but no room; and you can enter, but not go in?", "answer": "a keyboard"},
-    {"question": "What gets bigger when more is taken away?", "answer": "a hole"},
-    {"question": "I am taken from a mine and shut up in a wooden case, from which I am never released, and yet I am used by everyone. What am I?", "answer": "a pencil lead"},
-    {"question": "What kind of tree can you carry in your hand?", "answer": "a palm"},
-    {"question": "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. I have roads, but no cars. What am I?", "answer": "a map"},
-    {"question": "The more you code, the more of me there is. I may be gone for now but you can't get rid of me forever. What am I?", "answer": "a bug"},
-]
-
-COMPLIMENTS = [
-    "You're coding like a pro! 🚀",
-    "Your problem-solving skills are impressive! 🧠",
-    "You're crushing it today! 💪",
-    "You make debugging look easy! 🔍",
-    "Your code is cleaner than my cache! ✨",
-    "You're the exception to null pointer errors! ⭐",
-    "You're the semicolon to my statement! 😊",
-]
-
-DAD_JOKES = [
-    "Why don't programmers like nature? It has too many bugs!",
-    "What do you call a bear with no teeth? A gummy bear!",
-    "Why don't skeletons fight each other? They don't have the guts!",
-    "What do you call a fake noodle? An impasta!",
-    "Why did the scarecrow win an award? Because he was outstanding in his field!",
-]
-
-FORTUNE_COOKIES = [
-    "A beautiful, smart, and loving person will be coming into your code base.",
-    "Your commit will bring you good luck.",
-    "Now is the time to try something new with your code.",
-    "The bug you're looking for is in another file.",
-    "You will soon be the center of a git merge conflict.",
-    "Your code will compile on the first try today.",
-    "A mysterious pull request will bring unexpected joy.",
-    "Don't worry about the bugs of tomorrow, deal with the exceptions of today.",
-]
-
-WOULD_YOU_RATHER = [
-    {"option1": "Only be able to write Python", "option2": "Only be able to write JavaScript"},
-    {"option1": "Have perfect code but no comments", "option2": "Buggy code with perfect documentation"},
-    {"option1": "Be able to predict all runtime errors", "option2": "Be able to predict all compilation errors"},
-    {"option1": "Always have to code in light mode", "option2": "Always have to code without auto-complete"},
-    {"option1": "Write code that no one can understand but works perfectly", "option2": "Write code everyone understands but takes twice as long to run"},
-]
-
-# Dictionary for hangman words related to programming
-HANGMAN_WORDS = [
-    "python", "javascript", "programming", "database", "algorithm",
-    "function", "variable", "debugging", "framework", "developer",
-    "compiler", "frontend", "backend", "fullstack", "docker",
-    "github", "linux", "server", "cloud", "agile"
-]
-
-# Rock, Paper, Scissors responses
-RPS_RESPONSES = {
-    "win": [
-        "Amazing victory! 🎉",
-        "You're unbeatable! 🏆",
-        "Skillful play! ⭐",
-        "Champion move! 🌟",
-    ],
-    "lose": [
-        "Better luck next time! 🎲",
-        "Close game! 🎮",
-        "Don't give up! 💫",
-        "Practice makes perfect! 🎯",
-    ],
-    "tie": [
-        "Great minds think alike! 🤝",
-        "It's a tie! ⚖️",
-        "Perfect balance! ☯️",
-        "Let's go again! 🔄",
-    ]
-}
-
-TRIVIA_QUESTIONS = [
-    {
-        "question": "What does API stand for?",
-        "options": [
-            "Application Programming Interface",
-            "Advanced Programming Interface",
-            "Automated Programming Interface",
-            "Application Protocol Interface"
-        ],
-        "answer": "Application Programming Interface",
-        "category": "basics"
-    },
-    {
-        "question": "Which data structure uses LIFO?",
-        "options": [
-            "Queue",
-            "Stack",
-            "Tree",
-            "Linked List"
-        ],
-        "answer": "Stack",
-        "category": "data_structures"
-    },
-    {
-        "question": "What is the time complexity of binary search?",
-        "options": [
-            "O(n)",
-            "O(log n)",
-            "O(n²)",
-            "O(n log n)"
-        ],
-        "answer": "O(log n)",
-        "answer": "O(log n)",
-        "category": "algorithms"
-    }
-]
-
-class FunCommands(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-        
     @commands.command(name="joke", help="Get a random programming joke")
     async def joke(self, ctx):
         """Get a random programming joke"""
@@ -467,7 +216,6 @@ class FunCommands(commands.Cog):
             guess = await self.bot.wait_for('message', check=check, timeout=30.0)
             if guess.content.lower() == riddle["answer"]:
                 await ctx.send(f"🎉 Correct, {ctx.author.mention}! Well done!")
-                # XP system removed
             else:
                 await ctx.send(f"❌ Sorry, that's not correct. The answer was: {riddle['answer']}")
         except asyncio.TimeoutError:
@@ -480,7 +228,6 @@ class FunCommands(commands.Cog):
         options = question["options"]
         random.shuffle(options)
 
-        # Create the question embed
         embed = discord.Embed(
             title="🎯 Programming Trivia",
             description=question["question"],
@@ -502,7 +249,6 @@ class FunCommands(commands.Cog):
             guess = await self.bot.wait_for('message', check=check, timeout=30.0)
             if options[int(guess.content)-1] == question["answer"]:
                 await ctx.send(f"✨ Correct, {ctx.author.mention}! You're a genius!")
-                # XP system removed
             else:
                 await ctx.send(f"❌ Not quite! The correct answer was: {question['answer']}")
         except asyncio.TimeoutError:
@@ -520,19 +266,16 @@ class FunCommands(commands.Cog):
 
         bot_choice = random.choice(choices)
         
-        # Create result embed
         embed = discord.Embed(title="🎮 Rock, Paper, Scissors!", color=discord.Color.blue())
         embed.add_field(name="Your Choice", value=choice.capitalize(), inline=True)
         embed.add_field(name="Bot's Choice", value=bot_choice.capitalize(), inline=True)
         
-        # Determine winner
         if choice == bot_choice:
             result = "It's a tie! 🤝"
         elif ((choice == "rock" and bot_choice == "scissors") or 
               (choice == "paper" and bot_choice == "rock") or 
               (choice == "scissors" and bot_choice == "paper")):
             result = f"You win! 🎉"
-            # XP system removed
         else:
             result = "Bot wins! 🤖"
         
@@ -645,8 +388,6 @@ class FunCommands(commands.Cog):
                 
                 if guess == number:
                     await msg.reply(f"🎉 Congratulations! You guessed it in {attempts} attempts! The number was {number}.")
-                    # Give XP for winning
-                    # XP system removed
                     return
                 elif guess < number:
                     remaining = max_attempts - attempts
@@ -665,9 +406,47 @@ class FunCommands(commands.Cog):
                 await ctx.send(f"⏰ Time's up! The number was {number}.")
                 return
 
-        # Ran out of attempts
         await ctx.send(f"💔 Game over! The number was {number}. Better luck next time!")
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """Handle hangman game responses"""
+        if message.author.bot:
+            return
+
+        if message.channel.id in self.hangman_games:
+            game = self.hangman_games[message.channel.id]
+            
+            content = message.content.upper()
+            if len(content) == 1 and content.isalpha():
+                if content in game["guessed"]:
+                    await message.channel.send("You already guessed that letter!")
+                    return
+
+                game["guessed"].add(content)
+                
+                if content not in game["word"]:
+                    game["tries"] -= 1
+
+                word = game["word"]
+                guessed = game["guessed"]
+                tries = game["tries"]
+
+                display = " ".join(letter if letter in guessed else "_" for letter in word)
+                
+                if tries == 0:
+                    await message.channel.send(f"Game Over! The word was: {word}")
+                    del self.hangman_games[message.channel.id]
+                elif "_" not in display.replace(" ", ""):
+                    await message.channel.send(f"🎉 Congratulations! You got it: {word}")
+                    del self.hangman_games[message.channel.id]
+                else:
+                    embed = discord.Embed(
+                        title="🎯 Hangman - Programming Edition",
+                        description=f"```\n{display}\n```\nTries left: {tries}",
+                        color=discord.Color.green()
+                    )
+                    await message.channel.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))
-    await bot.add_cog(FunCommands(bot))

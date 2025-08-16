@@ -26,9 +26,8 @@ intents.guilds = True
 intents.reactions = True
 
 COGS_TO_LOAD = [
-    'commands.utility',       # Utility commands (afk, reminders, serverinfo, etc.) - Now using Hybrid Commands
-    'commands.core',          # Core prefix commands (ping, info, help)
-    'commands.diagnostics',   # Diagnostics (?diag)
+    'commands.core',          # Core hybrid commands (ping, info, help)
+    'commands.diagnostics',   # Diagnostics (?diag, /diag)
     'commands.community',     # quote, question, meme, suggest
     'commands.fun',           # fun & game commands
     'events.member_events',
