@@ -56,10 +56,15 @@ bot = CodeVerseBot()
 @bot.event
 async def on_ready():
     logger.info(f"Logged in as {bot.user} (ID: {bot.user.id}) [Instance: {INSTANCE_ID}]")
-    # Slash/hybrid commands have been intentionally removed. If old slash commands
-    # still appear in the client, they'll disappear after Discord cache refresh
-    # (can take up to ~1 hour) or you can manually clear them via Developer Portal.
-    # Use prefix commands with '?' (e.g. ?ping, ?dadjoke).
+    
+    # Sync slash commands
+    try:
+        synced = await bot.tree.sync()
+        logger.info(f"Synced {len(synced)} slash commands")
+    except Exception as e:
+        logger.error(f"Failed to sync slash commands: {e}")
+    
+    # Both prefix (?ping) and slash (/ping) commands are now available
 
 async def main():
     if not TOKEN:

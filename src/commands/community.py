@@ -6,6 +6,7 @@ suggestions/challenges/QOTD removed per simplification request.
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 import json
 from datetime import datetime, timezone
 from utils.helpers import (
@@ -35,7 +36,7 @@ class CommunityCommands(commands.Cog):
         except FileNotFoundError:
             self.quotes = []
 
-    @commands.command(name='quote', help='Get a random motivational/programming quote')
+    @commands.hybrid_command(name='quote', help='Get a random motivational/programming quote')
     async def quote(self, ctx: commands.Context):
         if not self.quotes:
             await ctx.send(embed=create_error_embed('No Quotes', 'No quotes available.'))
@@ -45,7 +46,7 @@ class CommunityCommands(commands.Cog):
         embed.set_footer(text='Stay motivated! 🚀')
         await ctx.send(embed=embed)
 
-    @commands.command(name='question', help='Get a random programming question')
+    @commands.hybrid_command(name='question', help='Get a random programming question')
     async def question(self, ctx: commands.Context):
         if not self.questions:
             await ctx.send(embed=create_error_embed('No Questions', 'No questions available.'))
@@ -62,7 +63,7 @@ class CommunityCommands(commands.Cog):
             embed.add_field(name='Question', value=str(q), inline=False)
         await ctx.send(embed=embed)
 
-    @commands.command(name='meme', help='Get a random programming meme')
+    @commands.hybrid_command(name='meme', help='Get a random programming meme')
     async def meme(self, ctx: commands.Context):
         async with ctx.typing():
             meme = await fetch_programming_meme()
@@ -74,7 +75,7 @@ class CommunityCommands(commands.Cog):
         embed.set_footer(text='Hope this made you smile! 😊')
         await ctx.send(embed=embed)
 
-    @commands.command(name='suggest', help='Submit a suggestion (ephemeral – not stored)')
+    @commands.hybrid_command(name='suggest', help='Submit a suggestion (ephemeral – not stored)')
     async def suggest(self, ctx: commands.Context, *, suggestion: str):
         suggestion = sanitize_input(suggestion, 1000)
         if len(suggestion.strip()) < 10:
