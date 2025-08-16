@@ -53,7 +53,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/codeverse-bot.git
+   git clone https://github.com/youngcoder45/codeverse-bot.git
    cd codeverse-bot
    ```
 
