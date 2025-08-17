@@ -97,6 +97,21 @@ class Core(commands.Cog):
             inline=False
         )
         
+        # Moderation Commands (Admin only)
+        moderation_commands = [
+            "**`purge <amount> [@user]`** - Delete messages *(Manage Messages)*",
+            "**`kick <member> [reason]`** - Kick a member *(Kick Members)*",
+            "**`ban <member> [days] [reason]`** - Ban a member *(Ban Members)*",
+            "**`timeout <member> <minutes> [reason]`** - Timeout a member *(Moderate Members)*",
+            "**`warn <member> [reason]`** - Warn a member *(Manage Messages)*",
+            "**`slowmode <seconds> [#channel]`** - Set channel slowmode *(Manage Channels)*"
+        ]
+        embed.add_field(
+            name="🛡️ Moderation (Admin Only)",
+            value="\n".join(moderation_commands),
+            inline=False
+        )
+        
         # Footer with usage info
         embed.add_field(
             name="💡 Usage Tips",

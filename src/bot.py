@@ -30,6 +30,7 @@ COGS_TO_LOAD = [
     'commands.diagnostics',   # Diagnostics (?diag, /diag)
     'commands.community',     # quote, question, meme, suggest
     'commands.fun',           # fun & game commands
+    'commands.moderation',    # moderation commands (purge, kick, ban, etc.)
     'events.member_events',
     'events.message_handler', # Simplified message handler
     'tasks.staff_reminder'    # Staff bump reminder every 2 hours

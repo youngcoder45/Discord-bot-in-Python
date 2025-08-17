@@ -30,6 +30,19 @@
 - **`?remind-now`** / **`/remind-now`** - Send manual reminder to staff (Admin only)
 - **`?staff-channel [#channel]`** / **`/staff-channel [#channel]`** - Set staff reminder channel (Admin only)
 
+### 🛡️ Light Moderation
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `?purge <amount> [@user]` / `/purge <amount> [@user]` | Delete 1-100 messages | Manage Messages |
+| `?kick <member> [reason]` / `/kick <member> [reason]` | Kick a member from server | Kick Members |
+| `?ban <member> [days] [reason]` / `/ban <member> [days] [reason]` | Ban a member from server | Ban Members |
+| `?unban <user> [reason]` / `/unban <user> [reason]` | Unban a user by ID/name | Ban Members |
+| `?timeout <member> <minutes> [reason]` / `/timeout <member> <minutes> [reason]` | Timeout member (max 28 days) | Moderate Members |
+| `?untimeout <member> [reason]` / `/untimeout <member> [reason]` | Remove timeout from member | Moderate Members |
+| `?warn <member> [reason]` / `/warn <member> [reason]` | Issue warning to member | Manage Messages |
+| `?slowmode <seconds> [#channel]` / `/slowmode <seconds> [#channel]` | Set channel slowmode (0-6hrs) | Manage Channels |
+| `?nick <member> [nickname]` / `/nick <member> [nickname]` | Change member nickname | Manage Nicknames |
+
 ### 🎮 Fun & Games
 | Command | Description |
 |---------|-------------|
@@ -107,7 +120,8 @@ codeverse-bot/
 │   │   ├── core.py         # Core commands (ping, info, help)
 │   │   ├── diagnostics.py  # Bot diagnostics
 │   │   ├── community.py    # Community engagement
-│   │   └── fun.py          # Fun commands & games
+│   │   ├── fun.py          # Fun commands & games
+│   │   └── moderation.py   # Moderation commands
 │   ├── events/             # Event listeners
 │   │   ├── member_events.py # Member tracking and logging
 │   │   └── message_handler.py # Message processing
@@ -185,6 +199,12 @@ python quick_test.py
 - Add Reactions
 - Manage Messages
 - Create Public Threads
+- Use Slash Commands
+- Kick Members (for moderation)
+- Ban Members (for moderation)
+- Moderate Members (for timeouts)
+- Manage Channels (for slowmode)
+- Manage Nicknames (for nickname changes)
 
 ## 📊 Design Philosophy
 
@@ -199,10 +219,10 @@ This bot is intentionally **simplified** and **lightweight**:
 ### What's NOT Included
 - ❌ XP/Leveling system
 - ❌ Complex database operations
-- ❌ Advanced moderation tools
 - ❌ Persistent challenge/QOTD systems
 - ❌ Auto-bumping (ToS compliant manual reminders only)
 - ❌ Welcome/farewell messages (simplified member tracking only)
+- ❌ Advanced moderation (infractions, auto-moderation, etc.)
 
 ## 👤 Author & Credits
 | Role | Person |
