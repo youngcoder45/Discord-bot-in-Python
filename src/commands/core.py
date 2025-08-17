@@ -29,22 +29,120 @@ class Core(commands.Cog):
         embed.set_footer(text=f"Hybrid commands • Instance: {instance_id}")
         await ctx.reply(embed=embed, mention_author=False)
 
-    @commands.hybrid_command(name="help", help="Show this help message")
+    @commands.hybrid_command(name="help", help="Show all bot commands organized by category")
     async def help_cmd(self, ctx: commands.Context):
-        """Custom help command listing available commands."""
-        embed = discord.Embed(title="📖 Help", color=discord.Color.teal())
-        embed.description = "Available commands. Use prefix `?` or slash `/` commands."
+        """Enhanced help command with organized categories."""
+        embed = discord.Embed(
+            title="🤖 CodeVerse Bot - Command Help",
+            description="All commands work with both prefix `?` and slash `/`\nExample: `?ping` or `/ping`",
+            color=discord.Color.blue()
+        )
+        
+        # Core Commands
+        core_commands = [
+            "**`ping`** - Check bot latency and responsiveness",
+            "**`info`** - View bot information and uptime",
+            "**`diag`** - Get bot diagnostics and health status",
+            "**`help`** - Show this help message"
+        ]
+        embed.add_field(
+            name="🎯 Core Commands",
+            value="\n".join(core_commands),
+            inline=False
+        )
+        
+        # Community Commands
+        community_commands = [
+            "**`quote`** - Get inspirational programming quotes",
+            "**`question`** - Random programming questions for learning",
+            "**`meme`** - Programming memes and humor",
+            "**`suggest <text>`** - Submit suggestions to bot developers"
+        ]
+        embed.add_field(
+            name="🎪 Community & Learning",
+            value="\n".join(community_commands),
+            inline=False
+        )
+        
+        # Fun & Games Commands
+        fun_commands = [
+            "**`compliment [@user]`** - Send a random compliment",
+            "**`dadjoke`** - Get a dad joke",
+            "**`fortune`** - Programming fortune cookie",
+            "**`joke`** - Programming jokes",
+            "**`flip`** - Flip a coin",
+            "**`8ball <question>`** - Magic 8-ball answers",
+            "**`roll [NdN]`** - Roll dice (e.g., 2d6)",
+            "**`rps <choice>`** - Rock Paper Scissors",
+            "**`wyr`** - Would you rather questions",
+            "**`hangman`** - Programming-themed hangman",
+            "**`riddle`** - Interactive riddles",
+            "**`trivia`** - Programming trivia questions"
+        ]
+        embed.add_field(
+            name="🎮 Fun & Games",
+            value="\n".join(fun_commands),
+            inline=False
+        )
+        
+        # Auto Bump Commands (Admin only)
+        bump_commands = [
+            "**`bump-status`** - Check auto bump status *(Admin)*",
+            "**`bump-now`** - Manually trigger bump *(Admin)*",
+            "**`bump-channel [#channel]`** - Set bump channel *(Admin)*"
+        ]
+        embed.add_field(
+            name="🔔 Auto Bump (Admin Only)",
+            value="\n".join(bump_commands),
+            inline=False
+        )
+        
+        # Footer with usage info
+        embed.add_field(
+            name="💡 Usage Tips",
+            value="• Use `?command` or `/command` - both work!\n• Some commands need parameters (shown in `<>` or `[]`)\n• Admin commands require Manage Server permission\n• Auto bump works every 2 hours in #bump channel",
+            inline=False
+        )
+        
+        embed.set_footer(text=f"CodeVerse Bot • {len([cmd for cmd in self.bot.commands if not cmd.hidden])} commands available")
+        embed.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user.avatar else None)
+        
+        await ctx.reply(embed=embed, mention_author=False)
 
-        entries = []
+    @commands.hybrid_command(name="commands", help="Quick list of all available commands")
+    async def commands_list(self, ctx: commands.Context):
+        """Simple command list for quick reference."""
+        embed = discord.Embed(
+            title="⚡ Quick Command List",
+            description="Use `?help` or `/help` for detailed descriptions",
+            color=discord.Color.green()
+        )
+        
+        # Get all non-hidden commands
+        all_commands = []
         for cmd in sorted(self.bot.commands, key=lambda c: c.name):
-            if cmd.hidden or cmd.name == 'help':
-                continue
-            entries.append(f"`{self.bot.command_prefix}{cmd.name}` or `/{cmd.name}` - {cmd.help or 'No description'}")
-
-        if entries:
-            embed.add_field(name="Commands", value="\n".join(entries), inline=False)
-        embed.add_field(name="Meta", value=f"`{self.bot.command_prefix}help` or `/help` - Show this message", inline=False)
-        embed.set_footer(text="CodeVerse Bot • Help")
+            if not cmd.hidden:
+                all_commands.append(f"`{cmd.name}`")
+        
+        # Split into chunks for better display
+        chunk_size = 10
+        command_chunks = [all_commands[i:i + chunk_size] for i in range(0, len(all_commands), chunk_size)]
+        
+        for i, chunk in enumerate(command_chunks):
+            field_name = f"Commands ({i*chunk_size + 1}-{min((i+1)*chunk_size, len(all_commands))})"
+            embed.add_field(
+                name=field_name,
+                value=" • ".join(chunk),
+                inline=False
+            )
+        
+        embed.add_field(
+            name="💡 Remember",
+            value="All commands work with both `?` and `/` prefixes!\nUse `?help` for full descriptions and examples.",
+            inline=False
+        )
+        
+        embed.set_footer(text=f"Total: {len(all_commands)} commands available")
         await ctx.reply(embed=embed, mention_author=False)
 
 async def setup(bot: commands.Bot):
