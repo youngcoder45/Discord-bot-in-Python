@@ -31,7 +31,8 @@ COGS_TO_LOAD = [
     'commands.community',     # quote, question, meme, suggest
     'commands.fun',           # fun & game commands
     'events.member_events',
-    'events.message_handler'  # Simplified message handler
+    'events.message_handler', # Simplified message handler
+    'tasks.auto_bump'         # Auto bump every 2 hours
 ]
 
 class CodeVerseBot(commands.Bot):

@@ -13,32 +13,38 @@
 ## ✨ Features
 
 ### 🎯 Core Commands
-- **`?ping`** - Check bot latency and responsiveness
-- **`?info`** - View bot information, uptime, and instance details
-- **`?diag`** - Get bot diagnostics and health status
-- **`?help`** - Display all available commands
+- **`?ping`** / **`/ping`** - Check bot latency and responsiveness
+- **`?info`** / **`/info`** - View bot information, uptime, and instance details
+- **`?diag`** / **`/diag`** - Get bot diagnostics and health status
+- **`?help`** / **`/help`** - Display all available commands
 
 ### 🎪 Community & Engagement
-- **`?quote`** - Get inspirational programming quotes
-- **`?question`** - Random programming questions for learning
-- **`?meme`** - Programming memes and jokes
-- **`?suggest <text>`** - Submit suggestions (ephemeral acknowledgment)
+- **`?quote`** / **`/quote`** - Get inspirational programming quotes
+- **`?question`** / **`/question`** - Random programming questions for learning
+- **`?meme`** / **`/meme`** - Programming memes and jokes
+- **`?suggest <text>`** / **`/suggest <text>`** - Submit suggestions (ephemeral acknowledgment)
+
+### 🔔 Auto Bump (New!)
+- **Automatic `/bump` every 2 hours** in #bump channel
+- **`?bump-status`** / **`/bump-status`** - Check auto bump status (Admin only)
+- **`?bump-now`** / **`/bump-now`** - Manually trigger bump (Admin only)
+- **`?bump-channel [#channel]`** / **`/bump-channel [#channel]`** - Set bump channel (Admin only)
 
 ### 🎮 Fun & Games
 | Command | Description |
 |---------|-------------|
-| `?compliment [@user]` | Send a random compliment |
-| `?dadjoke` | Get a dad joke |
-| `?fortune` | Programming fortune cookie |
-| `?wyr` | Would you rather (30s cooldown) |
-| `?hangman` | Programming-themed hangman game |
-| `?joke` | Programming jokes |
-| `?riddle` | Interactive riddle mini-game |
-| `?trivia` | Programming trivia questions |
-| `?rps <choice>` | Rock Paper Scissors |
-| `?flip` | Coin flip |
-| `?roll [NdN]` | Dice rolling (e.g., 2d6) |
-| `?8ball <question>` | Magic 8-ball |
+| `?compliment [@user]` / `/compliment [@user]` | Send a random compliment |
+| `?dadjoke` / `/dadjoke` | Get a dad joke |
+| `?fortune` / `/fortune` | Programming fortune cookie |
+| `?wyr` / `/wyr` | Would you rather (30s cooldown) |
+| `?hangman` / `/hangman` | Programming-themed hangman game |
+| `?joke` / `/joke` | Programming jokes |
+| `?riddle` / `/riddle` | Interactive riddle mini-game |
+| `?trivia` / `/trivia` | Programming trivia questions |
+| `?rps <choice>` / `/rps <choice>` | Rock Paper Scissors |
+| `?flip` / `/flip` | Coin flip |
+| `?roll [NdN]` / `/roll [NdN]` | Dice rolling (e.g., 2d6) |
+| `?8ball <question>` / `/8ball <question>` | Magic 8-ball |
 | `?poll Q \| Opt1 \| Opt2` | Create reaction polls |
 | `?guess [max]` | Number guessing game |
 
