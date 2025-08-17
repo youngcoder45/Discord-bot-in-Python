@@ -2,7 +2,7 @@
 
 # 🤖 CodeVerse Bot
 
-**Lightweight, prefix-only Discord bot for programming communities**
+**Lightweight, hybrid Discord bot for programming communities**
 
 ![Status](https://img.shields.io/badge/status-active-success) ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.12-blue)
 
@@ -192,7 +192,7 @@ python quick_test.py
 
 This bot is intentionally **simplified** and **lightweight**:
 
-- ✅ **Prefix-only commands** (`?`) - No slash commands
+- ✅ **Hybrid commands** (`?` and `/`) - Both prefix and slash commands supported
 - ✅ **JSON-based storage** - No database complexity
 - ✅ **Stateless design** - Minimal persistent data
 - ✅ **Single-file modules** - Easy to understand and modify
@@ -201,9 +201,9 @@ This bot is intentionally **simplified** and **lightweight**:
 ### What's NOT Included
 - ❌ XP/Leveling system
 - ❌ Complex database operations
-- ❌ Slash command integration
 - ❌ Advanced moderation tools
 - ❌ Persistent challenge/QOTD systems
+- ❌ Auto-bumping (ToS compliant manual reminders only)
 
 ## 👤 Author & Credits
 | Role | Person |

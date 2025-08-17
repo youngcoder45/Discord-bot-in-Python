@@ -85,22 +85,22 @@ class Core(commands.Cog):
             inline=False
         )
         
-        # Auto Bump Commands (Admin only)
-        bump_commands = [
-            "**`bump-status`** - Check auto bump status *(Admin)*",
-            "**`bump-now`** - Manually trigger bump *(Admin)*",
-            "**`bump-channel [#channel]`** - Set bump channel *(Admin)*"
+        # Staff Reminder Commands (Admin only)
+        reminder_commands = [
+            "**`reminder-status`** - Check staff reminder status *(Admin)*",
+            "**`remind-now`** - Send manual reminder to staff *(Admin)*",
+            "**`staff-channel [#channel]`** - Set staff reminder channel *(Admin)*"
         ]
         embed.add_field(
-            name="🔔 Auto Bump (Admin Only)",
-            value="\n".join(bump_commands),
+            name="🔔 Staff Reminder (Admin Only)",
+            value="\n".join(reminder_commands),
             inline=False
         )
         
         # Footer with usage info
         embed.add_field(
             name="💡 Usage Tips",
-            value="• Use `?command` or `/command` - both work!\n• Some commands need parameters (shown in `<>` or `[]`)\n• Admin commands require Manage Server permission\n• Auto bump works every 2 hours in #bump channel",
+            value="• Use `?command` or `/command` - both work!\n• Some commands need parameters (shown in `<>` or `[]`)\n• Admin commands require Manage Server permission\n• Staff reminders sent every 2 hours to #staff-chat (ToS compliant)",
             inline=False
         )
         
