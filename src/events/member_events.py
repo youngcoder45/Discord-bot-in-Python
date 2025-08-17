@@ -11,42 +11,13 @@ class MemberEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        """Handle member join: track user and post welcome (if channel configured)."""
+        """Handle member join: track user only (no welcome messages)."""
         await add_or_update_user(member.id, str(member))
-        joins_channel_id = int(os.getenv('JOINS_LEAVES_CHANNEL_ID', 0))
-        if joins_channel_id:
-            channel = self.bot.get_channel(joins_channel_id)
-            if channel:
-                embed = discord.Embed(
-                    title="👋 Welcome!",
-                    description=(
-                        f"{member.mention} joined **{member.guild.name}**!\n"
-                        "Share what you're building and have fun coding."
-                    ),
-                    color=discord.Color.green(),
-                    timestamp=datetime.now(tz=timezone.utc)
-                )
-                embed.set_thumbnail(url=member.display_avatar.url)
-                embed.set_footer(text=f"Member #{len(member.guild.members)} • Enjoy your stay")
-                await channel.send(embed=embed)
         await log_action("MEMBER_JOIN", member.id, f"Username: {member}")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        """Handle member leaving the guild."""
-        joins_channel_id = int(os.getenv('JOINS_LEAVES_CHANNEL_ID', 0))
-        if joins_channel_id:
-            channel = self.bot.get_channel(joins_channel_id)
-            if channel:
-                embed = discord.Embed(
-                    title="👋 Member Left",
-                    description=f"{member.display_name} has left the server.",
-                    color=discord.Color.red(),
-                    timestamp=datetime.now(tz=timezone.utc)
-                )
-                embed.set_thumbnail(url=member.display_avatar.url)
-                embed.set_footer(text=f"Members remaining: {len(member.guild.members)}")
-                await channel.send(embed=embed)
+        """Handle member leaving the guild (logging only)."""
         await log_action("MEMBER_LEAVE", member.id, f"Username: {member}")
 
     @commands.Cog.listener()

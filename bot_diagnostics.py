@@ -26,7 +26,7 @@ def check_environment_vars():
 
     required_vars = ['DISCORD_TOKEN', 'GUILD_ID']
     optional_vars = [
-        'JOINS_LEAVES_CHANNEL_ID', 'SERVER_LOGS_CHANNEL_ID',
+        'SERVER_LOGS_CHANNEL_ID',
         'HOSTING_PLATFORM', 'PORT'
     ]
 

@@ -83,7 +83,6 @@
    DISCORD_TOKEN=your_bot_token_here
    GUILD_ID=your_server_id_here
    # Optional
-   JOINS_LEAVES_CHANNEL_ID=123456789
    SERVER_LOGS_CHANNEL_ID=123456789
    ```
 
@@ -110,7 +109,7 @@ codeverse-bot/
 │   │   ├── community.py    # Community engagement
 │   │   └── fun.py          # Fun commands & games
 │   ├── events/             # Event listeners
-│   │   ├── member_events.py # Join/leave handling
+│   │   ├── member_events.py # Member tracking and logging
 │   │   └── message_handler.py # Message processing
 │   ├── utils/              # Utilities
 │   │   ├── helpers.py      # Helper functions
@@ -175,7 +174,6 @@ python quick_test.py
 - `GUILD_ID` - Your Discord server ID
 
 ### Optional Environment Variables
-- `JOINS_LEAVES_CHANNEL_ID` - Channel for member join/leave messages
 - `SERVER_LOGS_CHANNEL_ID` - Channel for server logs
 - `INSTANCE_ID` - Custom instance identifier
 - `PORT` - Port for keep-alive server (default: 8080)
@@ -204,6 +202,7 @@ This bot is intentionally **simplified** and **lightweight**:
 - ❌ Advanced moderation tools
 - ❌ Persistent challenge/QOTD systems
 - ❌ Auto-bumping (ToS compliant manual reminders only)
+- ❌ Welcome/farewell messages (simplified member tracking only)
 
 ## 👤 Author & Credits
 | Role | Person |
