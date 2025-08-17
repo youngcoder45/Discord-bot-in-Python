@@ -119,7 +119,7 @@ def check_cog_files():
         'src/commands/fun.py',
         'src/events/member_events.py',
         'src/events/message_handler.py',
-        'src/tasks/auto_bump.py',
+        'src/tasks/staff_reminder.py',
         'src/utils/helpers.py',
         'src/utils/json_store.py'
     ]

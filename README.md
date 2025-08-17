@@ -24,11 +24,11 @@
 - **`?meme`** / **`/meme`** - Programming memes and jokes
 - **`?suggest <text>`** / **`/suggest <text>`** - Submit suggestions (ephemeral acknowledgment)
 
-### 🔔 Auto Bump (New!)
-- **Automatic `/bump` every 2 hours** in #bump channel
-- **`?bump-status`** / **`/bump-status`** - Check auto bump status (Admin only)
-- **`?bump-now`** / **`/bump-now`** - Manually trigger bump (Admin only)
-- **`?bump-channel [#channel]`** / **`/bump-channel [#channel]`** - Set bump channel (Admin only)
+### 🔔 Staff Bump Reminder (ToS Compliant!)
+- **Staff reminder every 2 hours** in #staff-chat to manually bump server
+- **`?reminder-status`** / **`/reminder-status`** - Check reminder status (Admin only)
+- **`?remind-now`** / **`/remind-now`** - Send manual reminder to staff (Admin only)
+- **`?staff-channel [#channel]`** / **`/staff-channel [#channel]`** - Set staff reminder channel (Admin only)
 
 ### 🎮 Fun & Games
 | Command | Description |
