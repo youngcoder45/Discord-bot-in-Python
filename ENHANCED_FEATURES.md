@@ -1,23 +1,28 @@
-# 🚀 **CodeVerse Bot - Enhanced Features Summary**
+# 🚀 **CodeVerse Bot - YagPDB Competitor Edition**
 
-## **🎉 NEW FEATURES ADDED**
+## **🎉 COMPREHENSIVE MODERATION SYSTEM ADDED**
 
-### **1. 🎮 Fun & Engagement Commands**
-- **`/8ball <question>`** - Magic 8-ball for yes/no questions
-- **`/poll <question> <option1> <option2> [option3] [option4]`** - Create interactive polls with reactions
-- **`/guess [max_number]`** - Number guessing game with XP rewards
+### **1. 📊 Server Information Commands**
+- **`/serverinfo`** - Detailed server statistics with member counts, boost level, channels, roles
+- **`/userinfo [@user]`** - Complete user information including join position, activity, permissions  
+- **`/roleinfo <role>`** - Comprehensive role information with permissions and member lists
+- **`/channelinfo [#channel]`** - Full channel information for text, voice, and category channels
 
-### **2. 🎓 Learning & Education Commands**
-- **`/code-snippet [language]`** - Get useful code snippets (Python, JavaScript, React, Java)
-- **`/algorithm [topic]`** - Learn algorithms with examples (bubble sort, binary search, fibonacci)
-- **`/quiz [topic]`** - Interactive programming quizzes with explanations
+### **2. ⚔️ Advanced Moderation Arsenal**
+- **`/lockdown [#channel] [reason]`** - Lock channel to prevent normal users from speaking
+- **`/unlock [#channel] [reason]`** - Unlock previously locked channel
+- **`/nuke [#channel] [reason]`** - Delete and recreate channel (nuclear option)
+- **`/massban <user_ids> [days] [reason]`** - Ban multiple users by ID (max 20)
+- **`/listbans`** - List all banned users in server with reasons
+- **`/addrole <@user> <role> [reason]`** - Add role to user with permission checking
+- **`/removerole <@user> <role> [reason]`** - Remove role from user with validation
 
-### **3. 💼 Utility & Server Management**
-- **`/serverinfo`** - Comprehensive server statistics
-- **`/userinfo [member]`** - Detailed user information
-- **`/avatar [member]`** - Display user avatars
-- **`/reminder <time> <message>`** - Set personal reminders (supports 1h, 30m, 2d format)
-- **`/weather <location>`** - Weather information (placeholder for API integration)
+### **3. 🎮 Enhanced Fun System**
+- **`/kill <@user>`** - Playful elimination with 25+ funny programming-themed methods
+- **Enhanced moderation logging** - All actions logged with timestamps and reasons
+- **Smart DM notifications** - Users receive DMs before punishments when possible
+
+### **4. 🔔 ToS-Compliant Staff Management**
 - **`/afk [reason]`** - Set AFK status with automatic mention notifications
 - **`!roleinfo <role>`** - Get detailed role information
 

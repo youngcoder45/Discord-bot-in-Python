@@ -343,6 +343,68 @@ class Fun(commands.Cog):
         except Exception as e:
             await ctx.send(f"Error: {str(e)}")
 
+    @commands.hybrid_command(name="kill", help="Playfully 'kill' another user with a funny method")
+    async def kill(self, ctx, user: discord.Member):
+        """Playfully 'kill' another user with a random funny method"""
+        # Prevent self-targeting
+        if user.id == ctx.author.id:
+            embed = discord.Embed(
+                title="⚠️ Self-Preservation Mode",
+                description="You cannot kill yourself! That's not how this works!",
+                color=discord.Color.orange()
+            )
+            await ctx.send(embed=embed)
+            return
+
+        # Prevent targeting the bot
+        if user.bot:
+            embed = discord.Embed(
+                title="🤖 Bot Protection",
+                description="Nice try, but bots are immortal! 🛡️",
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
+            return
+
+        kill_methods = [
+            "brutally defeated with a keyboard",
+            "eliminated with a logic bomb",
+            "destroyed by an infinite loop",
+            "terminated with a stack overflow",
+            "annihilated by a null pointer exception",
+            "obliterated with a segmentation fault",
+            "vaporized by a memory leak",
+            "executed via system call",
+            "deleted from existence",
+            "crashed by a buffer overflow",
+            "eliminated with extreme prejudice",
+            "sent to the shadow realm",
+            "banished to /dev/null",
+            "compressed into a .zip file",
+            "converted to binary and forgotten",
+            "recursively deleted",
+            "force-quit from life",
+            "ctrl+alt+deleted from reality",
+            "blue-screened permanently",
+            "kernel panicked out of existence",
+            "garbage collected permanently",
+            "deadlocked in an eternal sleep",
+            "hit by a massive data breach",
+            "consumed by a black hole algorithm",
+            "suffocated by spaghetti code"
+        ]
+
+        method = random.choice(kill_methods)
+        
+        embed = discord.Embed(
+            title="☠️ Elimination Complete",
+            description=f"**{ctx.author.display_name}** has {method} **{user.display_name}**!",
+            color=discord.Color.red()
+        )
+        embed.set_footer(text="This is just for fun! No actual harm intended 😄")
+        
+        await ctx.send(embed=embed)
+
     @commands.hybrid_command(name="hangman", help="Play hangman with programming words")
     async def hangman(self, ctx):
         """Start a game of hangman"""

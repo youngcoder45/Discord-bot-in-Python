@@ -77,7 +77,8 @@ class Core(commands.Cog):
             "**`wyr`** - Would you rather questions",
             "**`hangman`** - Programming-themed hangman",
             "**`riddle`** - Interactive riddles",
-            "**`trivia`** - Programming trivia questions"
+            "**`trivia`** - Programming trivia questions",
+            "**`kill <@user>`** - Playfully 'eliminate' a user"
         ]
         embed.add_field(
             name="🎮 Fun & Games",
@@ -102,13 +103,36 @@ class Core(commands.Cog):
             "**`purge <amount> [@user]`** - Delete messages *(Manage Messages)*",
             "**`kick <member> [reason]`** - Kick a member *(Kick Members)*",
             "**`ban <member> [days] [reason]`** - Ban a member *(Ban Members)*",
+            "**`unban <user> [reason]`** - Unban a user *(Ban Members)*",
             "**`timeout <member> <minutes> [reason]`** - Timeout a member *(Moderate Members)*",
+            "**`untimeout <member> [reason]`** - Remove timeout *(Moderate Members)*",
             "**`warn <member> [reason]`** - Warn a member *(Manage Messages)*",
-            "**`slowmode <seconds> [#channel]`** - Set channel slowmode *(Manage Channels)*"
+            "**`slowmode <seconds> [#channel]`** - Set channel slowmode *(Manage Channels)*",
+            "**`nick <member> [nickname]`** - Change nickname *(Manage Nicknames)*"
         ]
         embed.add_field(
-            name="🛡️ Moderation (Admin Only)",
+            name="🛡️ Basic Moderation (Admin Only)",
             value="\n".join(moderation_commands),
+            inline=False
+        )
+        
+        # Advanced Moderation Commands
+        advanced_mod_commands = [
+            "**`serverinfo`** - Detailed server information",
+            "**`userinfo [@user]`** - Detailed user information", 
+            "**`roleinfo <role>`** - Detailed role information",
+            "**`channelinfo [#channel]`** - Detailed channel information",
+            "**`lockdown [#channel] [reason]`** - Lock channel *(Manage Channels)*",
+            "**`unlock [#channel] [reason]`** - Unlock channel *(Manage Channels)*",
+            "**`nuke [#channel] [reason]`** - Delete and recreate channel *(Manage Channels)*",
+            "**`massban <user_ids> [days] [reason]`** - Mass ban users *(Ban Members)*",
+            "**`listbans`** - List all banned users *(Ban Members)*",
+            "**`addrole <@user> <role> [reason]`** - Add role to user *(Manage Roles)*",
+            "**`removerole <@user> <role> [reason]`** - Remove role from user *(Manage Roles)*"
+        ]
+        embed.add_field(
+            name="⚔️ Advanced Moderation (Admin Only)",
+            value="\n".join(advanced_mod_commands),
             inline=False
         )
         

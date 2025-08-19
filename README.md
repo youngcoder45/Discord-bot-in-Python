@@ -30,7 +30,17 @@
 - **`?remind-now`** / **`/remind-now`** - Send manual reminder to staff (Admin only)
 - **`?staff-channel [#channel]`** / **`/staff-channel [#channel]`** - Set staff reminder channel (Admin only)
 
-### 🛡️ Light Moderation
+### 🛡️ Comprehensive Moderation System
+
+#### 📊 Server Information Commands
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `?serverinfo` / `/serverinfo` | Detailed server statistics and info | None |
+| `?userinfo [@user]` / `/userinfo [@user]` | Comprehensive user information | None |
+| `?roleinfo <role>` / `/roleinfo <role>` | Detailed role information | None |
+| `?channelinfo [#channel]` / `/channelinfo [#channel]` | Channel information and stats | None |
+
+#### ⚔️ Basic Moderation Commands
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
 | `?purge <amount> [@user]` / `/purge <amount> [@user]` | Delete 1-100 messages | Manage Messages |
@@ -42,6 +52,17 @@
 | `?warn <member> [reason]` / `/warn <member> [reason]` | Issue warning to member | Manage Messages |
 | `?slowmode <seconds> [#channel]` / `/slowmode <seconds> [#channel]` | Set channel slowmode (0-6hrs) | Manage Channels |
 | `?nick <member> [nickname]` / `/nick <member> [nickname]` | Change member nickname | Manage Nicknames |
+
+#### 🔥 Advanced Moderation Commands
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `?lockdown [#channel] [reason]` / `/lockdown [#channel] [reason]` | Lock channel (prevent normal users from speaking) | Manage Channels |
+| `?unlock [#channel] [reason]` / `/unlock [#channel] [reason]` | Unlock previously locked channel | Manage Channels |
+| `?nuke [#channel] [reason]` / `/nuke [#channel] [reason]` | Delete and recreate channel (clears all messages) | Manage Channels |
+| `?massban <user_ids> [days] [reason]` / `/massban <user_ids> [days] [reason]` | Ban multiple users by ID (max 20) | Ban Members |
+| `?listbans` / `/listbans` | List all banned users in server | Ban Members |
+| `?addrole <@user> <role> [reason]` / `/addrole <@user> <role> [reason]` | Add role to user | Manage Roles |
+| `?removerole <@user> <role> [reason]` / `/removerole <@user> <role> [reason]` | Remove role from user | Manage Roles |
 
 ### 🎮 Fun & Games
 | Command | Description |
@@ -58,6 +79,7 @@
 | `?flip` / `/flip` | Coin flip |
 | `?roll [NdN]` / `/roll [NdN]` | Dice rolling (e.g., 2d6) |
 | `?8ball <question>` / `/8ball <question>` | Magic 8-ball |
+| `?kill <@user>` / `/kill <@user>` | Playfully 'eliminate' a user with funny methods |
 | `?poll Q \| Opt1 \| Opt2` | Create reaction polls |
 | `?guess [max]` | Number guessing game |
 
