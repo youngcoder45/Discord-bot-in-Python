@@ -86,6 +86,27 @@ class Core(commands.Cog):
             inline=False
         )
         
+        # Programming Utilities
+        programming_commands = [
+            "**`snippet <lang> <algo>`** - Code snippets (Python, JS, Java, C++)",
+            "**`regex [pattern]`** - Common regex patterns (email, phone, etc.)",
+            "**`bigO [complexity]`** - Big O notation explanations",
+            "**`http [code]`** - HTTP status code lookup",
+            "**`git [command]`** - Git command reference",
+            "**`encode <format> <text>`** - Encode text (base64, url, hex, binary)",
+            "**`decode <format> <text>`** - Decode text (base64, url, hex)",
+            "**`hash <algo> <text>`** - Generate hashes (md5, sha1, sha256, sha512)",
+            "**`json <text>`** - Format and validate JSON",
+            "**`color <value>`** - Convert color formats (hex, rgb, names)",
+            "**`uuid [version]`** - Generate UUIDs (v1, v4)",
+            "**`timestamp [time] [format]`** - Convert timestamps"
+        ]
+        embed.add_field(
+            name="💻 Programming Utilities",
+            value="\n".join(programming_commands),
+            inline=False
+        )
+        
         # Staff Reminder Commands (Admin only)
         reminder_commands = [
             "**`reminder-status`** - Check staff reminder status *(Admin)*",

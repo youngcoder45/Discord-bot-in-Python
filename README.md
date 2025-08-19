@@ -2,11 +2,11 @@
 
 # 🤖 CodeVerse Bot.
 
-**Lightweight, hybrid Discord bot for programming communities**
+**Full-featured Discord bot for programming communities with comprehensive developer tools**
 
 ![Status](https://img.shields.io/badge/status-active-success) ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.12-blue)
 
-*Simple • Fast • Reliable*
+*Professional Moderation • Programming Utilities • Fun & Games*
 
 </div>
 
@@ -82,6 +82,22 @@
 | `?kill <@user>` / `/kill <@user>` | Playfully 'eliminate' a user with funny methods |
 | `?poll Q \| Opt1 \| Opt2` | Create reaction polls |
 | `?guess [max]` | Number guessing game |
+
+### 💻 Programming Utilities
+| Command | Description |
+|---------|-------------|
+| `?snippet <lang> <algo>` / `/snippet <lang> <algo>` | Get code snippets (Python, JS, Java, C++) |
+| `?regex [pattern]` / `/regex [pattern]` | Common regex patterns (email, phone, url, ip, etc.) |
+| `?bigO [complexity]` / `/bigO [complexity]` | Big O complexity explanations with examples |
+| `?http [code]` / `/http [code]` | HTTP status code lookup and explanations |
+| `?git [command]` / `/git [command]` | Git command reference with tips |
+| `?encode <format> <text>` / `/encode <format> <text>` | Encode text (base64, url, hex, binary) |
+| `?decode <format> <text>` / `/decode <format> <text>` | Decode text (base64, url, hex) |
+| `?hash <algo> <text>` / `/hash <algo> <text>` | Generate hashes (md5, sha1, sha256, sha512) |
+| `?json <text>` / `/json <text>` | Format and validate JSON |
+| `?color <value>` / `/color <value>` | Convert color formats (hex, rgb, names to all formats) |
+| `?uuid [version]` / `/uuid [version]` | Generate UUIDs (v1: time-based, v4: random) |
+| `?timestamp [time] [format]` / `/timestamp [time] [format]` | Convert timestamps between formats |
 
 ## 🚀 Quick Start
 
