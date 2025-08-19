@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤖 CodeVerse Bot
+# 🤖 CodeVerse Bot.
 
 **Lightweight, hybrid Discord bot for programming communities**
 
