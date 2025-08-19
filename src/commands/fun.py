@@ -898,9 +898,9 @@ class Fun(commands.Cog):
         
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="bigO", help="Explain Big O complexity notation")
+    @commands.hybrid_command(name="bigo", help="Explain Big O complexity notation")
     @app_commands.describe(complexity="Complexity notation (O(1), O(n), O(log n), etc.)")
-    async def big_o(self, ctx: commands.Context, complexity: str = None):
+    async def bigo(self, ctx: commands.Context, complexity: str = None):
         """Explain Big O complexity notation"""
         if complexity is None:
             complexities_list = ", ".join(BIG_O_COMPLEXITIES.keys())
