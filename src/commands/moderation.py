@@ -15,7 +15,7 @@ class Moderation(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="purge", help="Delete a specified number of messages (Admin only)")
+    @commands.hybrid_command(name="purge", help="Delete a specified number of messages (Mod only)")
     @app_commands.describe(
         amount="Number of messages to delete (1-100)",
         user="Optional: Only delete messages from this user"

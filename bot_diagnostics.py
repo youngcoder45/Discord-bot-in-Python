@@ -119,6 +119,7 @@ def check_cog_files():
         'src/commands/fun.py',
         'src/commands/moderation.py',
         'src/commands/moderation_extended.py',
+        'src/commands/staff_shifts.py',
         'src/events/member_events.py',
         'src/events/message_handler.py',
         'src/tasks/staff_reminder.py',

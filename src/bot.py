@@ -32,6 +32,7 @@ COGS_TO_LOAD = [
     'commands.fun',           # fun & game commands
     'commands.moderation',    # basic moderation commands (purge, kick, ban, etc.)
     'commands.moderation_extended',  # advanced moderation (serverinfo, userinfo, lockdown, etc.)
+    'commands.staff_shifts',  # Staff shift tracking and logging system
     'events.member_events',
     'events.message_handler', # Simplified message handler
     'tasks.staff_reminder'    # Staff bump reminder every 2 hours

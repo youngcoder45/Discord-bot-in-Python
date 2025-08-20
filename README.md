@@ -30,6 +30,17 @@
 - **`?remind-now`** / **`/remind-now`** - Send manual reminder to staff (Admin only)
 - **`?staff-channel [#channel]`** / **`/staff-channel [#channel]`** - Set staff reminder channel (Admin only)
 
+### ⏰ Staff Shift Tracking
+- **Staff shift logging system** for tracking on-duty time
+- **`?shift start [note]`** / **`/shift start [note]`** - Start your staff shift (Staff only)
+- **`?shift end [note]`** / **`/shift end [note]`** - End your staff shift (Staff only)
+- **`?shift discard`** / **`/shift discard`** - Discard current shift (Staff only)
+- **`?shift settings logs [#channel]`** / **`/shift settings logs [#channel]`** - Set shift log channel (Admin only)
+- **`?shift settings addrole <role>`** / **`/shift settings addrole <role>`** - Add staff role (Admin only)
+- **`?shift settings removerole <role>`** / **`/shift settings removerole <role>`** - Remove staff role (Admin only)
+- **`?shift settings clearroles`** / **`/shift settings clearroles`** - Clear all staff roles (Admin only)
+- **`?shift settings listroles`** / **`/shift settings listroles`** - List staff roles
+
 ### 🛡️ Comprehensive Moderation System
 
 #### 📊 Server Information Commands

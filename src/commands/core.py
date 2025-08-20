@@ -119,6 +119,23 @@ class Core(commands.Cog):
             inline=False
         )
         
+        # Staff Shift Commands
+        shift_commands = [
+            "**`shift start [note]`** - Start your staff shift *(Staff)*",
+            "**`shift end [note]`** - End your staff shift *(Staff)*",
+            "**`shift discard`** - Discard current shift *(Staff)*",
+            "**`shift settings logs [#channel]`** - Set shift log channel *(Admin)*",
+            "**`shift settings addrole <role>`** - Add staff role *(Admin)*",
+            "**`shift settings removerole <role>`** - Remove staff role *(Admin)*",
+            "**`shift settings clearroles`** - Clear all staff roles *(Admin)*",
+            "**`shift settings listroles`** - List staff roles"
+        ]
+        embed.add_field(
+            name="⏰ Staff Shift Tracking",
+            value="\n".join(shift_commands),
+            inline=False
+        )
+        
         # Moderation Commands (Admin only)
         moderation_commands = [
             "**`purge <amount> [@user]`** - Delete messages *(Manage Messages)*",
