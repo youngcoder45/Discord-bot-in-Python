@@ -170,10 +170,14 @@ codeverse-bot/
 │   │   ├── diagnostics.py  # Bot diagnostics
 │   │   ├── community.py    # Community engagement
 │   │   ├── fun.py          # Fun commands & games
-│   │   └── moderation.py   # Moderation commands
+│   │   ├── moderation.py   # Basic moderation commands
+│   │   ├── moderation_extended.py # Advanced moderation commands
+│   │   └── staff_shifts.py # Staff shift tracking system
 │   ├── events/             # Event listeners
 │   │   ├── member_events.py # Member tracking and logging
 │   │   └── message_handler.py # Message processing
+│   ├── tasks/              # Background tasks
+│   │   └── staff_reminder.py # Staff bump reminders
 │   ├── utils/              # Utilities
 │   │   ├── helpers.py      # Helper functions
 │   │   ├── json_store.py   # Lightweight data storage
@@ -182,9 +186,12 @@ codeverse-bot/
 │       ├── quotes.json     # Motivational quotes
 │       ├── questions.json  # Programming questions
 │       └── challenges.json # Coding challenges
+├── data/                   # Database files
+│   └── staff_shifts.db     # Staff shifts SQLite database
 ├── requirements.txt        # Python dependencies
 ├── bot_diagnostics.py      # Standalone diagnostics tool
 ├── quick_test.py           # Quick functionality test
+├── STAFF_SHIFTS_GUIDE.md   # Complete staff shifts documentation
 └── deployment files...     # Procfile, railway.json, etc.
 ```
 
@@ -252,8 +259,15 @@ python quick_test.py
 - Kick Members (for moderation)
 - Ban Members (for moderation)
 - Moderate Members (for timeouts)
-- Manage Channels (for slowmode)
+- Manage Channels (for slowmode and shift logs)
 - Manage Nicknames (for nickname changes)
+- Manage Roles (for shift role management)
+
+### Staff Shifts Setup (Optional)
+1. **Configure log channel**: `/shift settings logs #staff-logs`
+2. **Add staff roles**: `/shift settings addrole @Moderator`
+3. **Staff can use**: `/shift start` and `/shift end`
+4. **Documentation**: See `STAFF_SHIFTS_GUIDE.md` for complete setup guide
 
 ## 📊 Design Philosophy
 

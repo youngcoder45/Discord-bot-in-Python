@@ -177,7 +177,7 @@ class Core(commands.Cog):
         # Footer with usage info
         embed.add_field(
             name="💡 Usage Tips",
-            value="• Use `?command` or `/command` - both work!\n• Some commands need parameters (shown in `<>` or `[]`)\n• Admin commands require Manage Server permission\n• Staff reminders sent every 2 hours to #staff-chat (ToS compliant)",
+            value="• Use `?command` or `/command` - both work!\n• Some commands need parameters (shown in `<>` or `[]`)\n• Admin commands require Manage Server permission\n• Staff reminders sent every 2 hours to #staff-chat (ToS compliant)\n• Staff shifts track on-duty time with database logging",
             inline=False
         )
         
