@@ -288,7 +288,31 @@ class StaffShifts(commands.Cog):
         if not isinstance(ctx.author, discord.Member):
             return False
         settings = await self.service.get_settings(ctx.guild.id)
-        return any(role.id in settings.staff_role_ids for role in ctx.author.roles)
+        
+        # Debug: Check if any roles are configured
+        if not settings.staff_role_ids:
+            return False
+            
+        # Check if user has any of the configured staff roles
+        user_role_ids = [role.id for role in ctx.author.roles]
+        return any(role_id in settings.staff_role_ids for role_id in user_role_ids)
+    
+    async def send_staff_error(self, ctx: commands.Context):
+        """Send helpful error message when user is not staff"""
+        settings = await self.service.get_settings(ctx.guild.id)
+        if not settings.staff_role_ids:
+            await ctx.send("❌ **No staff roles configured!**\n\nAn admin needs to add staff roles first using:\n`/shift settings addrole @YourModRole`")
+        else:
+            staff_role_mentions = []
+            for role_id in settings.staff_role_ids:
+                role = ctx.guild.get_role(role_id)
+                if role:
+                    staff_role_mentions.append(f"<@&{role_id}>")
+            
+            if staff_role_mentions:
+                await ctx.send(f"❌ **You are not a staff member.**\n\nYou need one of these roles to use shift commands:\n{', '.join(staff_role_mentions)}")
+            else:
+                await ctx.send("❌ **No valid staff roles found.**\n\nAn admin needs to reconfigure staff roles using:\n`/shift settings addrole @YourModRole`")
 
     @commands.hybrid_group(
         name="shift",
@@ -316,8 +340,10 @@ class StaffShifts(commands.Cog):
     ):
         assert ctx.guild is not None
         await self.ready.wait()
+        
+        # Check if user is staff
         if not (await self.is_staff(ctx)):
-            await ctx.send("You are not a staff member.")
+            await self.send_staff_error(ctx)
             return
         user_id = ctx.author.id
         existing_shift = await self.service.get_shift(ctx.guild.id, user_id)
@@ -342,7 +368,7 @@ class StaffShifts(commands.Cog):
         assert ctx.guild is not None
         await self.ready.wait()
         if not (await self.is_staff(ctx)):
-            await ctx.send("You are not a staff member.")
+            await self.send_staff_error(ctx)
             return
         user_id = ctx.author.id
         current_shift = await self.service.get_shift(ctx.guild.id, user_id)
@@ -367,7 +393,7 @@ class StaffShifts(commands.Cog):
         assert ctx.guild is not None
         await self.ready.wait()
         if not (await self.is_staff(ctx)):
-            await ctx.send("You are not a staff member.")
+            await self.send_staff_error(ctx)
             return
         current_shift = await self.service.get_shift(ctx.guild.id, ctx.author.id)
         if not current_shift:
