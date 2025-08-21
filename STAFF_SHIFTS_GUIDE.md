@@ -97,11 +97,25 @@ All shift activities generate beautiful Discord embeds with:
 
 ## 🎮 Command Reference
 
+### Staff Commands
 | Command | Permission | Description |
 |---------|------------|-------------|
 | `/shift start [note]` | Staff | Start your shift with optional note |
 | `/shift end [note]` | Staff | End your shift with optional note |
 | `/shift discard` | Staff | Discard current shift without logging end |
+
+### Admin Management Commands
+| Command | Permission | Description |
+|---------|------------|-------------|
+| `/shift admin active` | Manage Guild | View all currently active shifts |
+| `/shift admin history [user] [days]` | Manage Guild | View shift history (default: 7 days) |
+| `/shift admin end <user> [reason]` | Manage Guild | Force end a user's active shift |
+| `/shift admin stats [user] [days]` | Manage Guild | View shift statistics (default: 30 days) |
+| `/shift admin summary [days]` | Manage Guild | Staff activity summary (default: 7 days) |
+
+### Settings Commands
+| Command | Permission | Description |
+|---------|------------|-------------|
 | `/shift settings logs [#channel]` | Manage Channels | Set log channel (none to disable) |
 | `/shift settings addrole <role>` | Manage Roles | Add role to staff list |
 | `/shift settings removerole <role>` | Manage Roles | Remove role from staff list |
@@ -140,7 +154,109 @@ All shift activities generate beautiful Discord embeds with:
 
 ---
 
-## 📋 Sample Usage Workflow
+## � Admin Features
+
+### View Active Shifts
+See who's currently on duty with real-time information:
+```
+/shift admin active
+```
+
+**Shows:**
+- All currently active staff shifts
+- How long each staff member has been on duty
+- Start notes for context
+- Real-time duration updates
+
+### Shift History
+View detailed shift history with filtering options:
+```
+/shift admin history                    # Last 7 days, all staff
+/shift admin history @StaffMember      # Specific user, 7 days
+/shift admin history @StaffMember 30   # Specific user, 30 days
+```
+
+**Features:**
+- Filter by specific staff member
+- Custom time range (1-365 days)
+- Shows completed and ongoing shifts
+- Start/end times and notes
+- Shift duration for completed shifts
+
+### Force End Shifts
+Manually end a staff member's shift when needed:
+```
+/shift admin end @StaffMember System maintenance
+/shift admin end @StaffMember          # No reason required
+```
+
+**Use cases:**
+- Staff forgot to end their shift
+- Emergency situations requiring immediate shift end
+- System maintenance or bot restarts
+- Disciplinary actions
+
+### Shift Statistics
+Get comprehensive statistics for monitoring:
+```
+/shift admin stats                     # Server-wide stats, 30 days
+/shift admin stats @StaffMember       # Individual stats, 30 days
+/shift admin stats @StaffMember 90    # Individual stats, 90 days
+```
+
+**Server Stats Include:**
+- Total shifts started
+- Completed vs ongoing shifts
+- Total hours logged
+- Average shift length
+- Number of active staff members
+
+**Individual Stats Include:**
+- Personal shift count
+- Total hours on duty
+- Average shift duration
+- Completion rate
+
+### Staff Activity Summary
+Monitor overall staff engagement:
+```
+/shift admin summary                   # Last 7 days
+/shift admin summary 30               # Last 30 days
+```
+
+**Shows:**
+- Most active staff (by hours)
+- Inactive staff members (no shifts)
+- Overall server activity metrics
+- Staff participation rates
+
+---
+
+## 📊 Sample Usage Workflow
+
+### Initial Setup
+1. **Admin**: `/shift settings logs #staff-logs`
+2. **Admin**: `/shift settings addrole @Moderator`
+3. **Admin**: `/shift settings addrole @Admin`
+
+### Daily Staff Use
+1. **Staff**: `/shift start Morning shift - focusing on general chat`
+2. *[Works for several hours]*
+3. **Staff**: `/shift end Helped 12 users, resolved 3 issues`
+
+### Admin Monitoring
+1. **Admin**: `/shift admin active` - Check who's currently on duty
+2. **Admin**: `/shift admin stats @TopStaff 7` - Review individual performance
+3. **Admin**: `/shift admin summary 30` - Monthly activity report
+
+### Emergency Management
+1. **Issue**: Staff member forgot to end shift before going offline
+2. **Admin**: `/shift admin end @ForgetfulStaff Shift ended - user went offline`
+3. **Result**: Clean shift logs and accurate duration tracking
+
+---
+
+## �📋 Sample Usage Workflow
 
 ### Initial Setup
 1. **Admin**: `/shift settings logs #staff-logs`

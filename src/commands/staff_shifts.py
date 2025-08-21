@@ -203,6 +203,107 @@ class ShiftService:
             await db.execute("DELETE FROM shifts WHERE shift_id = ?", (shift.shift_id,))
             await db.commit()
     
+    async def get_active_shifts(self, guild_id: int) -> list[Shift]:
+        """Get all currently active shifts in the guild"""
+        async with aiosqlite.connect(self.database_path) as db:
+            cursor = await db.execute(
+                "SELECT * FROM shifts WHERE guild_id = ? AND end IS NULL ORDER BY start DESC",
+                (guild_id,)
+            )
+            rows = await cursor.fetchall()
+            shifts = []
+            for row in rows:
+                s = Shift.from_row(row)
+                s.start = datetime.fromisoformat(s.start) if not isinstance(s.start, datetime) else s.start
+                s.end = datetime.fromisoformat(s.end) if not isinstance(s.end, datetime) and s.end else s.end
+                shifts.append(s)
+            return shifts
+    
+    async def get_shift_history(self, guild_id: int, user_id: int = None, days: int = 30, limit: int = 50) -> list[Shift]:
+        """Get shift history with optional filtering"""
+        async with aiosqlite.connect(self.database_path) as db:
+            if user_id:
+                cursor = await db.execute(
+                    """SELECT * FROM shifts WHERE guild_id = ? AND user_id = ? 
+                       AND start >= datetime('now', '-{} days') 
+                       ORDER BY start DESC LIMIT ?""".format(days),
+                    (guild_id, user_id, limit)
+                )
+            else:
+                cursor = await db.execute(
+                    """SELECT * FROM shifts WHERE guild_id = ? 
+                       AND start >= datetime('now', '-{} days') 
+                       ORDER BY start DESC LIMIT ?""".format(days),
+                    (guild_id, limit)
+                )
+            rows = await cursor.fetchall()
+            shifts = []
+            for row in rows:
+                s = Shift.from_row(row)
+                s.start = datetime.fromisoformat(s.start) if not isinstance(s.start, datetime) else s.start
+                s.end = datetime.fromisoformat(s.end) if not isinstance(s.end, datetime) and s.end else s.end
+                shifts.append(s)
+            return shifts
+    
+    async def get_shift_stats(self, guild_id: int, user_id: int = None, days: int = 30):
+        """Get shift statistics"""
+        async with aiosqlite.connect(self.database_path) as db:
+            if user_id:
+                # Individual user stats
+                cursor = await db.execute(
+                    """SELECT 
+                        COUNT(*) as total_shifts,
+                        COUNT(CASE WHEN end IS NOT NULL THEN 1 END) as completed_shifts,
+                        COALESCE(SUM(
+                            CASE WHEN end IS NOT NULL 
+                            THEN (julianday(end) - julianday(start)) * 24 * 60 * 60 
+                            END
+                        ), 0) as total_seconds,
+                        COALESCE(AVG(
+                            CASE WHEN end IS NOT NULL 
+                            THEN (julianday(end) - julianday(start)) * 24 * 60 * 60 
+                            END
+                        ), 0) as avg_seconds
+                    FROM shifts 
+                    WHERE guild_id = ? AND user_id = ? 
+                    AND start >= datetime('now', '-{} days')""".format(days),
+                    (guild_id, user_id)
+                )
+            else:
+                # Server-wide stats
+                cursor = await db.execute(
+                    """SELECT 
+                        COUNT(*) as total_shifts,
+                        COUNT(CASE WHEN end IS NOT NULL THEN 1 END) as completed_shifts,
+                        COUNT(DISTINCT user_id) as unique_staff,
+                        COALESCE(SUM(
+                            CASE WHEN end IS NOT NULL 
+                            THEN (julianday(end) - julianday(start)) * 24 * 60 * 60 
+                            END
+                        ), 0) as total_seconds,
+                        COALESCE(AVG(
+                            CASE WHEN end IS NOT NULL 
+                            THEN (julianday(end) - julianday(start)) * 24 * 60 * 60 
+                            END
+                        ), 0) as avg_seconds
+                    FROM shifts 
+                    WHERE guild_id = ? 
+                    AND start >= datetime('now', '-{} days')""".format(days),
+                    (guild_id,)
+                )
+            row = await cursor.fetchone()
+            return row
+    
+    async def force_end_shift(self, guild_id: int, user_id: int, end_note: str = None) -> Shift | None:
+        """Force end a user's active shift (admin function)"""
+        shift = await self.get_shift(guild_id, user_id)
+        if shift:
+            shift.end = datetime.now(timezone.utc)
+            shift.end_note = end_note
+            await self.end_shift(shift)
+            return shift
+        return None
+    
     async def get_settings(self, guild_id: int) -> Settings:
         async with aiosqlite.connect(self.database_path) as db:
             cursor = await db.execute(
@@ -404,6 +505,329 @@ class StaffShifts(commands.Cog):
         await self.service.end_shift(current_shift)
         await ctx.send(f"The end of your shift has been logged at <t:{round(current_shift.end.timestamp())}:F>.")
         await self.log_end(ctx, current_shift)
+    
+    @shift.group("admin")
+    @commands.has_permissions(manage_guild=True)
+    async def shift_admin(self, ctx: commands.Context):
+        """Admin commands for managing staff shifts"""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+    
+    @shift_admin.command(
+        name="active",
+        usage="shift admin active",
+        description="View all currently active shifts",
+    )
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.cooldown(1, 5, commands.BucketType.member)
+    async def shift_admin_active(self, ctx: commands.Context):
+        """Show all currently active shifts"""
+        assert ctx.guild is not None
+        await self.ready.wait()
+        
+        active_shifts = await self.service.get_active_shifts(ctx.guild.id)
+        
+        if not active_shifts:
+            embed = discord.Embed(
+                title="📊 Active Shifts", 
+                description="No staff members are currently on duty.",
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        embed = discord.Embed(
+            title="📊 Active Shifts", 
+            description=f"**{len(active_shifts)}** staff member(s) currently on duty",
+            color=discord.Color.green()
+        )
+        
+        for shift in active_shifts:
+            user = ctx.guild.get_member(shift.user_id)
+            if user:
+                duration = datetime.now(timezone.utc) - shift.start
+                hours, remainder = divmod(int(duration.total_seconds()), 3600)
+                minutes = remainder // 60
+                
+                value = f"**Started:** <t:{round(shift.start.timestamp())}:R>\n"
+                value += f"**Duration:** {hours}h {minutes}m"
+                if shift.start_note:
+                    value += f"\n**Note:** {shift.start_note[:100]}{'...' if len(shift.start_note) > 100 else ''}"
+                
+                embed.add_field(
+                    name=f"👤 {user.display_name}",
+                    value=value,
+                    inline=True
+                )
+        
+        await ctx.send(embed=embed)
+    
+    @shift_admin.command(
+        name="history",
+        usage="shift admin history [user] [days]",
+        description="View shift history with optional filters",
+    )
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.cooldown(1, 5, commands.BucketType.member)
+    async def shift_admin_history(self, ctx: commands.Context, user: discord.Member = None, days: int = 7):
+        """Show shift history with optional user and day filters"""
+        assert ctx.guild is not None
+        await self.ready.wait()
+        
+        if days < 1 or days > 365:
+            await ctx.send("❌ Days must be between 1 and 365.")
+            return
+        
+        user_id = user.id if user else None
+        shifts = await self.service.get_shift_history(ctx.guild.id, user_id, days, 20)
+        
+        if not shifts:
+            target = f" for {user.display_name}" if user else ""
+            embed = discord.Embed(
+                title="📜 Shift History", 
+                description=f"No shifts found{target} in the last {days} days.",
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        target = f" - {user.display_name}" if user else ""
+        embed = discord.Embed(
+            title=f"📜 Shift History{target}", 
+            description=f"Last {len(shifts)} shifts from the past {days} days",
+            color=discord.Color.blue()
+        )
+        
+        for shift in shifts[:10]:  # Limit to 10 for embed space
+            member = ctx.guild.get_member(shift.user_id)
+            username = member.display_name if member else f"Unknown User ({shift.user_id})"
+            
+            if shift.end:
+                duration = shift.end - shift.start
+                hours, remainder = divmod(int(duration.total_seconds()), 3600)
+                minutes = remainder // 60
+                status = f"✅ {hours}h {minutes}m"
+            else:
+                status = "🔄 Ongoing"
+            
+            value = f"**Started:** <t:{round(shift.start.timestamp())}:R>\n**Status:** {status}"
+            if shift.start_note:
+                value += f"\n**Note:** {shift.start_note[:50]}{'...' if len(shift.start_note) > 50 else ''}"
+            
+            embed.add_field(
+                name=f"👤 {username}",
+                value=value,
+                inline=True
+            )
+        
+        if len(shifts) > 10:
+            embed.set_footer(text=f"Showing 10 of {len(shifts)} shifts")
+        
+        await ctx.send(embed=embed)
+    
+    @shift_admin.command(
+        name="end",
+        usage="shift admin end <user> [reason]",
+        description="Force end a user's active shift",
+    )
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.cooldown(1, 3, commands.BucketType.member)
+    async def shift_admin_end(self, ctx: commands.Context, user: discord.Member, *, reason: str = None):
+        """Force end a user's active shift"""
+        assert ctx.guild is not None
+        await self.ready.wait()
+        
+        current_shift = await self.service.get_shift(ctx.guild.id, user.id)
+        if not current_shift:
+            await ctx.send(f"❌ {user.display_name} doesn't have an active shift.")
+            return
+        
+        # Add admin note to end reason
+        admin_note = f"[Force ended by {ctx.author.display_name}]"
+        if reason:
+            end_note = f"{reason} {admin_note}"
+        else:
+            end_note = admin_note
+        
+        ended_shift = await self.service.force_end_shift(ctx.guild.id, user.id, end_note)
+        if ended_shift:
+            duration = ended_shift.end - ended_shift.start
+            hours, remainder = divmod(int(duration.total_seconds()), 3600)
+            minutes = remainder // 60
+            
+            embed = discord.Embed(
+                title="⚠️ Shift Force Ended",
+                description=f"Successfully ended {user.mention}'s shift.",
+                color=discord.Color.orange()
+            )
+            embed.add_field(name="Duration", value=f"{hours}h {minutes}m", inline=True)
+            embed.add_field(name="Ended by", value=ctx.author.mention, inline=True)
+            if reason:
+                embed.add_field(name="Reason", value=reason, inline=False)
+            
+            await ctx.send(embed=embed)
+            
+            # Log the forced end
+            await self.log_end(ctx, ended_shift)
+    
+    @shift_admin.command(
+        name="stats",
+        usage="shift admin stats [user] [days]",
+        description="View shift statistics",
+    )
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.cooldown(1, 5, commands.BucketType.member)
+    async def shift_admin_stats(self, ctx: commands.Context, user: discord.Member = None, days: int = 30):
+        """Show shift statistics"""
+        assert ctx.guild is not None
+        await self.ready.wait()
+        
+        if days < 1 or days > 365:
+            await ctx.send("❌ Days must be between 1 and 365.")
+            return
+        
+        user_id = user.id if user else None
+        stats = await self.service.get_shift_stats(ctx.guild.id, user_id, days)
+        
+        if user:
+            embed = discord.Embed(
+                title=f"📊 Shift Statistics - {user.display_name}",
+                description=f"Stats for the last {days} days",
+                color=discord.Color.blue()
+            )
+            embed.set_thumbnail(url=user.display_avatar.url)
+        else:
+            embed = discord.Embed(
+                title="📊 Server Shift Statistics",
+                description=f"Stats for the last {days} days",
+                color=discord.Color.blue()
+            )
+        
+        total_shifts = stats[0] if stats else 0
+        completed_shifts = stats[1] if stats else 0
+        total_seconds = stats[3] if len(stats) > 3 and stats[3] else 0
+        avg_seconds = stats[4] if len(stats) > 4 and stats[4] else 0
+        
+        # Convert seconds to human readable
+        total_hours = int(total_seconds // 3600)
+        avg_hours = int(avg_seconds // 3600)
+        avg_minutes = int((avg_seconds % 3600) // 60)
+        
+        embed.add_field(name="Total Shifts", value=str(total_shifts), inline=True)
+        embed.add_field(name="Completed Shifts", value=str(completed_shifts), inline=True)
+        embed.add_field(name="Ongoing Shifts", value=str(total_shifts - completed_shifts), inline=True)
+        embed.add_field(name="Total Hours", value=f"{total_hours}h", inline=True)
+        
+        if completed_shifts > 0:
+            embed.add_field(name="Avg Shift Length", value=f"{avg_hours}h {avg_minutes}m", inline=True)
+        
+        if not user and len(stats) > 2:
+            unique_staff = stats[2]
+            embed.add_field(name="Active Staff", value=str(unique_staff), inline=True)
+        
+        await ctx.send(embed=embed)
+    
+    @shift_admin.command(
+        name="summary",
+        usage="shift admin summary [days]",
+        description="Staff activity summary",
+    )
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.cooldown(1, 10, commands.BucketType.member)
+    async def shift_admin_summary(self, ctx: commands.Context, days: int = 7):
+        """Show staff activity summary"""
+        assert ctx.guild is not None
+        await self.ready.wait()
+        
+        if days < 1 or days > 365:
+            await ctx.send("❌ Days must be between 1 and 365.")
+            return
+        
+        # Get all shifts in the timeframe
+        all_shifts = await self.service.get_shift_history(ctx.guild.id, None, days, 1000)
+        
+        # Get staff roles to identify all potential staff
+        settings = await self.service.get_settings(ctx.guild.id)
+        staff_members = set()
+        for role_id in settings.staff_role_ids:
+            role = ctx.guild.get_role(role_id)
+            if role:
+                staff_members.update(role.members)
+        
+        # Organize data by user
+        user_data = {}
+        for shift in all_shifts:
+            if shift.user_id not in user_data:
+                user_data[shift.user_id] = {'shifts': 0, 'hours': 0, 'ongoing': 0}
+            
+            user_data[shift.user_id]['shifts'] += 1
+            if shift.end:
+                duration = (shift.end - shift.start).total_seconds()
+                user_data[shift.user_id]['hours'] += duration / 3600
+            else:
+                user_data[shift.user_id]['ongoing'] += 1
+        
+        embed = discord.Embed(
+            title=f"📈 Staff Activity Summary",
+            description=f"Activity report for the last {days} days",
+            color=discord.Color.green()
+        )
+        
+        # Active staff (those with shifts)
+        active_staff = []
+        for user_id, data in user_data.items():
+            member = ctx.guild.get_member(user_id)
+            if member:
+                active_staff.append((member, data))
+        
+        # Sort by total hours
+        active_staff.sort(key=lambda x: x[1]['hours'], reverse=True)
+        
+        if active_staff:
+            top_staff = []
+            for member, data in active_staff[:5]:  # Top 5
+                hours = int(data['hours'])
+                shifts = data['shifts']
+                ongoing = data['ongoing']
+                status = f" ({ongoing} ongoing)" if ongoing else ""
+                top_staff.append(f"👤 **{member.display_name}**: {hours}h, {shifts} shifts{status}")
+            
+            embed.add_field(
+                name="🏆 Most Active Staff",
+                value="\n".join(top_staff) if top_staff else "None",
+                inline=False
+            )
+        
+        # Inactive staff (staff members with no shifts)
+        inactive_staff = []
+        for member in staff_members:
+            if member.id not in user_data:
+                inactive_staff.append(member.display_name)
+        
+        if inactive_staff:
+            embed.add_field(
+                name="😴 Inactive Staff",
+                value="\n".join([f"👤 {name}" for name in inactive_staff[:10]]) if inactive_staff else "None",
+                inline=False
+            )
+            if len(inactive_staff) > 10:
+                embed.set_footer(text=f"Showing 10 of {len(inactive_staff)} inactive staff")
+        
+        # Overall stats
+        total_shifts = sum(data['shifts'] for data in user_data.values())
+        total_hours = sum(data['hours'] for data in user_data.values())
+        active_count = len(active_staff)
+        
+        embed.add_field(name="Total Shifts", value=str(total_shifts), inline=True)
+        embed.add_field(name="Total Hours", value=f"{int(total_hours)}h", inline=True)
+        embed.add_field(name="Active Staff", value=f"{active_count}/{len(staff_members)}", inline=True)
+        
+        await ctx.send(embed=embed)
     
     @shift.group("settings")
     async def shift_settings(self, ctx: commands.Context):

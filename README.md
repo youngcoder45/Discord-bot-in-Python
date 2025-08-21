@@ -31,10 +31,15 @@
 - **`?staff-channel [#channel]`** / **`/staff-channel [#channel]`** - Set staff reminder channel (Admin only)
 
 ### ⏰ Staff Shift Tracking
-- **Staff shift logging system** for tracking on-duty time
+- **Staff shift logging system** for tracking on-duty time with comprehensive admin controls
 - **`?shift start [note]`** / **`/shift start [note]`** - Start your staff shift (Staff only)
 - **`?shift end [note]`** / **`/shift end [note]`** - End your staff shift (Staff only)
 - **`?shift discard`** / **`/shift discard`** - Discard current shift (Staff only)
+- **`?shift admin active`** / **`/shift admin active`** - View all active shifts (Admin only)
+- **`?shift admin history [user] [days]`** / **`/shift admin history [user] [days]`** - View shift history with filters (Admin only)
+- **`?shift admin end <user> [reason]`** / **`/shift admin end <user> [reason]`** - Force end user's shift (Admin only)
+- **`?shift admin stats [user] [days]`** / **`/shift admin stats [user] [days]`** - View shift statistics (Admin only)
+- **`?shift admin summary [days]`** / **`/shift admin summary [days]`** - Staff activity summary (Admin only)
 - **`?shift settings logs [#channel]`** / **`/shift settings logs [#channel]`** - Set shift log channel (Admin only)
 - **`?shift settings addrole <role>`** / **`/shift settings addrole <role>`** - Add staff role (Admin only)
 - **`?shift settings removerole <role>`** / **`/shift settings removerole <role>`** - Remove staff role (Admin only)
