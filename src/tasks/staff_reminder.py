@@ -4,6 +4,7 @@ Staff Bump Reminder Task - Reminds staff every 2 hours to bump the server
 
 import asyncio
 import logging
+import os
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timezone
@@ -20,6 +21,7 @@ class StaffBumpReminder(commands.Cog):
         self.last_reminder_time = None
         self.last_bump_time = None  # Track when last bump happened
         self.bump_cooldown = 7200  # 2 hours in seconds for Disboard
+        self.task_started = False  # Prevent duplicate task starts
         
     async def cog_load(self):
         """Start the staff reminder task when cog loads"""
@@ -29,14 +31,19 @@ class StaffBumpReminder(commands.Cog):
         """Clean up when cog unloads"""
         if self.staff_reminder_task.is_running():
             self.staff_reminder_task.cancel()
+        self.task_started = False
         logger.info("Staff bump reminder task unloaded")
     
     @commands.Cog.listener()
     async def on_ready(self):
         """Start staff reminder when bot is ready"""
+        if self.task_started:
+            return  # Prevent duplicate starts
+            
         await self.setup_staff_channel()
         if not self.staff_reminder_task.is_running():
             self.staff_reminder_task.start()
+            self.task_started = True
             logger.info("Staff bump reminder task started")
     
     @commands.Cog.listener()
@@ -65,33 +72,47 @@ class StaffBumpReminder(commands.Cog):
     
     async def setup_staff_channel(self):
         """Find and set up the staff channel"""
-        for guild in self.bot.guilds:
-            # Prioritize 'staff-chat' first
-            staff_channel = discord.utils.get(guild.channels, name='staff-chat')
-            
-            if not staff_channel:
-                # Try other staff-related names (avoid mod-tools)
-                for channel in guild.channels:
-                    if isinstance(channel, discord.TextChannel):
-                        name = channel.name.lower()
-                        if name in ['staff', 'staff-channel', 'staff-general']:
-                            staff_channel = channel
-                            break
-                        elif 'staff' in name and 'mod' not in name:
-                            staff_channel = channel
-                            break
-            
-            if staff_channel:
-                self.staff_channel = staff_channel
-                self.staff_channel_id = staff_channel.id
-                logger.info(f"Found staff channel: #{staff_channel.name} in {guild.name}")
-                return
+        # Get the main guild (first one or specific GUILD_ID)
+        target_guild = None
+        guild_id = int(os.getenv('GUILD_ID', 0))
         
-        logger.warning("No staff channel found. Looking for 'staff-chat' specifically.")
+        if guild_id:
+            target_guild = self.bot.get_guild(guild_id)
+        else:
+            target_guild = self.bot.guilds[0] if self.bot.guilds else None
+        
+        if not target_guild:
+            logger.warning("No target guild found for staff reminders")
+            return
+        
+        # ONLY look for 'staff-chat' - be very specific
+        staff_channel = discord.utils.get(target_guild.channels, name='staff-chat')
+        
+        if not staff_channel:
+            # Only check for exact matches to avoid conflicts
+            for channel in target_guild.channels:
+                if isinstance(channel, discord.TextChannel):
+                    name = channel.name.lower()
+                    # Be very specific - only these exact names
+                    if name in ['staff', 'staff-general', 'staff-channel']:
+                        # Make sure it's NOT shifts, logs, or mod related
+                        if 'shift' not in name and 'log' not in name and 'mod' not in name:
+                            staff_channel = channel
+                            break
+        
+        if staff_channel:
+            self.staff_channel = staff_channel
+            self.staff_channel_id = staff_channel.id
+            logger.info(f"Found staff channel: #{staff_channel.name} in {target_guild.name}")
+            return
+        
+        logger.warning("No staff-chat channel found. Please create #staff-chat channel.")
     
     @tasks.loop(hours=2)
     async def staff_reminder_task(self):
         """Send bump reminder to staff every 2 hours (only when bump is available)"""
+        logger.info("Staff reminder task running - checking conditions...")
+        
         if not self.staff_channel:
             logger.warning("No staff channel configured, skipping reminder")
             return
@@ -101,6 +122,15 @@ class StaffBumpReminder(commands.Cog):
             time_until_available = self.bump_cooldown - (datetime.now(timezone.utc) - self.last_bump_time).total_seconds()
             logger.info(f"Bump still on cooldown for {int(time_until_available/60)} more minutes, skipping reminder")
             return
+        
+        # Check if we sent a reminder recently (prevent spam)
+        if self.last_reminder_time:
+            time_since_last = (datetime.now(timezone.utc) - self.last_reminder_time).total_seconds()
+            if time_since_last < 3600:  # Less than 1 hour since last reminder
+                logger.info(f"Reminder sent recently ({int(time_since_last/60)} minutes ago), skipping")
+                return
+        
+        logger.info(f"Sending bump reminder to #{self.staff_channel.name}")
         
         try:
             # Create reminder embed
@@ -291,6 +321,65 @@ class StaffBumpReminder(commands.Cog):
         )
         await ctx.send(embed=embed)
         logger.info(f"Staff channel set to #{channel.name} by {ctx.author}")
+
+    @commands.hybrid_command(name="reminder-debug", help="Debug staff reminder channel detection (Admin only)")
+    @commands.has_permissions(manage_guild=True)
+    async def debug_reminder_system(self, ctx: commands.Context):
+        """Debug staff reminder channel detection"""
+        embed = discord.Embed(
+            title="🔍 Staff Reminder Debug",
+            description="Current channel detection status",
+            color=discord.Color.blue()
+        )
+        
+        # Show current configuration
+        if self.staff_channel:
+            embed.add_field(
+                name="✅ Current Staff Channel",
+                value=f"#{self.staff_channel.name} (ID: {self.staff_channel.id})",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="❌ No Staff Channel",
+                value="No staff channel currently configured",
+                inline=False
+            )
+        
+        # Show available channels with 'staff' in name
+        staff_like_channels = []
+        for channel in ctx.guild.channels:
+            if isinstance(channel, discord.TextChannel) and 'staff' in channel.name.lower():
+                staff_like_channels.append(f"#{channel.name}")
+        
+        if staff_like_channels:
+            embed.add_field(
+                name="📋 Channels with 'staff' in name",
+                value="\n".join(staff_like_channels),
+                inline=False
+            )
+        
+        # Show task status
+        embed.add_field(
+            name="🔄 Task Status",
+            value=f"Running: {self.staff_reminder_task.is_running()}\nStarted: {self.task_started}",
+            inline=True
+        )
+        
+        # Show bump status
+        if self.can_bump():
+            embed.add_field(name="💚 Bump Status", value="Available", inline=True)
+        else:
+            time_until = self.bump_cooldown - (datetime.now(timezone.utc) - self.last_bump_time).total_seconds()
+            embed.add_field(name="⏰ Bump Status", value=f"Cooldown ({int(time_until/60)}m left)", inline=True)
+        
+        embed.add_field(
+            name="💡 Tip",
+            value="Create a channel named exactly 'staff-chat' for automatic detection",
+            inline=False
+        )
+        
+        await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="reminder-test", help="Test the staff reminder system (Admin only)")
     @commands.has_permissions(manage_guild=True)
