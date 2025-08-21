@@ -33,6 +33,7 @@ from typing import Optional
 import aiosqlite
 import discord
 from discord.ext import commands
+from discord import app_commands
 
 
 @dataclass
@@ -932,6 +933,32 @@ class StaffShifts(commands.Cog):
         await ctx.send(
             "The list of staff roles is: " + "\n -".join(["" if len(roles) > 0 else "None"] + [f"<@&{role.id}>" for role in roles])
         )
+
+    @commands.hybrid_command(name="embed", help="Send a formatted embed message (Staff only)")
+    @app_commands.describe(message="Message to send (up to 4000 chars)")
+    async def embed_cmd(self, ctx: commands.Context, *, message: str):
+        """Staff-only embed command with auto-delete."""
+        # Check staff role
+        staff_roles = {"Admin", "Moderator"}
+        member_roles = {role.name for role in ctx.author.roles}
+        if not staff_roles.intersection(member_roles):
+            await ctx.reply("❌ Only staff (Admin/Moderator) can use this command.", ephemeral=True)
+            return
+        # Truncate message if too long
+        if len(message) > 4000:
+            await ctx.reply("❌ Message too long (max 4000 characters).", ephemeral=True)
+            return
+        # Determine embed title
+        title = "📜 Server Rules" if "rule" in message.lower() else "📢 Staff Announcement"
+        embed = discord.Embed(title=title, description=message, color=discord.Color.blue())
+        embed.set_footer(text=f"Sent by {ctx.author.display_name}")
+        await ctx.channel.send(embed=embed)
+        try:
+            await ctx.message.delete()
+        except Exception:
+            pass
+        # Optionally acknowledge with ephemeral reply
+        await ctx.reply("✅ Embed sent!", ephemeral=True)
 
 
 async def setup(bot: commands.Bot):
