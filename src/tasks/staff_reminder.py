@@ -18,6 +18,8 @@ class StaffBumpReminder(commands.Cog):
         self.staff_channel_id = None
         self.staff_channel = None
         self.last_reminder_time = None
+        self.last_bump_time = None  # Track when last bump happened
+        self.bump_cooldown = 7200  # 2 hours in seconds for Disboard
         
     async def cog_load(self):
         """Start the staff reminder task when cog loads"""
@@ -37,17 +39,47 @@ class StaffBumpReminder(commands.Cog):
             self.staff_reminder_task.start()
             logger.info("Staff bump reminder task started")
     
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """Track bump commands and responses"""
+        if not message.guild or message.author.bot:
+            return
+        
+        # Track when bumps happen based on bot responses
+        if message.author.id == 302050872383242240:  # Disboard
+            if "Bump done!" in message.content or "Server bumped!" in message.content:
+                self.last_bump_time = datetime.now(timezone.utc)
+                logger.info("Disboard bump detected")
+        elif message.author.id == 159985870458322944:  # MEE6
+            if "bumped" in message.content.lower() and "server" in message.content.lower():
+                self.last_bump_time = datetime.now(timezone.utc)
+                logger.info("MEE6 bump detected")
+    
+    def can_bump(self):
+        """Check if server can be bumped (not on cooldown)"""
+        if not self.last_bump_time:
+            return True  # No previous bump recorded
+        
+        time_since_bump = (datetime.now(timezone.utc) - self.last_bump_time).total_seconds()
+        return time_since_bump >= self.bump_cooldown
+    
     async def setup_staff_channel(self):
         """Find and set up the staff channel"""
         for guild in self.bot.guilds:
-            # Look for channel named 'staff-chat' or containing 'staff'
+            # Prioritize 'staff-chat' first
             staff_channel = discord.utils.get(guild.channels, name='staff-chat')
+            
             if not staff_channel:
-                # Try variations
+                # Try other staff-related names (avoid mod-tools)
                 for channel in guild.channels:
-                    if isinstance(channel, discord.TextChannel) and any(term in channel.name.lower() for term in ['staff', 'mod', 'admin']):
-                        staff_channel = channel
-                        break
+                    if isinstance(channel, discord.TextChannel):
+                        name = channel.name.lower()
+                        if name in ['staff', 'staff-channel', 'staff-general']:
+                            staff_channel = channel
+                            break
+                        elif 'staff' in name and 'mod' not in name:
+                            staff_channel = channel
+                            break
             
             if staff_channel:
                 self.staff_channel = staff_channel
@@ -55,21 +87,27 @@ class StaffBumpReminder(commands.Cog):
                 logger.info(f"Found staff channel: #{staff_channel.name} in {guild.name}")
                 return
         
-        logger.warning("No staff channel found. Staff reminders will not work.")
+        logger.warning("No staff channel found. Looking for 'staff-chat' specifically.")
     
     @tasks.loop(hours=2)
     async def staff_reminder_task(self):
-        """Send bump reminder to staff every 2 hours"""
+        """Send bump reminder to staff every 2 hours (only when bump is available)"""
         if not self.staff_channel:
             logger.warning("No staff channel configured, skipping reminder")
+            return
+        
+        # Check if bump is available
+        if not self.can_bump():
+            time_until_available = self.bump_cooldown - (datetime.now(timezone.utc) - self.last_bump_time).total_seconds()
+            logger.info(f"Bump still on cooldown for {int(time_until_available/60)} more minutes, skipping reminder")
             return
         
         try:
             # Create reminder embed
             embed = discord.Embed(
-                title="🔔 Bump Reminder",
-                description="Time to bump the server! Please use the appropriate bump command.",
-                color=discord.Color.orange(),
+                title="🔔 Bump Available!",
+                description="The server bump cooldown has ended. Time to bump the server!",
+                color=discord.Color.green(),
                 timestamp=datetime.now(timezone.utc)
             )
             
@@ -79,7 +117,7 @@ class StaffBumpReminder(commands.Cog):
             
             # Check for Disboard
             if guild.get_member(302050872383242240):
-                bump_methods.append("🎯 **Disboard**: Use `/bump` in your bump channel")
+                bump_methods.append("🎯 **Disboard**: Use `/bump` in any channel")
             
             # Check for MEE6
             if guild.get_member(159985870458322944):
@@ -96,17 +134,25 @@ class StaffBumpReminder(commands.Cog):
             )
             
             embed.add_field(
-                name="📌 Why Bump?",
-                value="• Increases server visibility\n• Attracts new members\n• Grows the community\n• Improves server ranking",
+                name="📌 Why Bump Now?",
+                value="• Cooldown period has ended\n• Perfect timing for maximum visibility\n• Helps attract new members\n• Improves server ranking",
                 inline=False
             )
             
-            embed.set_footer(text="Next reminder in 2 hours • Manual bumping keeps us ToS compliant")
+            # Show cooldown info if we have bump history
+            if self.last_bump_time:
+                embed.add_field(
+                    name="⏰ Last Bump",
+                    value=f"<t:{int(self.last_bump_time.timestamp())}:R>",
+                    inline=True
+                )
+            
+            embed.set_footer(text="Bump reminders only sent when bump is available • ToS compliant")
             
             # Send reminder
             await self.staff_channel.send(embed=embed)
             self.last_reminder_time = datetime.now(timezone.utc)
-            logger.info(f"Staff bump reminder sent in #{self.staff_channel.name}")
+            logger.info(f"Staff bump reminder sent in #{self.staff_channel.name} (bump available)")
             
         except discord.Forbidden:
             logger.error(f"No permission to send messages in #{self.staff_channel.name}")
@@ -122,7 +168,7 @@ class StaffBumpReminder(commands.Cog):
         await self.bot.wait_until_ready()
         logger.info("Staff reminder task ready to start")
     
-    @commands.hybrid_command(name="reminder-status", help="Check staff reminder status and next reminder time")
+    @commands.hybrid_command(name="reminder-status", help="Check staff reminder status and bump availability")
     @commands.has_permissions(manage_guild=True)
     async def reminder_status(self, ctx: commands.Context):
         """Check the status of staff reminder feature"""
@@ -135,44 +181,75 @@ class StaffBumpReminder(commands.Cog):
                 embed.add_field(name="Status", value="✅ Running", inline=True)
                 next_iteration = self.staff_reminder_task.next_iteration
                 if next_iteration:
-                    embed.add_field(name="Next Reminder", value=f"<t:{int(next_iteration.timestamp())}:R>", inline=True)
+                    embed.add_field(name="Next Check", value=f"<t:{int(next_iteration.timestamp())}:R>", inline=True)
             else:
                 embed.add_field(name="Status", value="❌ Stopped", inline=True)
+            
+            # Bump availability status
+            if self.can_bump():
+                embed.add_field(name="Bump Status", value="✅ Available", inline=True)
+            else:
+                time_until_available = self.bump_cooldown - (datetime.now(timezone.utc) - self.last_bump_time).total_seconds()
+                minutes_left = int(time_until_available / 60)
+                embed.add_field(name="Bump Status", value=f"❌ Cooldown ({minutes_left}m left)", inline=True)
+            
+            if self.last_bump_time:
+                embed.add_field(name="Last Bump", value=f"<t:{int(self.last_bump_time.timestamp())}:R>", inline=True)
             
             if self.last_reminder_time:
                 embed.add_field(name="Last Reminder", value=f"<t:{int(self.last_reminder_time.timestamp())}:R>", inline=True)
         else:
             embed.add_field(name="Status", value="❌ No staff channel found", inline=False)
-            embed.add_field(name="Solution", value="Create a channel named 'staff-chat' or add 'staff' to an existing channel name", inline=False)
+            embed.add_field(name="Solution", value="Create a channel named 'staff-chat' or use `/staff-channel` command", inline=False)
         
         embed.add_field(
-            name="💡 Purpose", 
-            value="Reminds staff to manually bump the server (ToS compliant)", 
+            name="💡 Smart Reminders", 
+            value="Only sends reminders when bump is actually available (no spam!)", 
             inline=False
         )
         
         await ctx.send(embed=embed)
     
-    @commands.hybrid_command(name="remind-now", help="Manually send a bump reminder to staff (Admin only)")
+    @commands.hybrid_command(name="remind-now", help="Manually send a bump reminder to staff (only if bump available)")
     @commands.has_permissions(manage_guild=True)
     async def remind_now(self, ctx: commands.Context):
-        """Manually trigger a bump reminder"""
+        """Manually trigger a bump reminder (only if bump is available)"""
         if not self.staff_channel:
-            await ctx.send("❌ No staff channel configured!")
+            await ctx.send("❌ No staff channel configured! Use `/staff-channel` to set one.")
+            return
+        
+        # Check if bump is available
+        if not self.can_bump():
+            time_until_available = self.bump_cooldown - (datetime.now(timezone.utc) - self.last_bump_time).total_seconds()
+            minutes_left = int(time_until_available / 60)
+            
+            embed = discord.Embed(
+                title="⏰ Bump Not Available",
+                description=f"Server bump is still on cooldown for **{minutes_left} more minutes**.",
+                color=discord.Color.orange()
+            )
+            if self.last_bump_time:
+                embed.add_field(
+                    name="Last Bump",
+                    value=f"<t:{int(self.last_bump_time.timestamp())}:R>",
+                    inline=False
+                )
+            embed.set_footer(text="Reminders are only sent when bump is actually available")
+            await ctx.send(embed=embed)
             return
         
         try:
             # Send the reminder immediately
             embed = discord.Embed(
                 title="🔔 Manual Bump Reminder",
-                description="A staff member has requested a bump reminder.",
-                color=discord.Color.blue(),
+                description="A staff member has requested a bump reminder. Bump is available!",
+                color=discord.Color.green(),
                 timestamp=datetime.now(timezone.utc)
             )
             
             embed.add_field(
                 name="📢 Action Needed",
-                value="Please bump the server using your preferred method:\n• Disboard: `/bump`\n• MEE6: `!bump`\n• Other: Check your server's bump commands",
+                value="Please bump the server using your preferred method:\n• **Disboard**: `/bump`\n• **MEE6**: `!bump`\n• **Other**: Check your server's bump commands",
                 inline=False
             )
             
