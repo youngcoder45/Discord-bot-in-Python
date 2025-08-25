@@ -24,12 +24,6 @@
 - **`?meme`** / **`/meme`** - Programming memes and jokes
 - **`?suggest <text>`** / **`/suggest <text>`** - Submit suggestions (ephemeral acknowledgment)
 
-### 🔔 Staff Bump Reminder (ToS Compliant!)
-- **Staff reminder every 2 hours** in #staff-chat to manually bump server
-- **`?reminder-status`** / **`/reminder-status`** - Check reminder status (Admin only)
-- **`?remind-now`** / **`/remind-now`** - Send manual reminder to staff (Admin only)
-- **`?staff-channel [#channel]`** / **`/staff-channel [#channel]`** - Set staff reminder channel (Admin only)
-
 ### ⏰ Staff Shift Tracking
 - **Staff shift logging system** for tracking on-duty time with comprehensive admin controls
 - **`?shift start [note]`** / **`/shift start [note]`** - Start your staff shift (Staff only)

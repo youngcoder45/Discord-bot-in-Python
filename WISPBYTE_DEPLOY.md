@@ -12,7 +12,6 @@
 - Moderation tools
 - Programming utilities
 - Fun commands & games
-- Automatic server bump reminders
 
 ## Installation & Setup
 
@@ -31,11 +30,12 @@ PORT=8080
 
 ### Start Command:
 ```bash
-python src/bot.py
+python main.py
 ```
 
 ### Alternative Start Commands:
 ```bash
+python src/bot.py
 bash start.sh
 ```
 
@@ -46,6 +46,7 @@ All dependencies are listed in `requirements.txt`:
 - aiohttp>=3.8.0
 - requests>=2.31.0
 - aiosqlite>=0.19.0
+- flask>=2.3.0
 
 ## File Structure
 ```

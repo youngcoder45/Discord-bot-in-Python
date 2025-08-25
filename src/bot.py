@@ -35,7 +35,6 @@ COGS_TO_LOAD = [
     'commands.staff_shifts',  # Staff shift tracking and logging system
     'events.member_events',
     'events.message_handler', # Simplified message handler
-    'tasks.staff_reminder'    # Staff bump reminder every 2 hours
 ]
 
 class CodeVerseBot(commands.Bot):
