@@ -22,8 +22,8 @@ class Election(commands.Cog):
                 color=discord.Color.blue()
             )
             embed.add_field(
-                name="Vote Weights",
-                value="- **Staff**: 2 votes\n- **Top Contributors**: 1 vote\n- **Members**: 0.5 vote",
+                name="How to Vote",
+                value="Click the buttons below candidates to cast your vote!\nYou can change your vote anytime before the election ends.",
                 inline=False
             )
             await ctx.send(embed=embed)
@@ -65,7 +65,7 @@ class Election(commands.Cog):
         # Create embed
         embed = discord.Embed(
             title=f"🗳️ {title}",
-            description="**Vote for your preferred candidate below!**\n\n**Vote Weights:**\n🟦 **Staff**: 2 votes\n🟨 **Top Contributors**: 1 vote\n🟩 **Members**: 0.5 vote",
+            description="**Vote for your preferred candidate below!**\n\nClick the buttons to cast your vote. You can change your vote anytime during the election.",
             color=0x5865F2
         )
         embed.add_field(
@@ -83,7 +83,7 @@ class Election(commands.Cog):
             value="0",
             inline=True
         )
-        embed.set_footer(text="Click buttons below to vote • One vote per person")
+        embed.set_footer(text="Click buttons below to vote • You can change your vote anytime")
         embed.timestamp = datetime.now(timezone.utc)
 
         msg = await ctx.send(embed=embed, view=view)
@@ -123,7 +123,12 @@ class Election(commands.Cog):
         )
         embed.add_field(
             name="Status", 
-            value="Online and ready", 
+            value="🟢 Online and ready", 
+            inline=False
+        )
+        embed.add_field(
+            name="Features",
+            value="• Create elections with multiple candidates\n• Real-time vote counting\n• Automatic election endings\n• Vote change support",
             inline=False
         )
         await ctx.send(embed=embed)
@@ -285,21 +290,13 @@ class VoteButton(discord.ui.Button):
         # Get election data
         election_data = election_cog.active_elections[interaction.guild.id]
         
-        # Determine vote weight
-        weight = 0.5  # Default for regular members
-        weight_text = "Member (0.5 votes)"
+        # Determine vote weight (hidden from users)
+        weight = 1.0  # Default for regular members
         
-        # Check for staff roles (from staff shift system)
+        # Check for staff roles (staff gets 2x weight secretly)
         staff_roles = await self._get_staff_roles(interaction.guild, interaction.client)
         if any(role in member.roles for role in staff_roles):
             weight = 2.0
-            weight_text = "Staff (2 votes)"
-        else:
-            # Check for Top Contributors role
-            top_role = discord.utils.get(interaction.guild.roles, name="Top Contributors")
-            if top_role and top_role in member.roles:
-                weight = 1.0
-                weight_text = "Top Contributor (1 vote)"
         
         # Check if user already voted for someone
         previous_vote = None
@@ -337,19 +334,19 @@ class VoteButton(discord.ui.Button):
         if previous_vote and previous_vote != self.candidate:
             # Vote was changed
             await interaction.response.send_message(
-                f"✅ Your vote has been changed to **{self.candidate}**!\nYour vote weight: **{weight_text}**",
+                f"✅ Your vote has been changed to **{self.candidate}**!",
                 ephemeral=True
             )
         elif previous_vote == self.candidate:
             # Same vote (shouldn't happen but just in case)
             await interaction.response.send_message(
-                f"ℹ️ You have already voted for **{self.candidate}**!\nYour vote weight: **{weight_text}**",
+                f"ℹ️ You have already voted for **{self.candidate}**!",
                 ephemeral=True
             )
         else:
             # New vote
             await interaction.response.send_message(
-                f"✅ Vote registered for **{self.candidate}**!\nYour vote weight: **{weight_text}**",
+                f"✅ Vote registered for **{self.candidate}**!",
                 ephemeral=True
             )
 
