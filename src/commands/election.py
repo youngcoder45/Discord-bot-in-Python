@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from typing import List, Dict, Tuple
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from utils.helpers import create_success_embed, create_error_embed
 
 class Election(commands.Cog):
@@ -57,7 +57,7 @@ class Election(commands.Cog):
 
         # Create election data
         results: Dict[str, List[Tuple[int, float]]] = {c: [] for c in candidate_list}
-        end_time = datetime.utcnow() + timedelta(minutes=duration)
+        end_time = datetime.now(timezone.utc) + timedelta(minutes=duration)
         
         # Create view with buttons
         view = ElectionView(self.bot, results, candidate_list, end_time, ctx.guild.id)
@@ -84,7 +84,7 @@ class Election(commands.Cog):
             inline=True
         )
         embed.set_footer(text="Click buttons below to vote • One vote per person")
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = datetime.now(timezone.utc)
 
         msg = await ctx.send(embed=embed, view=view)
         
@@ -154,11 +154,17 @@ class Election(commands.Cog):
         election_data = self.active_elections[guild_id]
         msg = election_data["message"]
         
-        # Disable view
+        # Create disabled view (we'll replace the original view)
         view = discord.ui.View()
-        for item in msg.view.children:
-            item.disabled = True
-            view.add_item(item)
+        view.timeout = None
+        for candidate in election_data["candidates"]:
+            button = discord.ui.Button(
+                label=candidate,
+                style=discord.ButtonStyle.secondary,
+                emoji="🗳️",
+                disabled=True
+            )
+            view.add_item(button)
         
         # Show final results
         tally = {}
@@ -198,7 +204,7 @@ class Election(commands.Cog):
         embed.add_field(name="📈 Total Votes", value=str(total_votes), inline=True)
         embed.add_field(name="👥 Voters", value=str(len(set(user_id for votes in election_data["results"].values() for user_id, _ in votes))), inline=True)
         embed.set_footer(text="Election completed")
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = datetime.now(timezone.utc)
         
         await msg.edit(embed=embed, view=view)
         
@@ -236,7 +242,7 @@ class Election(commands.Cog):
         embed.add_field(name="Voters", value=str(len(set(user_id for votes in election_data["results"].values() for user_id, _ in votes))), inline=True)
         
         if not final:
-            time_left = election_data["end_time"] - datetime.utcnow()
+            time_left = election_data["end_time"] - datetime.now(timezone.utc)
             if time_left.total_seconds() > 0:
                 embed.add_field(name="Time Remaining", value=f"{int(time_left.total_seconds() // 60)} minutes", inline=True)
         
