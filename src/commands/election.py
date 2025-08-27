@@ -141,15 +141,24 @@ class Election(commands.Cog):
             await ctx.reply("❌ No active election in this server.", ephemeral=True)
             return
             
-        election_data = self.active_elections[ctx.guild.id]
-        await self._end_election(ctx.guild.id)
-        await ctx.reply("✅ Election ended manually.")
+        try:
+            election_data = self.active_elections[ctx.guild.id]
+            await self._end_election(ctx.guild.id)
+            await ctx.reply("✅ Election ended manually.")
+        except Exception as e:
+            await ctx.reply(f"⚠️ Election ended but there was an issue updating the message: {str(e)[:100]}...", ephemeral=True)
 
     async def _auto_end_election(self, guild_id: int, delay: int):
         """Automatically end election after delay."""
         await asyncio.sleep(delay)
         if guild_id in self.active_elections:
-            await self._end_election(guild_id)
+            try:
+                await self._end_election(guild_id)
+            except Exception as e:
+                print(f"Error auto-ending election for guild {guild_id}: {e}")
+                # Clean up the election data even if ending fails
+                if guild_id in self.active_elections:
+                    del self.active_elections[guild_id]
 
     async def _end_election(self, guild_id: int):
         """End an election and show final results."""
@@ -211,7 +220,29 @@ class Election(commands.Cog):
         embed.set_footer(text="Election completed")
         embed.timestamp = datetime.now(timezone.utc)
         
-        await msg.edit(embed=embed, view=view)
+        # Try to edit the original message, if that fails send a new one
+        try:
+            await msg.edit(embed=embed, view=view)
+        except discord.errors.HTTPException as e:
+            if e.code == 50027:  # Invalid Webhook Token
+                # Interaction expired, send a new message to the channel
+                try:
+                    channel = msg.channel if hasattr(msg, 'channel') else None
+                    if channel is None and hasattr(msg, 'guild'):
+                        # Try to get the channel from the guild
+                        channel = msg.guild.get_channel(msg.channel_id) if hasattr(msg, 'channel_id') else None
+                    
+                    if channel:
+                        await channel.send(embed=embed, view=view)
+                    else:
+                        print(f"Could not send election results - channel not found for guild {guild_id}")
+                except Exception as channel_error:
+                    print(f"Failed to send election results to channel: {channel_error}")
+            else:
+                # Re-raise other HTTP exceptions
+                raise e
+        except Exception as e:
+            print(f"Unexpected error ending election: {e}")
         
         # Clean up
         del self.active_elections[guild_id]
@@ -328,7 +359,13 @@ class VoteButton(discord.ui.Button):
                 break
         
         # Update the message with new embed
-        await interaction.message.edit(embed=embed)
+        try:
+            await interaction.message.edit(embed=embed)
+        except discord.errors.HTTPException as e:
+            if e.code == 50027:  # Invalid Webhook Token - interaction expired
+                pass  # Can't update the message, but the vote was still recorded
+            else:
+                raise e
         
         # Send appropriate response message
         if previous_vote and previous_vote != self.candidate:
