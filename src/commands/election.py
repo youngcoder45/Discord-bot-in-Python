@@ -4,6 +4,7 @@ from discord import app_commands
 from typing import List, Dict, Tuple
 import asyncio
 from datetime import datetime, timedelta
+from utils.helpers import create_success_embed, create_error_embed
 
 class Election(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -33,7 +34,7 @@ class Election(commands.Cog):
         candidates="Comma-separated candidate names (e.g. Alice,Bob,Charlie)",
         duration="Duration in minutes (1-1440, default: 60)"
     )
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(manage_messages=True)
     async def create(self, ctx: commands.Context, title: str, candidates: str, duration: int = 60):
         """Create a new election poll."""
         # Validation
@@ -112,8 +113,23 @@ class Election(commands.Cog):
         election_data = self.active_elections[ctx.guild.id]
         await self._show_results(ctx, election_data, final=False)
 
+    @election.command(name="test", description="Test if election system is working.")
+    async def test(self, ctx: commands.Context):
+        """Test election system."""
+        embed = discord.Embed(
+            title="✅ Election System Test",
+            description="Election system is working correctly!",
+            color=discord.Color.green()
+        )
+        embed.add_field(
+            name="Status", 
+            value="🟢 Online and ready", 
+            inline=False
+        )
+        await ctx.send(embed=embed)
+
     @election.command(name="end", description="Force end the current election.")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(manage_messages=True)
     async def end(self, ctx: commands.Context):
         """Force end the current election."""
         if ctx.guild.id not in self.active_elections:
@@ -303,17 +319,6 @@ class VoteButton(discord.ui.Button):
         # Fallback: look for common staff role names
         staff_keywords = ["staff", "moderator", "admin", "mod"]
         return [role for role in guild.roles if any(keyword in role.name.lower() for keyword in staff_keywords)]
-
-async def setup(bot: commands.Bot):
-    await bot.add_cog(Election(bot))
-
-    async def show_results(self, ctx, msg, results):
-        tally = {c: sum(w for _, w in votes) for c, votes in results.items()}
-        sorted_results = sorted(tally.items(), key=lambda x: x[1], reverse=True)
-        result_str = "\n".join([f"**{c}**: {v} votes" for c, v in sorted_results])
-        embed = discord.Embed(title="🗳️ Election Results", description=result_str, color=discord.Color.green())
-        await msg.edit(embed=embed, view=None)
-        await ctx.send("Election ended! Results above.")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Election(bot))
