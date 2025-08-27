@@ -79,7 +79,7 @@ class Election(commands.Cog):
             inline=True
         )
         embed.add_field(
-            name="📊 Total Votes",
+            name="Total Votes",
             value="0",
             inline=True
         )
@@ -123,7 +123,7 @@ class Election(commands.Cog):
         )
         embed.add_field(
             name="Status", 
-            value="🟢 Online and ready", 
+            value="Online and ready", 
             inline=False
         )
         await ctx.send(embed=embed)
@@ -282,6 +282,9 @@ class VoteButton(discord.ui.Button):
             await interaction.response.send_message("❌ This election has ended.", ephemeral=True)
             return
         
+        # Get election data
+        election_data = election_cog.active_elections[interaction.guild.id]
+        
         # Determine vote weight
         weight = 0.5  # Default for regular members
         weight_text = "Member (0.5 votes)"
@@ -298,18 +301,57 @@ class VoteButton(discord.ui.Button):
                 weight = 1.0
                 weight_text = "Top Contributor (1 vote)"
         
+        # Check if user already voted for someone
+        previous_vote = None
+        for candidate_name, votes in self.results.items():
+            for uid, w in votes:
+                if uid == user.id:
+                    previous_vote = candidate_name
+                    break
+            if previous_vote:
+                break
+        
         # Remove previous vote from all candidates
         for candidate_name in self.results.keys():
             self.results[candidate_name] = [(uid, w) for uid, w in self.results[candidate_name] if uid != user.id]
         
         # Add new vote
-        if user.id not in [uid for uid, _ in self.results[self.candidate]]:
-            self.results[self.candidate].append((user.id, weight))
+        self.results[self.candidate].append((user.id, weight))
         
-        await interaction.response.send_message(
-            f"✅ Vote registered for **{self.candidate}**!\nYour vote weight: **{weight_text}**",
-            ephemeral=True
-        )
+        # Calculate total votes for embed update
+        total_votes = sum(sum(w for _, w in votes) for votes in self.results.values())
+        
+        # Update the embed with new total vote count
+        embed = interaction.message.embeds[0]
+        
+        # Find and update the Total Votes field
+        for i, field in enumerate(embed.fields):
+            if field.name == "Total Votes":
+                embed.set_field_at(i, name="Total Votes", value=str(int(total_votes)), inline=True)
+                break
+        
+        # Update the message with new embed
+        await interaction.message.edit(embed=embed)
+        
+        # Send appropriate response message
+        if previous_vote and previous_vote != self.candidate:
+            # Vote was changed
+            await interaction.response.send_message(
+                f"✅ Your vote has been changed to **{self.candidate}**!\nYour vote weight: **{weight_text}**",
+                ephemeral=True
+            )
+        elif previous_vote == self.candidate:
+            # Same vote (shouldn't happen but just in case)
+            await interaction.response.send_message(
+                f"ℹ️ You have already voted for **{self.candidate}**!\nYour vote weight: **{weight_text}**",
+                ephemeral=True
+            )
+        else:
+            # New vote
+            await interaction.response.send_message(
+                f"✅ Vote registered for **{self.candidate}**!\nYour vote weight: **{weight_text}**",
+                ephemeral=True
+            )
 
     async def _get_staff_roles(self, guild, bot):
         """Get staff roles from the staff shift system."""
