@@ -1,25 +1,25 @@
-# ⭐ Staff Points (Aura) System - CodeVerse Bot
+# ⭐ Staff Aura System - CodeVerse Bot
 
 ## 🎯 Overview
 
-The Staff Points (Aura) System is a comprehensive reward and recognition system for staff members. It allows administrators to track staff performance, reward good behavior, and maintain a competitive leaderboard to help with promotions and recognition.
+The Staff Aura System is a comprehensive reward and recognition system for staff members. It allows administrators to track staff performance, reward good behavior, and maintain a competitive leaderboard to help with promotions and recognition.
 
 ---
 
 ## 🚀 Features
 
 ### ✨ Core Features
-- **Points Management** - Add, remove, set, and reset staff points *(Admin Only)*
-- **Leaderboard System** - Simple ranking showing all staff with points
-- **Activity Tracking** - Complete history of all points changes
-- **Automatic Thanks Points** - Staff get 1 point when thanked via mention/reply
+- **Aura Management** - Add, remove, set, and reset staff aura *(Admin Only)*
+- **Leaderboard System** - Simple ranking showing all staff with aura
+- **Activity Tracking** - Complete history of all aura changes
+- **Automatic Thanks Aura** - Staff get 1 aura when thanked via mention/reply
 - **Staff Recognition** - Promote healthy competition and recognition
 - **Detailed Statistics** - In-depth performance analytics
 
 ### 🔒 Permission Levels
-- **Everyone** - View own points, leaderboard, stats
+- **Everyone** - View own aura, leaderboard, stats
 - **Moderators** - View detailed histories and staff statistics
-- **Administrators Only** - Full points management and configuration
+- **Administrators Only** - Full aura management and configuration
 
 ---
 
@@ -27,35 +27,35 @@ The Staff Points (Aura) System is a comprehensive reward and recognition system 
 
 ### 📊 Viewing Commands (Everyone)
 
-#### `/points` or `/points check [@user]`
-**View points balance for yourself or another staff member**
+#### `/aura` or `/aura check [@user]`
+**View aura balance for yourself or another staff member**
 ```
-/points                    # Your own points
-/points check @John        # Check John's points
+/aura                      # Your own aura
+/aura check @John          # Check John's aura
 ```
 
-#### `/points leaderboard`
-**View all staff members with points**
+#### `/aura leaderboard`
+**View all staff members with aura**
 ```
-/points leaderboard        # Shows all staff with points (no limit)
+/aura leaderboard          # Shows all staff with aura (no limit)
 ```
-**Shows:** Simple ranking without emojis, all staff members with points
+**Shows:** Simple ranking without emojis, all staff members with aura
 
-#### `/points top`
+#### `/aura top`
 **Quick view of top 3 staff members**
 ```
-/points top               # Shows top 3 with medals
+/aura top                  # Shows top 3 with medals
 ```
 
-#### `/points stats [@user]`
+#### `/aura stats [@user]`
 **Detailed statistics for a staff member**
 ```
-/points stats             # Your own detailed stats
-/points stats @Alice      # Alice's detailed stats
+/aura stats                # Your own detailed stats
+/aura stats @Alice         # Alice's detailed stats
 ```
 **Shows:**
-- Current points and rank
-- Total points earned/spent
+- Current aura and rank
+- Total aura earned/spent
 - Recent activity (30 days)
 - Retention rate
 - Last activity timestamp
@@ -64,62 +64,64 @@ The Staff Points (Aura) System is a comprehensive reward and recognition system 
 
 ### 📈 Management Commands (Admin Only)
 
-#### `/points add <@user> <amount> [reason]`
-**Award points to a staff member** *(Administrator Only)*
+#### `/aura add <@user> <amount> [reason]`
+**Award aura to a staff member** *(Administrator Only)*
 ```
-/points add @John 50 Great help with moderation today
-/points add @Alice 25 Excellent community engagement
+/aura add @John 50 Great help with moderation today
+/aura add @Alice 25 Excellent community engagement
 ```
-**Limits:** 1-1000 points per action
+**Limits:** 1-1000 aura per action
 
-#### `/points remove <@user> <amount> [reason]`
-**Remove points from a staff member** *(Administrator Only)*
+#### `/aura remove <@user> <amount> [reason]`
+**Remove aura from a staff member** *(Administrator Only)*
 ```
-/points remove @John 10 Late to shift without notice
-/points remove @Alice 5 Minor policy violation
+/aura remove @John 10 Late to shift without notice
+/aura remove @Alice 5 Minor policy violation
 ```
-**Limits:** 1-1000 points per action, cannot go below 0
+**Limits:** 1-1000 aura per action, cannot go below 0
 
-#### `/points set <@user> <amount> [reason]`
-**Set a staff member's points to exact amount** *(Administrator Only)*
+#### `/aura set <@user> <amount> [reason]`
+**Set a staff member's aura to exact amount** *(Administrator Only)*
 ```
-/points set @John 100 Promotion adjustment
-/points set @Alice 0 Starting fresh
+/aura set @John 100 Promotion adjustment
+/aura set @Alice 0 Starting fresh
 ```
-**Limits:** 0-10000 points total
+**Limits:** 0-10000 aura total
 
 ---
 
 ## 🤖 Automatic Thanks System
 
 ### How It Works
-When someone mentions or replies to a staff member and says "thanks" (or similar), that staff member automatically gets **1 point**!
+When someone mentions or replies to a staff member and says "thanks", that staff member automatically gets **1 aura**!
 
-### Trigger Words
-The system detects these words:
-- `thanks`, `thank you`, `ty`, `thanku`, `thx`, `tysm`, `thanks!`
+### Trigger Word
+The system detects the exact word: **`thanks`**
 
-### How to Give Auto Points
+### How to Give Auto Aura
 1. **Mention a staff member:** `@StaffMember thanks for the help!`
 2. **Reply to a staff member:** Reply to their message with `thanks!`
-3. **Multiple staff:** `@Staff1 @Staff2 thank you both!`
+3. **Multiple staff:** `@Staff1 @Staff2 thanks for helping!`
 
 ### What Happens
-- Staff member gets +1 point automatically
-- Message gets a 👍 reaction to confirm
-- Point is logged as "Thanks from [username]"
+- Staff member gets +1 aura automatically
+- Bot replies with "Added 1 aura to @StaffMember"
+- Aura is logged as "Thanks from [username]"
 - Only works for configured staff roles
 
 ### Examples
 ```
 @ModeratorJohn thanks for helping with that issue!
-# ✅ ModeratorJohn gets +1 point
+# ✅ Bot replies: "Added 1 aura to @ModeratorJohn"
 
-Reply to staff message: "ty for the quick response!"
-# ✅ Staff member gets +1 point
+Reply to staff message: "thanks for the quick response!"
+# ✅ Bot replies: "Added 1 aura to @StaffMember"
 
-thanks everyone in this channel!  
-# ❌ No points (no specific mention/reply)
+@Staff1 @Staff2 thanks for the help!  
+# ✅ Both staff get +1 aura each
+
+thank you for helping!
+# ❌ No aura (must say exact word "thanks")
 ```
 
 ---

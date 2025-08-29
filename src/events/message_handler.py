@@ -26,13 +26,8 @@ class MessageHandler(commands.Cog):
         """Check if message contains 'thanks' and mentions/replies to staff"""
         content = message.content.lower()
         
-        # Check if message contains thanks-like words
-        thanks_patterns = [
-            r'\bthanks?\b', r'\bthank\s+you\b', r'\bty\b', r'\bthanku\b', 
-            r'\bthx\b', r'\btysm\b', r'\bthanks?\s*!+\b'
-        ]
-        
-        has_thanks = any(re.search(pattern, content) for pattern in thanks_patterns)
+        # Check if message contains exactly "thanks" (more strict)
+        has_thanks = 'thanks' in content
         if not has_thanks:
             return
         
@@ -57,15 +52,16 @@ class MessageHandler(commands.Cog):
             except:
                 pass
         
-        # Give points to mentioned/replied staff
+        # Give points to mentioned/replied staff and send confirmation
         for staff_member in set(mentioned_staff):  # Remove duplicates
             success = await staff_points_cog.auto_give_point(staff_member, f"Thanks from {message.author.display_name}")
             if success:
-                # Optional: React to show point was given
-                try:
-                    await message.add_reaction("👍")
-                except:
-                    pass
+                # Send bot reply message
+                embed = discord.Embed(
+                    description=f"Added 1 aura to {staff_member.mention}",
+                    color=0x00FF00
+                )
+                await message.reply(embed=embed, mention_author=False)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -83,23 +79,6 @@ class MessageHandler(commands.Cog):
             timestamp=datetime.now(tz=timezone.utc)
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        await channel.send(embed=embed)
-
-    @commands.Cog.listener()
-    async def on_member_remove(self, member):
-        """Handle member leaves (simplified)."""
-        joins_channel_id = int(os.getenv('JOINS_LEAVES_CHANNEL_ID', 0))
-        if not joins_channel_id:
-            return
-        channel = self.bot.get_channel(joins_channel_id)
-        if not channel:
-            return
-        embed = discord.Embed(
-            title="👋 Member Left",
-            description=f"{member.display_name} has left the server.",
-            color=discord.Color.red(),
-            timestamp=datetime.now(tz=timezone.utc)
-        )
         await channel.send(embed=embed)
 
     @commands.Cog.listener()

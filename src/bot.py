@@ -33,7 +33,7 @@ COGS_TO_LOAD = [
     'commands.moderation',    # basic moderation commands (purge, kick, ban, etc.)
     'commands.moderation_extended',  # advanced moderation (serverinfo, userinfo, lockdown, etc.)
     'commands.staff_shifts',  # Staff shift tracking and logging system
-    'commands.staff_points',  # Staff points (aura) system with leaderboard
+    'commands.staff_points',  # Staff aura system with leaderboard
     'commands.election',      # Staff election system
     'commands.data_management',  # Data backup and persistence management
     'events.member_events',

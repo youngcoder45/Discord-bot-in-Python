@@ -66,23 +66,23 @@ class StaffPoints(commands.Cog):
             
             await db.commit()
 
-    @commands.hybrid_group(name="points", description="Staff points (aura) management system")
+    @commands.hybrid_group(name="aura", description="Staff aura management system")
     @commands.guild_only()
-    async def points(self, ctx: commands.Context):
-        """Main points command group"""
+    async def aura(self, ctx: commands.Context):
+        """Main aura command group"""
         if ctx.invoked_subcommand is None:
-            # Show user's own points
+            # Show user's own aura
             await self.show_user_points(ctx, ctx.author)
 
-    @points.command(name="add", description="Add points to a staff member")
+    @aura.command(name="add", description="Add aura to a staff member")
     @app_commands.describe(
-        member="The staff member to give points to",
-        amount="Number of points to add (1-1000)",
-        reason="Reason for awarding points"
+        member="The staff member to give aura to",
+        amount="Number of aura to add (1-1000)",
+        reason="Reason for awarding aura"
     )
     @commands.has_permissions(administrator=True)
     async def add_points(self, ctx: commands.Context, member: discord.Member, amount: int, *, reason: str = "No reason provided"):
-        """Add points to a staff member"""
+        """Add aura to a staff member"""
         if amount <= 0 or amount > 1000:
             await ctx.reply("❌ Points amount must be between 1 and 1000!", ephemeral=True)
             return
@@ -110,11 +110,11 @@ class StaffPoints(commands.Cog):
         # Log to points channel if configured
         await self.log_points_change(ctx.guild, member, amount, ctx.author, reason, "add")
 
-    @points.command(name="remove", description="Remove points from a staff member")
+    @aura.command(name="remove", description="Remove aura from a staff member")
     @app_commands.describe(
-        member="The staff member to remove points from",
-        amount="Number of points to remove (1-1000)",
-        reason="Reason for removing points"
+        member="The staff member to remove aura from",
+        amount="Number of aura to remove (1-1000)",
+        reason="Reason for removing aura"
     )
     @commands.has_permissions(administrator=True)
     async def remove_points(self, ctx: commands.Context, member: discord.Member, amount: int, *, reason: str = "No reason provided"):
@@ -151,11 +151,11 @@ class StaffPoints(commands.Cog):
         # Log to points channel if configured
         await self.log_points_change(ctx.guild, member, -amount, ctx.author, reason, "remove")
 
-    @points.command(name="set", description="Set a staff member's points to a specific amount")
+    @aura.command(name="set", description="Set a staff member's aura to a specific amount")
     @app_commands.describe(
-        member="The staff member to set points for",
-        amount="Number of points to set (0-10000)",
-        reason="Reason for setting points"
+        member="The staff member to set aura for",
+        amount="Number of aura to set (0-10000)",
+        reason="Reason for setting aura"
     )
     @commands.has_permissions(administrator=True)
     async def set_points(self, ctx: commands.Context, member: discord.Member, amount: int, *, reason: str = "Points adjustment"):
@@ -187,8 +187,8 @@ class StaffPoints(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    @points.command(name="check", description="Check a staff member's points")
-    @app_commands.describe(member="The staff member to check points for")
+    @aura.command(name="check", description="Check a staff member's aura")
+    @app_commands.describe(member="The staff member to check aura for")
     async def check_points(self, ctx: commands.Context, member: discord.Member = None):
         """Check a staff member's points"""
         if member is None:
@@ -196,7 +196,7 @@ class StaffPoints(commands.Cog):
             
         await self.show_user_points(ctx, member)
 
-    @points.command(name="history", description="View points history for a staff member")
+    @aura.command(name="history", description="View aura history for a staff member")
     @app_commands.describe(
         member="The staff member to check history for",
         limit="Number of recent entries to show (default: 10, max: 50)"
@@ -259,7 +259,7 @@ class StaffPoints(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    @points.command(name="leaderboard", description="Show all staff members with points")
+    @aura.command(name="leaderboard", description="Show all staff members with aura")
     async def leaderboard(self, ctx: commands.Context):
         """Show all staff members with points"""
             
@@ -277,8 +277,8 @@ class StaffPoints(commands.Cog):
             return
         
         embed = discord.Embed(
-            title="Staff Points Leaderboard",
-            description="All staff members with points",
+            title="Staff Aura Leaderboard",
+            description="All staff members with aura",
             color=0x3498DB
         )
         
@@ -286,7 +286,7 @@ class StaffPoints(commands.Cog):
         for i, (user_id, points, total_earned, last_updated) in enumerate(leaderboard, 1):
             user = self.bot.get_user(user_id)
             if user:
-                leaderboard_text += f"{i}. {user.display_name} - {points} points\n"
+                leaderboard_text += f"{i}. {user.display_name} - {points} aura\n"
         
         if leaderboard_text:
             # Split into chunks if too long
@@ -316,7 +316,7 @@ class StaffPoints(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    @points.command(name="top", description="Show top 3 staff members")
+    @aura.command(name="top", description="Show top 3 staff members")
     async def top_staff(self, ctx: commands.Context):
         """Show top 3 staff members"""
         async with aiosqlite.connect(self.db_path) as db:
@@ -352,7 +352,7 @@ class StaffPoints(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    @points.command(name="stats", description="Show detailed statistics for a staff member")
+    @aura.command(name="stats", description="Show detailed statistics for a staff member")
     @app_commands.describe(member="The staff member to show stats for")
     async def staff_stats(self, ctx: commands.Context, member: discord.Member = None):
         """Show detailed statistics for a staff member"""
@@ -455,10 +455,10 @@ class StaffPoints(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    @points.command(name="reset", description="Reset a staff member's points")
+    @aura.command(name="reset", description="Reset a staff member's aura")
     @app_commands.describe(
-        member="The staff member to reset points for",
-        reason="Reason for resetting points"
+        member="The staff member to reset aura for",
+        reason="Reason for resetting aura"
     )
     @commands.has_permissions(administrator=True)
     async def reset_points(self, ctx: commands.Context, member: discord.Member, *, reason: str = "Points reset"):
@@ -501,14 +501,14 @@ class StaffPoints(commands.Cog):
             embed = create_error_embed("Reset Cancelled", "Points reset has been cancelled.")
             await message.edit(embed=embed, view=None)
 
-    @points.command(name="config", description="Configure staff points settings")
+    @aura.command(name="config", description="Configure staff aura settings")
     @app_commands.describe(
         action="Configuration action",
         value="Configuration value"
     )
     @commands.has_permissions(administrator=True)
     async def config_points(self, ctx: commands.Context, action: str = None, *, value: str = None):
-        """Configure staff points settings"""
+        """Configure staff aura settings"""
         if action is None:
             # Show current configuration
             await self.show_config(ctx)
@@ -851,7 +851,7 @@ class StaffPoints(commands.Cog):
         return any(role_id in member_role_ids for role_id in staff_role_ids)
 
     async def auto_give_point(self, member: discord.Member, reason: str = "Thanks received"):
-        """Automatically give a point to a staff member"""
+        """Automatically give an aura to a staff member"""
         if not await self.is_staff_member(member):
             return False
         
