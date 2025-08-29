@@ -40,6 +40,29 @@
 - **`?shift settings clearroles`** / **`/shift settings clearroles`** - Clear all staff roles (Admin only)
 - **`?shift settings listroles`** / **`/shift settings listroles`** - List staff roles
 
+### ⭐ Staff Points (Aura) System
+- **Comprehensive staff recognition and promotion system** with leaderboards and statistics
+- **`?points check [@user]`** / **`/points check [@user]`** - Check points balance
+- **`?points leaderboard [limit]`** / **`/points leaderboard [limit]`** - View staff rankings
+- **`?points top`** / **`/points top`** - Quick top 3 view with medals
+- **`?points stats [@user]`** / **`/points stats [@user]`** - Detailed performance statistics
+- **`?points add <@user> <amount> [reason]`** / **`/points add <@user> <amount> [reason]`** - Award points (Admin only)
+- **`?points remove <@user> <amount> [reason]`** / **`/points remove <@user> <amount> [reason]`** - Remove points (Admin only)
+- **`?points set <@user> <amount> [reason]`** / **`/points set <@user> <amount> [reason]`** - Set exact points (Admin only)
+- **`?points reset <@user> [reason]`** / **`/points reset <@user> [reason]`** - Reset to zero (Admin only)
+- **`?points history [@user] [limit]`** / **`/points history [@user] [limit]`** - View points activity log (Mod+)
+- **`?points config <action> [value]`** / **`/points config <action> [value]`** - Configure system (Admin only)
+
+### 🔄 Data Persistence System
+- **Automatic data backup and restoration** - Never lose your data on deployments!
+- **`?data status`** / **`/data status`** - Check backup system status
+- **`?data backup`** / **`/data backup`** - Create immediate backup (Admin only)
+- **`?data restore`** / **`/data restore`** - Restore from backup (Admin only)
+- **`?data export`** / **`/data export`** - Export data as downloadable file (Admin only)
+- **GitHub-based cloud storage** with automatic backups every 6 hours
+- **Local backup files** as fallback storage
+- **Complete data protection** for staff shifts, points, elections, and configurations
+
 ### 🛡️ Comprehensive Moderation System
 
 #### 📊 Server Information Commands

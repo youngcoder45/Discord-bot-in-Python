@@ -33,7 +33,9 @@ COGS_TO_LOAD = [
     'commands.moderation',    # basic moderation commands (purge, kick, ban, etc.)
     'commands.moderation_extended',  # advanced moderation (serverinfo, userinfo, lockdown, etc.)
     'commands.staff_shifts',  # Staff shift tracking and logging system
+    'commands.staff_points',  # Staff points (aura) system with leaderboard
     'commands.election',      # Staff election system
+    'commands.data_management',  # Data backup and persistence management
     'events.member_events',
     'events.message_handler', # Simplified message handler
 ]
@@ -60,6 +62,17 @@ bot = CodeVerseBot()
 @bot.event
 async def on_ready():
     logger.info(f"Logged in as {bot.user} (ID: {bot.user.id}) [Instance: {INSTANCE_ID}]")
+    
+    # Restore data from backups on startup
+    try:
+        from utils.data_persistence import startup_restore, start_periodic_backup
+        await startup_restore()
+        
+        # Start periodic backup task (every 6 hours)
+        await start_periodic_backup()
+        logger.info("🔄 Data persistence system initialized")
+    except Exception as e:
+        logger.error(f"⚠️ Data persistence system failed to initialize: {e}")
     
     # Sync slash commands
     try:

@@ -107,6 +107,25 @@ class Core(commands.Cog):
             inline=False
         )
         
+        # Staff Points System
+        points_commands = [
+            "**`points check [@user]`** - Check points balance",
+            "**`points leaderboard`** - View top staff members",
+            "**`points top`** - Quick top 3 view",
+            "**`points stats [@user]`** - Detailed statistics",
+            "**`points history [@user]`** - Points activity log *(Mod)*",
+            "**`points add <@user> <amount> [reason]`** - Award points *(Admin)*",
+            "**`points remove <@user> <amount> [reason]`** - Remove points *(Admin)*",
+            "**`points set <@user> <amount> [reason]`** - Set exact points *(Admin)*",
+            "**`points reset <@user> [reason]`** - Reset to zero *(Admin)*",
+            "**`points config <action> [value]`** - Configure system *(Admin)*"
+        ]
+        embed.add_field(
+            name="⭐ Staff Points (Aura) System",
+            value="\n".join(points_commands),
+            inline=False
+        )
+        
         # Staff Reminder Commands (Admin only)
         reminder_commands = [
             "**`reminder-status`** - Check staff reminder status *(Admin)*",
