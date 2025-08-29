@@ -80,7 +80,7 @@ class StaffPoints(commands.Cog):
         amount="Number of points to add (1-1000)",
         reason="Reason for awarding points"
     )
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def add_points(self, ctx: commands.Context, member: discord.Member, amount: int, *, reason: str = "No reason provided"):
         """Add points to a staff member"""
         if amount <= 0 or amount > 1000:
@@ -116,7 +116,7 @@ class StaffPoints(commands.Cog):
         amount="Number of points to remove (1-1000)",
         reason="Reason for removing points"
     )
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def remove_points(self, ctx: commands.Context, member: discord.Member, amount: int, *, reason: str = "No reason provided"):
         """Remove points from a staff member"""
         if amount <= 0 or amount > 1000:
@@ -259,12 +259,9 @@ class StaffPoints(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    @points.command(name="leaderboard", description="Show the staff points leaderboard")
-    @app_commands.describe(limit="Number of top staff to show (default: 10, max: 25)")
-    async def leaderboard(self, ctx: commands.Context, limit: int = 10):
-        """Show the staff points leaderboard"""
-        if limit < 1 or limit > 25:
-            limit = 10
+    @points.command(name="leaderboard", description="Show all staff members with points")
+    async def leaderboard(self, ctx: commands.Context):
+        """Show all staff members with points"""
             
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute("""
@@ -272,8 +269,7 @@ class StaffPoints(commands.Cog):
                 FROM staff_points 
                 WHERE guild_id = ? AND points > 0
                 ORDER BY points DESC, total_earned DESC
-                LIMIT ?
-            """, (ctx.guild.id, limit)) as cursor:
+            """, (ctx.guild.id,)) as cursor:
                 leaderboard = await cursor.fetchall()
         
         if not leaderboard:
@@ -281,30 +277,26 @@ class StaffPoints(commands.Cog):
             return
         
         embed = discord.Embed(
-            title="🏆 Staff Points Leaderboard",
-            description="Top performing staff members",
-            color=0xFFD700
+            title="Staff Points Leaderboard",
+            description="All staff members with points",
+            color=0x3498DB
         )
         
         leaderboard_text = ""
         for i, (user_id, points, total_earned, last_updated) in enumerate(leaderboard, 1):
             user = self.bot.get_user(user_id)
             if user:
-                # Medal emojis for top 3
-                if i == 1:
-                    medal = "🥇"
-                elif i == 2:
-                    medal = "🥈"
-                elif i == 3:
-                    medal = "🥉"
-                else:
-                    medal = f"**{i}.**"
-                
-                leaderboard_text += f"{medal} **{user.display_name}** - {points} points\n"
-                leaderboard_text += f"     *Total earned: {total_earned}*\n\n"
+                leaderboard_text += f"{i}. {user.display_name} - {points} points\n"
         
         if leaderboard_text:
-            embed.add_field(name="Rankings", value=leaderboard_text, inline=False)
+            # Split into chunks if too long
+            if len(leaderboard_text) > 1024:
+                chunks = [leaderboard_text[i:i+1024] for i in range(0, len(leaderboard_text), 1024)]
+                for i, chunk in enumerate(chunks):
+                    field_name = f"Rankings {i+1}" if i > 0 else "Rankings"
+                    embed.add_field(name=field_name, value=chunk, inline=False)
+            else:
+                embed.add_field(name="Rankings", value=leaderboard_text, inline=False)
         
         # Add some stats
         async with aiosqlite.connect(self.db_path) as db:
@@ -317,7 +309,7 @@ class StaffPoints(commands.Cog):
         
         if stats and stats[0]:
             total_staff, total_points, total_earned = stats
-            embed.add_field(name="📊 Server Stats", value=f"**Staff Members:** {total_staff}\n**Total Points:** {total_points or 0}\n**Total Earned:** {total_earned or 0}", inline=True)
+            embed.add_field(name="Server Stats", value=f"Staff Members: {total_staff}\nTotal Points: {total_points or 0}\nTotal Earned: {total_earned or 0}", inline=True)
         
         embed.set_footer(text=f"Showing top {len(leaderboard)} staff members")
         embed.timestamp = datetime.now(timezone.utc)
@@ -841,6 +833,50 @@ class StaffPoints(commands.Cog):
                 VALUES (?, ?)
             """, (guild_id, new_roles))
             await db.commit()
+
+    async def is_staff_member(self, member: discord.Member) -> bool:
+        """Check if a member is a staff member"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("""
+                SELECT staff_role_ids FROM staff_config WHERE guild_id = ?
+            """, (member.guild.id,)) as cursor:
+                result = await cursor.fetchone()
+        
+        if not result or not result[0]:
+            return False
+        
+        staff_role_ids = [int(role_id) for role_id in result[0].split(',')]
+        member_role_ids = [role.id for role in member.roles]
+        
+        return any(role_id in member_role_ids for role_id in staff_role_ids)
+
+    async def auto_give_point(self, member: discord.Member, reason: str = "Thanks received"):
+        """Automatically give a point to a staff member"""
+        if not await self.is_staff_member(member):
+            return False
+        
+        # Add point to database
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                INSERT OR IGNORE INTO staff_points (guild_id, user_id, points, total_earned, last_updated)
+                VALUES (?, ?, 0, 0, datetime('now'))
+            """, (member.guild.id, member.id))
+            
+            await db.execute("""
+                UPDATE staff_points 
+                SET points = points + 1, total_earned = total_earned + 1, last_updated = datetime('now')
+                WHERE guild_id = ? AND user_id = ?
+            """, (member.guild.id, member.id))
+            
+            # Log the transaction
+            await db.execute("""
+                INSERT INTO points_history (guild_id, user_id, admin_id, amount, reason, action_type)
+                VALUES (?, ?, ?, 1, ?, 'auto_add')
+            """, (member.guild.id, member.id, self.bot.user.id, reason))
+            
+            await db.commit()
+        
+        return True
 
 
 class ConfirmView(discord.ui.View):

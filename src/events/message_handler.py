@@ -1,25 +1,71 @@
 from discord.ext import commands
-import logging, discord, os
+import logging, discord, os, re
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
 class MessageHandler(commands.Cog):
-    """Simplified message handler (leveling system removed)."""
+    """Simplified message handler with auto-thanks points."""
     def __init__(self, bot):
         self.bot = bot
 
-    # @commands.Cog.listener()
-    # async def on_message(self, message):
-    #     # Ignore bot messages or DMs
-    #     if message.author.bot or not message.guild:
-    #         return
-    #     # Allow other cogs / commands to process
-    #     await self.bot.process_commands(message)
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """Handle messages for auto-thanks detection"""
+        # Ignore bot messages or DMs
+        if message.author.bot or not message.guild:
+            return
+        
+        # Check for thanks mentions
+        await self.check_thanks_mention(message)
+        
+        # Allow other cogs / commands to process
+        await self.bot.process_commands(message)
 
-async def setup(bot):
-    await bot.add_cog(MessageHandler(bot))
-    # NOTE: Legacy leveling/XP code removed.
+    async def check_thanks_mention(self, message):
+        """Check if message contains 'thanks' and mentions/replies to staff"""
+        content = message.content.lower()
+        
+        # Check if message contains thanks-like words
+        thanks_patterns = [
+            r'\bthanks?\b', r'\bthank\s+you\b', r'\bty\b', r'\bthanku\b', 
+            r'\bthx\b', r'\btysm\b', r'\bthanks?\s*!+\b'
+        ]
+        
+        has_thanks = any(re.search(pattern, content) for pattern in thanks_patterns)
+        if not has_thanks:
+            return
+        
+        # Get staff points cog
+        staff_points_cog = self.bot.get_cog('StaffPoints')
+        if not staff_points_cog:
+            return
+        
+        mentioned_staff = []
+        
+        # Check direct mentions
+        for mention in message.mentions:
+            if await staff_points_cog.is_staff_member(mention):
+                mentioned_staff.append(mention)
+        
+        # Check if replying to a staff member
+        if message.reference and message.reference.message_id:
+            try:
+                replied_msg = await message.channel.fetch_message(message.reference.message_id)
+                if replied_msg.author != message.author and await staff_points_cog.is_staff_member(replied_msg.author):
+                    mentioned_staff.append(replied_msg.author)
+            except:
+                pass
+        
+        # Give points to mentioned/replied staff
+        for staff_member in set(mentioned_staff):  # Remove duplicates
+            success = await staff_points_cog.auto_give_point(staff_member, f"Thanks from {message.author.display_name}")
+            if success:
+                # Optional: React to show point was given
+                try:
+                    await message.add_reaction("👍")
+                except:
+                    pass
 
     @commands.Cog.listener()
     async def on_member_join(self, member):

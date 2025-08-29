@@ -9,18 +9,17 @@ The Staff Points (Aura) System is a comprehensive reward and recognition system 
 ## 🚀 Features
 
 ### ✨ Core Features
-- **Points Management** - Add, remove, set, and reset staff points
-- **Leaderboard System** - Comprehensive ranking with statistics
+- **Points Management** - Add, remove, set, and reset staff points *(Admin Only)*
+- **Leaderboard System** - Simple ranking showing all staff with points
 - **Activity Tracking** - Complete history of all points changes
-- **Automatic Logging** - Log all points activities to a designated channel
+- **Automatic Thanks Points** - Staff get 1 point when thanked via mention/reply
 - **Staff Recognition** - Promote healthy competition and recognition
 - **Detailed Statistics** - In-depth performance analytics
 
 ### 🔒 Permission Levels
 - **Everyone** - View own points, leaderboard, stats
 - **Moderators** - View detailed histories and staff statistics
-- **Administrators** - Full points management and configuration
-- **Bot Administrators** - System configuration and role management
+- **Administrators Only** - Full points management and configuration
 
 ---
 
@@ -35,12 +34,12 @@ The Staff Points (Aura) System is a comprehensive reward and recognition system 
 /points check @John        # Check John's points
 ```
 
-#### `/points leaderboard [limit]`
-**View the staff points leaderboard**
+#### `/points leaderboard`
+**View all staff members with points**
 ```
-/points leaderboard        # Top 10 staff members
-/points leaderboard 20     # Top 20 staff members (max 25)
+/points leaderboard        # Shows all staff with points (no limit)
 ```
+**Shows:** Simple ranking without emojis, all staff members with points
 
 #### `/points top`
 **Quick view of top 3 staff members**
@@ -66,7 +65,7 @@ The Staff Points (Aura) System is a comprehensive reward and recognition system 
 ### 📈 Management Commands (Admin Only)
 
 #### `/points add <@user> <amount> [reason]`
-**Award points to a staff member**
+**Award points to a staff member** *(Administrator Only)*
 ```
 /points add @John 50 Great help with moderation today
 /points add @Alice 25 Excellent community engagement
@@ -74,7 +73,7 @@ The Staff Points (Aura) System is a comprehensive reward and recognition system 
 **Limits:** 1-1000 points per action
 
 #### `/points remove <@user> <amount> [reason]`
-**Remove points from a staff member**
+**Remove points from a staff member** *(Administrator Only)*
 ```
 /points remove @John 10 Late to shift without notice
 /points remove @Alice 5 Minor policy violation
@@ -82,12 +81,48 @@ The Staff Points (Aura) System is a comprehensive reward and recognition system 
 **Limits:** 1-1000 points per action, cannot go below 0
 
 #### `/points set <@user> <amount> [reason]`
-**Set a staff member's points to exact amount**
+**Set a staff member's points to exact amount** *(Administrator Only)*
 ```
 /points set @John 100 Promotion adjustment
 /points set @Alice 0 Starting fresh
 ```
 **Limits:** 0-10000 points total
+
+---
+
+## 🤖 Automatic Thanks System
+
+### How It Works
+When someone mentions or replies to a staff member and says "thanks" (or similar), that staff member automatically gets **1 point**!
+
+### Trigger Words
+The system detects these words:
+- `thanks`, `thank you`, `ty`, `thanku`, `thx`, `tysm`, `thanks!`
+
+### How to Give Auto Points
+1. **Mention a staff member:** `@StaffMember thanks for the help!`
+2. **Reply to a staff member:** Reply to their message with `thanks!`
+3. **Multiple staff:** `@Staff1 @Staff2 thank you both!`
+
+### What Happens
+- Staff member gets +1 point automatically
+- Message gets a 👍 reaction to confirm
+- Point is logged as "Thanks from [username]"
+- Only works for configured staff roles
+
+### Examples
+```
+@ModeratorJohn thanks for helping with that issue!
+# ✅ ModeratorJohn gets +1 point
+
+Reply to staff message: "ty for the quick response!"
+# ✅ Staff member gets +1 point
+
+thanks everyone in this channel!  
+# ❌ No points (no specific mention/reply)
+```
+
+---
 
 #### `/points reset <@user> [reason]`
 **Reset a staff member's points to zero (with confirmation)**
