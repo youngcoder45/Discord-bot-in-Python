@@ -37,7 +37,7 @@ class Core(commands.Cog):
         embed.set_footer(text=f"Instance: {instance_id}")
         await ctx.reply(embed=embed, mention_author=False)
 
-    @commands.hybrid_command(name="help", help="Show all bot commands organized by category")
+    @commands.hybrid_command(name="bothelp", help="Show all bot commands organized by category")
     async def help_cmd(self, ctx: commands.Context):
         """Enhanced help command with organized categories."""
         embed = discord.Embed(
