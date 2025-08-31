@@ -120,11 +120,14 @@ def check_cog_files():
         'src/commands/moderation.py',
         'src/commands/moderation_extended.py',
         'src/commands/staff_shifts.py',
+        'src/commands/staff_points.py',
+        'src/commands/election.py',
+        'src/commands/data_management.py',
         'src/events/member_events.py',
         'src/events/message_handler.py',
-        'src/tasks/staff_reminder.py',
         'src/utils/helpers.py',
-        'src/utils/json_store.py'
+        'src/utils/json_store.py',
+        'src/utils/data_persistence.py'
     ]
     issues = []
     for file_path in cog_files:

@@ -26,8 +26,9 @@ class MessageHandler(commands.Cog):
         """Check if message contains 'thanks' and mentions/replies to staff"""
         content = message.content.lower()
         
-        # Check if message contains exactly "thanks" (more strict)
-        has_thanks = 'thanks' in content
+        # Check if message contains the exact word "thanks" using word boundaries
+        import re
+        has_thanks = bool(re.search(r'\bthanks\b', content))
         if not has_thanks:
             return
         
@@ -56,10 +57,12 @@ class MessageHandler(commands.Cog):
         for staff_member in set(mentioned_staff):  # Remove duplicates
             success = await staff_points_cog.auto_give_point(staff_member, f"Thanks from {message.author.display_name}")
             if success:
-                # Send bot reply message
+                # Send professional bot reply message
                 embed = discord.Embed(
-                    description=f"Added 1 aura to {staff_member.mention}",
-                    color=0x00FF00
+                    title="Aura Awarded",
+                    description=f"Added 1 aura to {staff_member.mention} for their helpful contribution.",
+                    color=0x2ECC71,
+                    timestamp=datetime.now(timezone.utc)
                 )
                 await message.reply(embed=embed, mention_author=False)
 
@@ -73,9 +76,9 @@ class MessageHandler(commands.Cog):
         if not channel:
             return
         embed = discord.Embed(
-            title="👋 Welcome!",
-            description=f"Welcome {member.mention} to **{member.guild.name}**!",
-            color=discord.Color.green(),
+            title="Welcome to the Server",
+            description=f"Welcome {member.mention} to {member.guild.name}",
+            color=0x3498DB,
             timestamp=datetime.now(tz=timezone.utc)
         )
         embed.set_thumbnail(url=member.display_avatar.url)

@@ -7,7 +7,6 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import random
-import asyncio
 from datetime import datetime, timezone
 
 # Professional data sets without emojis
@@ -24,7 +23,7 @@ COMPLIMENTS = [
 PROGRAMMING_JOKES = [
     "Why don't programmers like nature? It has too many bugs!",
     "What do you call a programmer from Finland? Nerdic!",
-    "Why do Java developers wear glasses? Because they don't C!",
+    "Why do Java developers wear glasses? Because they don't C#!",
     "How many programmers does it take to change a light bulb? None, that's a hardware problem.",
     "Why did the programmer quit his job? He didn't get arrays!",
     "What's a programmer's favorite hangout place? Foo Bar!",

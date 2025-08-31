@@ -14,39 +14,48 @@ class Core(commands.Cog):
     async def ping(self, ctx: commands.Context):
         """Latency check."""
         latency_ms = round(self.bot.latency * 1000)
-        embed = discord.Embed(title="🏓 Pong", color=discord.Color.green())
-        embed.add_field(name="WebSocket Latency", value=f"{latency_ms} ms")
+        embed = discord.Embed(
+            title="Connection Status", 
+            description=f"WebSocket Latency: {latency_ms}ms",
+            color=0x2ECC71
+        )
         await ctx.reply(embed=embed, mention_author=False)
 
     @commands.hybrid_command(name="info", help="Get bot information")
     async def info(self, ctx: commands.Context):
         uptime = datetime.now(timezone.utc) - self.start_time
-        embed = discord.Embed(title="CodeVerse Bot", color=discord.Color.blue())
-        embed.add_field(name="Uptime", value=str(uptime).split('.')[0], inline=False)
-        embed.add_field(name="Prefix", value=str(self.bot.command_prefix), inline=True)
-        instance_id = os.getenv('INSTANCE_ID', 'unknown')
-        embed.add_field(name="Instance", value=instance_id, inline=True)
-        embed.set_footer(text=f"Hybrid commands • Instance: {instance_id}")
+        embed = discord.Embed(
+            title="CodeVerse Bot Information", 
+            description="A professional Discord bot for programming communities",
+            color=0x3498DB,
+            timestamp=datetime.now(timezone.utc)
+        )
+        embed.add_field(name="Uptime", value=str(uptime).split('.')[0], inline=True)
+        embed.add_field(name="Command Prefix", value=str(self.bot.command_prefix), inline=True)
+        instance_id = os.getenv('INSTANCE_ID', 'production')
+        embed.add_field(name="Instance ID", value=instance_id, inline=True)
+        embed.set_footer(text=f"Instance: {instance_id}")
         await ctx.reply(embed=embed, mention_author=False)
 
     @commands.hybrid_command(name="help", help="Show all bot commands organized by category")
     async def help_cmd(self, ctx: commands.Context):
         """Enhanced help command with organized categories."""
         embed = discord.Embed(
-            title="🤖 CodeVerse Bot - Command Help",
-            description="All commands work with both prefix `?` and slash `/`\nExample: `?ping` or `/ping`",
-            color=discord.Color.blue()
+            title="CodeVerse Bot - Command Reference",
+            description="All commands work with both prefix `?` and slash `/` notation\nExample: `?ping` or `/ping`",
+            color=0x3498DB,
+            timestamp=datetime.now(timezone.utc)
         )
         
         # Core Commands
         core_commands = [
-            "**`ping`** - Check bot latency and responsiveness",
-            "**`info`** - View bot information and uptime",
-            "**`diag`** - Get bot diagnostics and health status",
-            "**`help`** - Show this help message"
+            "**ping** - Check bot latency and responsiveness",
+            "**info** - View bot information and uptime",
+            "**diag** - Get bot diagnostics and health status",
+            "**help** - Show this command reference"
         ]
         embed.add_field(
-            name="🎯 Core Commands",
+            name="Core Commands",
             value="\n".join(core_commands),
             inline=False
         )
