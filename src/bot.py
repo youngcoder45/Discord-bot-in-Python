@@ -50,6 +50,16 @@ class CodeVerseBot(commands.Bot):
 
     async def setup_hook(self):
         """Async setup tasks (load cogs, etc.)."""
+        # Initialize databases before loading cogs
+        try:
+            from utils.database_init import initialize_all_databases
+            if initialize_all_databases():
+                logger.info("🗄️ Database initialization completed")
+            else:
+                logger.warning("⚠️ Database initialization had issues")
+        except Exception as e:
+            logger.error(f"❌ Database initialization failed: {e}")
+        
         for cog in COGS_TO_LOAD:
             try:
                 await self.load_extension(cog)
