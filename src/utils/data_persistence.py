@@ -251,6 +251,9 @@ class DataPersistenceManager:
             }
             
             async with aiohttp.ClientSession() as session:
+                # First, ensure backup branch exists
+                await self._ensure_backup_branch_exists(session, base_url, headers)
+                
                 # Check if file exists to get SHA
                 get_url = f"{base_url}/contents/{file_path}?ref={self.backup_branch}"
                 sha = None
@@ -259,6 +262,9 @@ class DataPersistenceManager:
                     if response.status == 200:
                         file_info = await response.json()
                         sha = file_info.get("sha")
+                    elif response.status == 404:
+                        # File doesn't exist yet, that's fine for first backup
+                        logger.info("📁 Creating first backup file in GitHub")
                 
                 # Prepare commit data
                 commit_data = {
@@ -344,6 +350,45 @@ class DataPersistenceManager:
         # This will be called by each cog's init_database method
         # No need to do anything here, just log
         logger.info("ℹ️ Fresh database initialization will be handled by individual cogs")
+    
+    async def _ensure_backup_branch_exists(self, session, base_url: str, headers: dict):
+        """Ensure the backup branch exists, create it if it doesn't"""
+        try:
+            # Check if branch exists
+            branch_url = f"{base_url}/branches/{self.backup_branch}"
+            async with session.get(branch_url, headers=headers) as response:
+                if response.status == 200:
+                    return  # Branch exists
+                
+            # Branch doesn't exist, create it from master
+            logger.info(f"🌿 Creating backup branch: {self.backup_branch}")
+            
+            # Get master branch SHA
+            master_url = f"{base_url}/git/refs/heads/master"
+            async with session.get(master_url, headers=headers) as response:
+                if response.status != 200:
+                    logger.error("❌ Could not get master branch SHA")
+                    return
+                
+                master_info = await response.json()
+                master_sha = master_info["object"]["sha"]
+            
+            # Create new branch
+            create_branch_data = {
+                "ref": f"refs/heads/{self.backup_branch}",
+                "sha": master_sha
+            }
+            
+            create_url = f"{base_url}/git/refs"
+            async with session.post(create_url, headers=headers, json=create_branch_data) as response:
+                if response.status == 201:
+                    logger.info(f"✅ Backup branch created: {self.backup_branch}")
+                else:
+                    error_text = await response.text()
+                    logger.error(f"❌ Failed to create backup branch: {response.status} - {error_text}")
+                    
+        except Exception as e:
+            logger.error(f"❌ Error ensuring backup branch exists: {e}")
     
     async def schedule_periodic_backup(self, interval_hours: int = 6):
         """Schedule periodic backups"""
