@@ -40,22 +40,21 @@ def init_staff_shifts_db():
     conn = sqlite3.connect(db_path)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS shifts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            start_time TEXT NOT NULL,
-            end_time TEXT,
-            start_note TEXT,
-            end_note TEXT,
+            shift_id INTEGER PRIMARY KEY AUTOINCREMENT,
             guild_id INTEGER NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            user_id INTEGER NOT NULL,
+            start DATETIME NOT NULL,
+            end DATETIME DEFAULT NULL,
+            start_note TEXT DEFAULT NULL,
+            end_note TEXT DEFAULT NULL
         )
     ''')
     
     conn.execute('''
         CREATE TABLE IF NOT EXISTS shift_settings (
             guild_id INTEGER PRIMARY KEY,
-            log_channel_id INTEGER,
-            staff_roles TEXT
+            log_channel_id INTEGER DEFAULT NULL,
+            staff_role_ids TEXT DEFAULT '[]'
         )
     ''')
     
