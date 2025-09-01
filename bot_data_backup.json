@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-01T08:57:04.628723+00:00",
+  "timestamp": "2025-09-01T13:27:56.981635+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -113,7 +113,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 704912146378653766,
               "start": "2025-09-01 07:13:45.685335+00:00",
-              "end": null,
+              "end": "2025-09-01 09:49:15.966811+00:00",
               "start_note": null,
               "end_note": null
             },
@@ -122,7 +122,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 825572836181147648,
               "start": "2025-09-01 08:03:15.128674+00:00",
-              "end": null,
+              "end": "2025-09-01 11:45:13.620136+00:00",
               "start_note": null,
               "end_note": null
             }
@@ -321,11 +321,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 21
+              "seq": 22
             },
             {
               "name": "points_history",
-              "seq": 21
+              "seq": 22
             }
           ]
         },
@@ -465,10 +465,10 @@
               "id": 9,
               "guild_id": 1263067254153805905,
               "user_id": 1239292183136174121,
-              "points": 10,
-              "total_earned": 10,
+              "points": 11,
+              "total_earned": 11,
               "total_spent": 0,
-              "last_updated": "2025-08-31 07:33:28"
+              "last_updated": "2025-09-01 13:21:32"
             },
             {
               "id": 10,
@@ -803,6 +803,16 @@
               "reason": "bump",
               "action_type": "add",
               "timestamp": "2025-09-01 05:07:01"
+            },
+            {
+              "id": 22,
+              "guild_id": 1263067254153805905,
+              "user_id": 1239292183136174121,
+              "moderator_id": 955695820999639120,
+              "points_change": 1,
+              "reason": "bunp",
+              "action_type": "add",
+              "timestamp": "2025-09-01 13:21:32"
             }
           ]
         },
@@ -1536,7 +1546,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-01T08:57:04.642231+00:00",
+    "last_backup": "2025-09-01T13:27:56.991308+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
