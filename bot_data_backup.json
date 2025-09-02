@@ -1,0 +1,1148 @@
+{
+  "timestamp": "2025-09-02T14:47:23.664998+00:00",
+  "databases": {
+    "staff_shifts.db": {
+      "tables": {
+        "shifts": {
+          "schema": [
+            [
+              0,
+              "shift_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "start",
+              "DATETIME",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "end",
+              "DATETIME",
+              0,
+              "NULL",
+              0
+            ],
+            [
+              5,
+              "start_note",
+              "TEXT",
+              0,
+              "NULL",
+              0
+            ],
+            [
+              6,
+              "end_note",
+              "TEXT",
+              0,
+              "NULL",
+              0
+            ]
+          ],
+          "data": []
+        },
+        "sqlite_sequence": {
+          "schema": [
+            [
+              0,
+              "name",
+              "",
+              0,
+              null,
+              0
+            ],
+            [
+              1,
+              "seq",
+              "",
+              0,
+              null,
+              0
+            ]
+          ],
+          "data": []
+        },
+        "shift_settings": {
+          "schema": [
+            [
+              0,
+              "guild_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "log_channel_id",
+              "INTEGER",
+              0,
+              "NULL",
+              0
+            ],
+            [
+              2,
+              "staff_role_ids",
+              "TEXT",
+              0,
+              "'[]'",
+              0
+            ]
+          ],
+          "data": [
+            {
+              "guild_id": 1263067254153805905,
+              "log_channel_id": 1407256147760517151,
+              "staff_role_ids": "[1403059755001577543]"
+            }
+          ]
+        }
+      }
+    },
+    "staff_points.db": {
+      "tables": {
+        "staff_aura": {
+          "schema": [
+            [
+              0,
+              "user_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "aura",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              2,
+              "total_earned",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              3,
+              "total_spent",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              4,
+              "last_updated",
+              "TEXT",
+              0,
+              "CURRENT_TIMESTAMP",
+              0
+            ]
+          ],
+          "data": []
+        },
+        "aura_history": {
+          "schema": [
+            [
+              0,
+              "id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "change_amount",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "change_type",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "reason",
+              "TEXT",
+              0,
+              null,
+              0
+            ],
+            [
+              5,
+              "admin_id",
+              "INTEGER",
+              0,
+              null,
+              0
+            ],
+            [
+              6,
+              "timestamp",
+              "TEXT",
+              0,
+              "CURRENT_TIMESTAMP",
+              0
+            ]
+          ],
+          "data": []
+        },
+        "sqlite_sequence": {
+          "schema": [
+            [
+              0,
+              "name",
+              "",
+              0,
+              null,
+              0
+            ],
+            [
+              1,
+              "seq",
+              "",
+              0,
+              null,
+              0
+            ]
+          ],
+          "data": [
+            {
+              "name": "staff_points",
+              "seq": 1
+            },
+            {
+              "name": "points_history",
+              "seq": 1
+            }
+          ]
+        },
+        "staff_points": {
+          "schema": [
+            [
+              0,
+              "id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "points",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              4,
+              "total_earned",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              5,
+              "total_spent",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              6,
+              "last_updated",
+              "TIMESTAMP",
+              0,
+              "CURRENT_TIMESTAMP",
+              0
+            ]
+          ],
+          "data": [
+            {
+              "id": 1,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "points": 4,
+              "total_earned": 4,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 14:46:57"
+            }
+          ]
+        },
+        "points_history": {
+          "schema": [
+            [
+              0,
+              "id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "moderator_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "points_change",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              5,
+              "reason",
+              "TEXT",
+              0,
+              null,
+              0
+            ],
+            [
+              6,
+              "action_type",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              7,
+              "timestamp",
+              "TIMESTAMP",
+              0,
+              "CURRENT_TIMESTAMP",
+              0
+            ]
+          ],
+          "data": [
+            {
+              "id": 1,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 955695820999639120,
+              "points_change": 4,
+              "reason": "No reason provided",
+              "action_type": "add",
+              "timestamp": "2025-09-02 14:46:57"
+            }
+          ]
+        },
+        "staff_config": {
+          "schema": [
+            [
+              0,
+              "guild_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "staff_role_ids",
+              "TEXT",
+              0,
+              null,
+              0
+            ],
+            [
+              2,
+              "points_channel_id",
+              "INTEGER",
+              0,
+              null,
+              0
+            ],
+            [
+              3,
+              "auto_rewards",
+              "TEXT",
+              0,
+              null,
+              0
+            ],
+            [
+              4,
+              "daily_bonus",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              5,
+              "weekly_bonus",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ]
+          ],
+          "data": [
+            {
+              "guild_id": 1263067254153805905,
+              "staff_role_ids": "1403059755001577543",
+              "points_channel_id": null,
+              "auto_rewards": null,
+              "daily_bonus": 0,
+              "weekly_bonus": 0
+            }
+          ]
+        }
+      }
+    },
+    "codeverse_bot.db": {
+      "tables": {
+        "elections": {
+          "schema": [
+            [
+              0,
+              "guild_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "title",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "candidates",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "votes",
+              "TEXT",
+              0,
+              "'{}'",
+              0
+            ],
+            [
+              4,
+              "end_time",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              5,
+              "created_at",
+              "TEXT",
+              0,
+              "CURRENT_TIMESTAMP",
+              0
+            ]
+          ],
+          "data": []
+        },
+        "bot_settings": {
+          "schema": [
+            [
+              0,
+              "guild_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "settings_json",
+              "TEXT",
+              0,
+              "'{}'",
+              0
+            ]
+          ],
+          "data": []
+        }
+      }
+    }
+  },
+  "json_files": {
+    "questions.json": [
+      {
+        "question": "What is your favorite programming language and why?",
+        "difficulty": "Easy",
+        "category": "General Programming"
+      },
+      {
+        "question": "Explain the difference between == and === in JavaScript",
+        "difficulty": "Beginner",
+        "category": "JavaScript",
+        "hint": "Think about type coercion"
+      },
+      {
+        "question": "What are the four pillars of Object-Oriented Programming?",
+        "difficulty": "Beginner",
+        "category": "OOP"
+      },
+      {
+        "question": "How would you implement a stack using two queues?",
+        "difficulty": "Medium",
+        "category": "Data Structures",
+        "hint": "Think about how stack and queue operations differ"
+      },
+      {
+        "question": "What is the time complexity of binary search and why?",
+        "difficulty": "Medium",
+        "category": "Algorithms"
+      },
+      {
+        "question": "Explain the concept of closures in programming",
+        "difficulty": "Medium",
+        "category": "Programming Concepts",
+        "hint": "Think about scope and function contexts"
+      },
+      {
+        "question": "What is the difference between SQL and NoSQL databases?",
+        "difficulty": "Medium",
+        "category": "Databases"
+      },
+      {
+        "question": "How does garbage collection work in programming languages?",
+        "difficulty": "Hard",
+        "category": "Memory Management"
+      },
+      {
+        "question": "What is Big O notation and why is it important?",
+        "difficulty": "Medium",
+        "category": "Algorithms",
+        "hint": "Think about algorithm efficiency"
+      },
+      {
+        "question": "Explain the difference between synchronous and asynchronous programming",
+        "difficulty": "Medium",
+        "category": "Programming Concepts"
+      },
+      {
+        "question": "What is the most challenging bug you have ever encountered?",
+        "difficulty": "Easy",
+        "category": "Personal Experience"
+      },
+      {
+        "question": "How do you stay updated with the latest programming trends?",
+        "difficulty": "Easy",
+        "category": "Learning"
+      },
+      {
+        "question": "What is recursion and when would you use it?",
+        "difficulty": "Medium",
+        "category": "Programming Concepts",
+        "hint": "A function that calls itself"
+      },
+      {
+        "question": "Explain the MVC (Model-View-Controller) pattern",
+        "difficulty": "Medium",
+        "category": "Software Architecture"
+      },
+      {
+        "question": "What are APIs and how do they work?",
+        "difficulty": "Beginner",
+        "category": "Web Development"
+      },
+      {
+        "question": "What is the difference between a compiler and an interpreter?",
+        "difficulty": "Medium",
+        "category": "Programming Languages"
+      },
+      {
+        "question": "How would you optimize a slow-running SQL query?",
+        "difficulty": "Hard",
+        "category": "Database Optimization",
+        "hint": "Think about indexes, query structure, and execution plans"
+      },
+      {
+        "question": "What is the difference between HTTP and HTTPS?",
+        "difficulty": "Beginner",
+        "category": "Web Security"
+      },
+      {
+        "question": "Explain the concept of polymorphism in OOP",
+        "difficulty": "Medium",
+        "category": "OOP",
+        "hint": "One interface, multiple implementations"
+      },
+      {
+        "question": "What are design patterns and name three common ones",
+        "difficulty": "Hard",
+        "category": "Software Design"
+      },
+      {
+        "question": "How would you implement a LRU (Least Recently Used) cache?",
+        "difficulty": "Hard",
+        "category": "Data Structures",
+        "hint": "Think about combining hash map with doubly linked list"
+      },
+      {
+        "question": "What is version control and why is it important?",
+        "difficulty": "Beginner",
+        "category": "Development Tools"
+      },
+      {
+        "question": "Explain the difference between unit testing and integration testing",
+        "difficulty": "Medium",
+        "category": "Testing"
+      },
+      {
+        "question": "What is the CAP theorem in distributed systems?",
+        "difficulty": "Hard",
+        "category": "Distributed Systems",
+        "hint": "Consistency, Availability, Partition tolerance"
+      },
+      {
+        "question": "How would you handle a situation where your code works on your machine but not in production?",
+        "difficulty": "Medium",
+        "category": "Debugging"
+      },
+      {
+        "question": "What is the difference between machine learning and artificial intelligence?",
+        "difficulty": "Medium",
+        "category": "AI/ML"
+      },
+      {
+        "question": "Explain what happens when you type a URL in your browser and press Enter",
+        "difficulty": "Hard",
+        "category": "Web Development"
+      },
+      {
+        "question": "What is the purpose of virtual environments in Python?",
+        "difficulty": "Beginner",
+        "category": "Python"
+      },
+      {
+        "question": "How do you ensure your code is secure?",
+        "difficulty": "Medium",
+        "category": "Security"
+      },
+      {
+        "question": "What advice would you give to someone just starting their programming journey?",
+        "difficulty": "Easy",
+        "category": "Learning"
+      }
+    ],
+    "challenges.json": [
+      {
+        "title": "FizzBuzz Extended",
+        "description": "Write a program that prints numbers from 1 to 100. For multiples of 3 print 'Fizz', for multiples of 5 print 'Buzz', for multiples of 7 print 'Bang', and for multiples of both print the combination (e.g., 'FizzBuzz', 'FizzBang', 'BuzzBang', 'FizzBuzzBang').",
+        "difficulty": "Beginner",
+        "estimated_time": "30-60 minutes",
+        "category": "Logic & Math",
+        "requirements": [
+          "Handle numbers 1 to 100",
+          "Print 'Fizz' for multiples of 3",
+          "Print 'Buzz' for multiples of 5",
+          "Print 'Bang' for multiples of 7",
+          "Combine words for multiple conditions",
+          "Print the number if none of the conditions apply"
+        ],
+        "bonus_features": [
+          "Make it configurable for different ranges",
+          "Add command line arguments",
+          "Create a web interface",
+          "Add more rules dynamically"
+        ]
+      },
+      {
+        "title": "Smart To-Do List",
+        "description": "Create a command-line to-do list application with advanced features like priority levels, due dates, categories, and search functionality.",
+        "difficulty": "Medium",
+        "estimated_time": "2-4 hours",
+        "category": "CLI Applications",
+        "requirements": [
+          "Add, edit, and delete tasks",
+          "Set priority levels (High, Medium, Low)",
+          "Assign due dates to tasks",
+          "Categorize tasks with tags",
+          "Mark tasks as complete/incomplete",
+          "Search and filter tasks",
+          "Save data persistently"
+        ],
+        "bonus_features": [
+          "Color-coded output",
+          "Export to different formats (JSON, CSV)",
+          "Recurring tasks",
+          "Task statistics and analytics",
+          "Integration with calendar APIs"
+        ]
+      },
+      {
+        "title": "URL Shortener Service",
+        "description": "Build a URL shortener service similar to bit.ly with a web interface and API endpoints.",
+        "difficulty": "Hard",
+        "estimated_time": "4-8 hours",
+        "category": "Web Development",
+        "requirements": [
+          "Shorten long URLs to unique short codes",
+          "Redirect short URLs to original URLs",
+          "Web interface for creating short URLs",
+          "REST API endpoints",
+          "Click tracking and analytics",
+          "Custom alias support",
+          "Database storage"
+        ],
+        "bonus_features": [
+          "User authentication and personal URL management",
+          "QR code generation",
+          "Link expiration dates",
+          "Bulk URL shortening",
+          "Advanced analytics dashboard",
+          "API rate limiting"
+        ]
+      },
+      {
+        "title": "Expense Tracker",
+        "description": "Create a personal expense tracking application with categories, budgets, and reporting features.",
+        "difficulty": "Medium",
+        "estimated_time": "3-5 hours",
+        "category": "Desktop/Web Application",
+        "requirements": [
+          "Add, edit, delete expenses",
+          "Categorize expenses (Food, Transport, Entertainment, etc.)",
+          "Set monthly budgets per category",
+          "Generate expense reports",
+          "Data visualization (charts/graphs)",
+          "Export data to CSV/PDF",
+          "Date range filtering"
+        ],
+        "bonus_features": [
+          "Receipt photo attachments",
+          "Currency conversion",
+          "Recurring expense tracking",
+          "Budget alerts and notifications",
+          "Mobile-responsive design",
+          "Multi-user support"
+        ]
+      },
+      {
+        "title": "Code Snippet Manager",
+        "description": "Build a tool for developers to store, organize, and quickly access their code snippets with syntax highlighting and search capabilities.",
+        "difficulty": "Medium",
+        "estimated_time": "2-4 hours",
+        "category": "Developer Tools",
+        "requirements": [
+          "Store code snippets with title and description",
+          "Support multiple programming languages",
+          "Syntax highlighting",
+          "Tag-based organization",
+          "Search functionality",
+          "Copy to clipboard feature",
+          "Import/export snippets"
+        ],
+        "bonus_features": [
+          "Version control for snippets",
+          "Sharing snippets publicly",
+          "Integration with popular editors",
+          "Snippet templates",
+          "Collaborative features",
+          "API for external access"
+        ]
+      },
+      {
+        "title": "Real-time Chat Application",
+        "description": "Develop a real-time chat application with multiple rooms, user authentication, and message history.",
+        "difficulty": "Hard",
+        "estimated_time": "6-10 hours",
+        "category": "Real-time Applications",
+        "requirements": [
+          "User registration and authentication",
+          "Multiple chat rooms",
+          "Real-time messaging",
+          "Message history storage",
+          "Online user indicators",
+          "Private messaging",
+          "File sharing capabilities"
+        ],
+        "bonus_features": [
+          "Message reactions and emojis",
+          "Voice/video calls",
+          "Screen sharing",
+          "Message encryption",
+          "Custom themes",
+          "Bot integration",
+          "Mobile app companion"
+        ]
+      },
+      {
+        "title": "Password Manager",
+        "description": "Create a secure password manager with encryption, password generation, and browser integration.",
+        "difficulty": "Hard",
+        "estimated_time": "5-8 hours",
+        "category": "Security Applications",
+        "requirements": [
+          "Secure password storage with encryption",
+          "Master password authentication",
+          "Password generator with customizable criteria",
+          "Website/application categorization",
+          "Search and filter passwords",
+          "Password strength analyzer",
+          "Backup and restore functionality"
+        ],
+        "bonus_features": [
+          "Browser extension integration",
+          "Two-factor authentication support",
+          "Password breach checking",
+          "Secure notes storage",
+          "Emergency access features",
+          "Cross-platform synchronization"
+        ]
+      },
+      {
+        "title": "API Rate Limiter",
+        "description": "Implement a rate limiting system for APIs with different algorithms and storage backends.",
+        "difficulty": "Hard",
+        "estimated_time": "4-6 hours",
+        "category": "Backend Systems",
+        "requirements": [
+          "Token bucket algorithm implementation",
+          "Fixed window rate limiting",
+          "Sliding window rate limiting",
+          "Per-user and per-IP limiting",
+          "Redis/Memory storage options",
+          "HTTP middleware integration",
+          "Configuration management"
+        ],
+        "bonus_features": [
+          "Rate limiting analytics",
+          "Dynamic rate limit adjustment",
+          "Multiple rate limit tiers",
+          "Rate limit bypass for premium users",
+          "Distributed rate limiting",
+          "Custom rate limit rules"
+        ]
+      },
+      {
+        "title": "Mini Search Engine",
+        "description": "Build a basic search engine that can crawl, index, and search through a collection of documents or web pages.",
+        "difficulty": "Hard",
+        "estimated_time": "6-10 hours",
+        "category": "Information Retrieval",
+        "requirements": [
+          "Web crawler for collecting documents",
+          "Text indexing and preprocessing",
+          "TF-IDF or similar ranking algorithm",
+          "Search query processing",
+          "Results ranking and pagination",
+          "Basic web interface",
+          "Performance optimization"
+        ],
+        "bonus_features": [
+          "Advanced search operators",
+          "Image and document search",
+          "Autocomplete suggestions",
+          "Search analytics",
+          "Personalized results",
+          "Machine learning ranking"
+        ]
+      },
+      {
+        "title": "Game Leaderboard System",
+        "description": "Design a scalable leaderboard system for games with real-time updates, multiple ranking types, and anti-cheat measures.",
+        "difficulty": "Medium",
+        "estimated_time": "3-6 hours",
+        "category": "Game Development",
+        "requirements": [
+          "Player score submission and validation",
+          "Real-time leaderboard updates",
+          "Multiple leaderboard types (daily, weekly, all-time)",
+          "Pagination for large leaderboards",
+          "Player ranking and position tracking",
+          "Score history and trends",
+          "Basic anti-cheat validation"
+        ],
+        "bonus_features": [
+          "Tournament bracket systems",
+          "Achievement and badge systems",
+          "Social features (friends, following)",
+          "Advanced anti-cheat algorithms",
+          "Mobile push notifications",
+          "Analytics dashboard for game developers"
+        ]
+      }
+    ],
+    "quotes.json": [
+      "The only way to do great work is to love what you do. - Steve Jobs",
+      "Programming isn't about what you know; it's about what you can figure out. - Chris Pine",
+      "Code is like humor. When you have to explain it, it's bad. - Cory House",
+      "The best way to predict the future is to invent it. - Alan Kay",
+      "Simplicity is the soul of efficiency. - Austin Freeman",
+      "In programming, the hard part isn't solving problems, but deciding what problems to solve. - Paul Graham",
+      "First, solve the problem. Then, write the code. - John Johnson",
+      "Experience is the name everyone gives to their mistakes. - Oscar Wilde",
+      "Talk is cheap. Show me the code. - Linus Torvalds",
+      "Any fool can write code that a computer can understand. Good programmers write code that humans can understand. - Martin Fowler",
+      "Programming is not about typing, it's about thinking. - Rich Hickey",
+      "The most important property of a program is whether it accomplishes the intention of its user. - C.A.R. Hoare",
+      "Debugging is twice as hard as writing the code in the first place. - Brian Kernighan",
+      "Make it work, make it right, make it fast. - Kent Beck",
+      "Premature optimization is the root of all evil. - Donald Knuth",
+      "Code never lies, comments sometimes do. - Ron Jeffries",
+      "Programs must be written for people to read, and only incidentally for machines to execute. - Harold Abelson",
+      "The best error message is the one that never shows up. - Thomas Fuchs",
+      "It's not a bug – it's an undocumented feature. - Anonymous",
+      "Programming is the art of algorithm design and the craft of debugging errant code. - Ellen Ullman",
+      "Learning to write programs stretches your mind, and helps you think better. - Bill Gates",
+      "Every great developer you know got there by solving problems they were unqualified to solve until they actually did it. - Patrick McKenzie",
+      "The function of good software is to make the complex appear to be simple. - Grady Booch",
+      "Software is a great combination between artistry and engineering. - Bill Gates",
+      "Clean code always looks like it was written by someone who cares. - Robert C. Martin",
+      "Code is read much more often than it is written. - Guido van Rossum",
+      "The only way to learn a new programming language is by writing programs in it. - Dennis Ritchie",
+      "Simplicity is prerequisite for reliability. - Edsger W. Dijkstra",
+      "Good code is its own best documentation. - Steve McConnell",
+      "Programming is not a science. Programming is a craft. - Richard Stallman",
+      "Don't comment bad code—rewrite it. - Brian Kernighan",
+      "Measuring programming progress by lines of code is like measuring aircraft building progress by weight. - Bill Gates",
+      "Always code as if the guy who ends up maintaining your code will be a violent psychopath who knows where you live. - Martin Golding",
+      "There are only two hard things in Computer Science: cache invalidation and naming things. - Phil Karlton",
+      "Walking on water and developing software from a specification are easy if both are frozen. - Edward V Berard",
+      "Programming today is a race between software engineers striving to build bigger and better idiot-proof programs, and the Universe trying to produce bigger and better idiots. - Rick Cook",
+      "The computer was born to solve problems that did not exist before. - Bill Gates",
+      "The best thing about a boolean is even if you are wrong, you are only off by a bit. - Anonymous",
+      "If debugging is the process of removing software bugs, then programming must be the process of putting them in. - Edsger Dijkstra",
+      "Programming is like sex. One mistake and you have to support it for the rest of your life. - Michael Sinz",
+      "It's not that I'm so smart, it's just that I stay with problems longer. - Albert Einstein",
+      "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill",
+      "The way to get started is to quit talking and begin doing. - Walt Disney",
+      "Innovation distinguishes between a leader and a follower. - Steve Jobs",
+      "Your limitation—it's only your imagination.",
+      "Push yourself, because no one else is going to do it for you.",
+      "Great things never come from comfort zones.",
+      "Dream it. Wish it. Do it.",
+      "Don't stop when you're tired. Stop when you're done.",
+      "Wake up with determination. Go to bed with satisfaction."
+    ],
+    "quotes_new.json": [
+      "The only way to do great work is to love what you do. - Steve Jobs",
+      "Programming isn't about what you know; it's about what you can figure out. - Chris Pine",
+      "Code is like humor. When you have to explain it, it's bad. - Cory House",
+      "The best way to predict the future is to invent it. - Alan Kay",
+      "Simplicity is the soul of efficiency. - Austin Freeman",
+      "In programming, the hard part isn't solving problems, but deciding what problems to solve. - Paul Graham",
+      "First, solve the problem. Then, write the code. - John Johnson",
+      "Experience is the name everyone gives to their mistakes. - Oscar Wilde",
+      "Talk is cheap. Show me the code. - Linus Torvalds",
+      "Any fool can write code that a computer can understand. Good programmers write code that humans can understand. - Martin Fowler",
+      "Programming is not about typing, it's about thinking. - Rich Hickey",
+      "The most important property of a program is whether it accomplishes the intention of its user. - C.A.R. Hoare",
+      "Debugging is twice as hard as writing the code in the first place. - Brian Kernighan",
+      "Make it work, make it right, make it fast. - Kent Beck",
+      "Premature optimization is the root of all evil. - Donald Knuth",
+      "Code never lies, comments sometimes do. - Ron Jeffries",
+      "Programs must be written for people to read, and only incidentally for machines to execute. - Harold Abelson",
+      "The best error message is the one that never shows up. - Thomas Fuchs",
+      "It's not a bug – it's an undocumented feature. - Anonymous",
+      "Programming is the art of algorithm design and the craft of debugging errant code. - Ellen Ullman",
+      "Learning to write programs stretches your mind, and helps you think better. - Bill Gates",
+      "Every great developer you know got there by solving problems they were unqualified to solve until they actually did it. - Patrick McKenzie",
+      "The function of good software is to make the complex appear to be simple. - Grady Booch",
+      "Software is a great combination between artistry and engineering. - Bill Gates",
+      "Clean code always looks like it was written by someone who cares. - Robert C. Martin",
+      "Code is read much more often than it is written. - Guido van Rossum",
+      "The only way to learn a new programming language is by writing programs in it. - Dennis Ritchie",
+      "Simplicity is prerequisite for reliability. - Edsger W. Dijkstra",
+      "Good code is its own best documentation. - Steve McConnell",
+      "Programming is not a science. Programming is a craft. - Richard Stallman",
+      "Don't comment bad code—rewrite it. - Brian Kernighan",
+      "Measuring programming progress by lines of code is like measuring aircraft building progress by weight. - Bill Gates",
+      "Always code as if the guy who ends up maintaining your code will be a violent psychopath who knows where you live. - Martin Golding",
+      "There are only two hard things in Computer Science: cache invalidation and naming things. - Phil Karlton",
+      "Walking on water and developing software from a specification are easy if both are frozen. - Edward V Berard",
+      "Programming today is a race between software engineers striving to build bigger and better idiot-proof programs, and the Universe trying to produce bigger and better idiots. - Rick Cook",
+      "The computer was born to solve problems that did not exist before. - Bill Gates",
+      "The best thing about a boolean is even if you are wrong, you are only off by a bit. - Anonymous",
+      "If debugging is the process of removing software bugs, then programming must be the process of putting them in. - Edsger Dijkstra",
+      "Programming is like sex. One mistake and you have to support it for the rest of your life. - Michael Sinz",
+      "It's not that I'm so smart, it's just that I stay with problems longer. - Albert Einstein",
+      "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill",
+      "The way to get started is to quit talking and begin doing. - Walt Disney",
+      "Innovation distinguishes between a leader and a follower. - Steve Jobs",
+      "Your limitation—it's only your imagination.",
+      "Push yourself, because no one else is going to do it for you.",
+      "Great things never come from comfort zones.",
+      "Dream it. Wish it. Do it.",
+      "Don't stop when you're tired. Stop when you're done.",
+      "Wake up with determination. Go to bed with satisfaction."
+    ],
+    "code_snippets.json": {
+      "python": [
+        {
+          "description": "List Comprehension Example",
+          "code": "squares = [x**2 for x in range(10)]\nprint(squares)  # [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]",
+          "explanation": "List comprehensions provide a concise way to create lists based on existing iterables."
+        },
+        {
+          "description": "Dictionary Comprehension",
+          "code": "word_lengths = {word: len(word) for word in ['python', 'code', 'bot']}\nprint(word_lengths)  # {'python': 6, 'code': 4, 'bot': 3}",
+          "explanation": "Dictionary comprehensions create dictionaries in a single line of code."
+        },
+        {
+          "description": "Context Manager for File Handling",
+          "code": "with open('file.txt', 'r') as f:\n    content = f.read()\n    # File automatically closed",
+          "explanation": "Context managers ensure proper resource cleanup, especially useful for file operations."
+        },
+        {
+          "description": "Enumerate Function",
+          "code": "items = ['apple', 'banana', 'cherry']\nfor index, item in enumerate(items):\n    print(f'{index}: {item}')",
+          "explanation": "Enumerate provides both index and value when iterating over sequences."
+        },
+        {
+          "description": "Lambda Functions",
+          "code": "numbers = [1, 2, 3, 4, 5]\nsquared = list(map(lambda x: x**2, numbers))\nprint(squared)  # [1, 4, 9, 16, 25]",
+          "explanation": "Lambda functions are anonymous functions useful for short, simple operations."
+        }
+      ],
+      "javascript": [
+        {
+          "description": "Array Destructuring",
+          "code": "const [first, second, ...rest] = [1, 2, 3, 4, 5];\nconsole.log(first, second, rest); // 1 2 [3, 4, 5]",
+          "explanation": "Destructuring allows unpacking values from arrays into distinct variables."
+        },
+        {
+          "description": "Object Destructuring",
+          "code": "const {name, age} = {name: 'John', age: 25, city: 'NYC'};\nconsole.log(name, age); // John 25",
+          "explanation": "Object destructuring extracts properties from objects into variables."
+        },
+        {
+          "description": "Arrow Functions",
+          "code": "const multiply = (a, b) => a * b;\nconst square = x => x * x;\nconsole.log(multiply(3, 4)); // 12",
+          "explanation": "Arrow functions provide a shorter syntax for writing functions."
+        },
+        {
+          "description": "Template Literals",
+          "code": "const name = 'World';\nconst greeting = `Hello, ${name}!`;\nconsole.log(greeting); // Hello, World!",
+          "explanation": "Template literals allow embedded expressions and multi-line strings."
+        },
+        {
+          "description": "Promise with Async/Await",
+          "code": "async function fetchData() {\n  try {\n    const response = await fetch('/api/data');\n    const data = await response.json();\n    return data;\n  } catch (error) {\n    console.error('Error:', error);\n  }\n}",
+          "explanation": "Async/await provides a cleaner way to handle asynchronous operations."
+        }
+      ],
+      "java": [
+        {
+          "description": "Stream API Example",
+          "code": "List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5);\nList<Integer> squared = numbers.stream()\n    .map(x -> x * x)\n    .collect(Collectors.toList());",
+          "explanation": "Java Streams provide functional-style operations on collections."
+        },
+        {
+          "description": "Optional for Null Safety",
+          "code": "Optional<String> optional = Optional.ofNullable(getString());\noptional.ifPresent(System.out::println);\nString result = optional.orElse(\"Default\");",
+          "explanation": "Optional helps avoid NullPointerExceptions by wrapping potentially null values."
+        }
+      ],
+      "react": [
+        {
+          "description": "useState Hook",
+          "code": "import React, { useState } from 'react';\n\nfunction Counter() {\n  const [count, setCount] = useState(0);\n  \n  return (\n    <div>\n      <p>Count: {count}</p>\n      <button onClick={() => setCount(count + 1)}>+</button>\n    </div>\n  );\n}",
+          "explanation": "useState is a Hook that lets you add state to functional components."
+        },
+        {
+          "description": "useEffect Hook",
+          "code": "import React, { useState, useEffect } from 'react';\n\nfunction Timer() {\n  const [seconds, setSeconds] = useState(0);\n  \n  useEffect(() => {\n    const interval = setInterval(() => {\n      setSeconds(s => s + 1);\n    }, 1000);\n    \n    return () => clearInterval(interval);\n  }, []);\n  \n  return <div>Seconds: {seconds}</div>;\n}",
+          "explanation": "useEffect lets you perform side effects in functional components."
+        }
+      ]
+    }
+  },
+  "config": {
+    "last_backup": "2025-09-02T14:47:23.674466+00:00",
+    "version": "1.0",
+    "bot_instance": "unknown"
+  }
+}
