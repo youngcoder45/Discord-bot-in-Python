@@ -34,9 +34,19 @@ class DataPersistenceManager:
         logger.info("🔄 Starting data restoration process...")
         
         try:
+            # First, check if we have any existing data to preserve
+            existing_data = await self.check_existing_data()
+            
+            if existing_data["has_data"]:
+                logger.info("📊 Found existing data, creating safety backup before restoration...")
+                await self.backup_all_data()
+            
             # Try GitHub backup first
             if self.github_token:
-                await self.restore_from_github()
+                restored = await self.restore_from_github()
+                if not restored:
+                    logger.warning("⚠️ GitHub restore failed, trying local backup...")
+                    await self.restore_from_local()
             else:
                 logger.warning("⚠️ No GITHUB_TOKEN found, using local backup only")
                 await self.restore_from_local()
@@ -47,6 +57,45 @@ class DataPersistenceManager:
             # Continue with fresh data if restore fails
             await self.initialize_fresh_databases()
     
+    async def check_existing_data(self):
+        """Check if we have existing data in databases"""
+        has_data = False
+        data_info = {"has_data": False, "databases": {}}
+        
+        db_files = [
+            "data/staff_shifts.db",
+            "data/staff_points.db", 
+            "data/codeverse_bot.db"
+        ]
+        
+        for db_path in db_files:
+            if os.path.exists(db_path):
+                try:
+                    async with aiosqlite.connect(db_path) as db:
+                        # Get all tables and count rows
+                        async with db.execute("SELECT name FROM sqlite_master WHERE type='table'") as cursor:
+                            tables = await cursor.fetchall()
+                        
+                        total_rows = 0
+                        for table in tables:
+                            table_name = table[0]
+                            async with db.execute(f"SELECT COUNT(*) FROM {table_name}") as cursor:
+                                count = await cursor.fetchone()
+                                total_rows += count[0] if count else 0
+                        
+                        data_info["databases"][os.path.basename(db_path)] = total_rows
+                        if total_rows > 0:
+                            has_data = True
+                            
+                except Exception as e:
+                    logger.warning(f"⚠️ Error checking {db_path}: {e}")
+        
+        data_info["has_data"] = has_data
+        if has_data:
+            logger.info(f"📊 Existing data found: {data_info['databases']}")
+        
+        return data_info
+    
     async def backup_all_data(self):
         """Backup all bot data"""
         logger.info("💾 Starting comprehensive data backup...")
@@ -55,15 +104,23 @@ class DataPersistenceManager:
             backup_data = await self.collect_all_data()
             
             # Save to local backup
-            await self.save_local_backup(backup_data)
+            local_success = await self.save_local_backup(backup_data)
             
             # Save to GitHub if token available
+            github_success = False
             if self.github_token:
-                await self.save_to_github(backup_data)
+                github_success = await self.save_to_github(backup_data)
             
-            logger.info("✅ Data backup completed successfully")
+            if local_success or github_success:
+                logger.info("✅ Data backup completed successfully")
+                return True
+            else:
+                logger.error("❌ Both local and GitHub backups failed!")
+                return False
+                
         except Exception as e:
             logger.error(f"❌ Data backup failed: {e}")
+            return False
     
     async def collect_all_data(self) -> Dict[str, Any]:
         """Collect all data from databases and files"""
@@ -201,18 +258,24 @@ class DataPersistenceManager:
     
     async def save_local_backup(self, backup_data: Dict[str, Any]):
         """Save backup to local file"""
-        backup_file = self.backup_dir / f"bot_data_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        
-        with open(backup_file, 'w', encoding='utf-8') as f:
-            json.dump(backup_data, f, indent=2, ensure_ascii=False)
-        
-        # Keep only last 5 local backups
-        backup_files = sorted(self.backup_dir.glob("bot_data_backup_*.json"))
-        while len(backup_files) > 5:
-            oldest = backup_files.pop(0)
-            oldest.unlink()
-        
-        logger.info(f"💾 Local backup saved: {backup_file}")
+        try:
+            backup_file = self.backup_dir / f"bot_data_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            
+            with open(backup_file, 'w', encoding='utf-8') as f:
+                json.dump(backup_data, f, indent=2, ensure_ascii=False)
+            
+            # Keep only last 5 local backups
+            backup_files = sorted(self.backup_dir.glob("bot_data_backup_*.json"))
+            while len(backup_files) > 5:
+                oldest = backup_files.pop(0)
+                oldest.unlink()
+            
+            logger.info(f"💾 Local backup saved: {backup_file}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Local backup failed: {e}")
+            return False
     
     async def restore_from_local(self):
         """Restore from most recent local backup"""
@@ -220,15 +283,22 @@ class DataPersistenceManager:
         
         if not backup_files:
             logger.info("ℹ️ No local backups found, starting fresh")
-            return
+            return False
         
         latest_backup = backup_files[-1]
         logger.info(f"📂 Restoring from local backup: {latest_backup}")
         
-        with open(latest_backup, 'r', encoding='utf-8') as f:
-            backup_data = json.load(f)
-        
-        await self.restore_from_backup_data(backup_data)
+        try:
+            with open(latest_backup, 'r', encoding='utf-8') as f:
+                backup_data = json.load(f)
+            
+            await self.restore_from_backup_data(backup_data)
+            logger.info("✅ Local restore completed successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Local restore failed: {e}")
+            return False
     
     async def save_to_github(self, backup_data: Dict[str, Any]):
         """Save backup to GitHub repository"""
@@ -281,18 +351,21 @@ class DataPersistenceManager:
                 async with session.put(put_url, headers=headers, json=commit_data) as response:
                     if response.status in [200, 201]:
                         logger.info("✅ Data backed up to GitHub successfully")
+                        return True
                     else:
                         error_text = await response.text()
                         logger.error(f"❌ GitHub backup failed: {response.status} - {error_text}")
+                        return False
         
         except Exception as e:
             logger.error(f"❌ GitHub backup error: {e}")
+            return False
     
     async def restore_from_github(self):
         """Restore data from GitHub backup"""
         if not self.github_token:
             logger.warning("⚠️ No GitHub token available for restore")
-            return
+            return False
         
         try:
             base_url = f"https://api.github.com/repos/{self.github_repo}"
@@ -314,11 +387,15 @@ class DataPersistenceManager:
                         
                         logger.info("📥 Restoring data from GitHub backup...")
                         await self.restore_from_backup_data(backup_data)
+                        logger.info("✅ GitHub restore completed successfully")
+                        return True
                     else:
-                        logger.info("ℹ️ No GitHub backup found, starting fresh")
+                        logger.info("ℹ️ No GitHub backup found")
+                        return False
         
         except Exception as e:
             logger.error(f"❌ GitHub restore error: {e}")
+            return False
     
     async def restore_from_backup_data(self, backup_data: Dict[str, Any]):
         """Restore from backup data dictionary"""
