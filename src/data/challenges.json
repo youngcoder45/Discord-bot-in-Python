@@ -1,239 +1,239 @@
 [
-    {
-        "title": "FizzBuzz Extended",
-        "description": "Write a program that prints numbers from 1 to 100. For multiples of 3 print 'Fizz', for multiples of 5 print 'Buzz', for multiples of 7 print 'Bang', and for multiples of both print the combination (e.g., 'FizzBuzz', 'FizzBang', 'BuzzBang', 'FizzBuzzBang').",
-        "difficulty": "Beginner",
-        "estimated_time": "30-60 minutes",
-        "category": "Logic & Math",
-        "requirements": [
-            "Handle numbers 1 to 100",
-            "Print 'Fizz' for multiples of 3",
-            "Print 'Buzz' for multiples of 5", 
-            "Print 'Bang' for multiples of 7",
-            "Combine words for multiple conditions",
-            "Print the number if none of the conditions apply"
-        ],
-        "bonus_features": [
-            "Make it configurable for different ranges",
-            "Add command line arguments",
-            "Create a web interface",
-            "Add more rules dynamically"
-        ]
-    },
-    {
-        "title": "Smart To-Do List",
-        "description": "Create a command-line to-do list application with advanced features like priority levels, due dates, categories, and search functionality.",
-        "difficulty": "Medium",
-        "estimated_time": "2-4 hours",
-        "category": "CLI Applications",
-        "requirements": [
-            "Add, edit, and delete tasks",
-            "Set priority levels (High, Medium, Low)",
-            "Assign due dates to tasks",
-            "Categorize tasks with tags",
-            "Mark tasks as complete/incomplete",
-            "Search and filter tasks",
-            "Save data persistently"
-        ],
-        "bonus_features": [
-            "Color-coded output",
-            "Export to different formats (JSON, CSV)",
-            "Recurring tasks",
-            "Task statistics and analytics",
-            "Integration with calendar APIs"
-        ]
-    },
-    {
-        "title": "URL Shortener Service",
-        "description": "Build a URL shortener service similar to bit.ly with a web interface and API endpoints.",
-        "difficulty": "Hard",
-        "estimated_time": "4-8 hours",
-        "category": "Web Development",
-        "requirements": [
-            "Shorten long URLs to unique short codes",
-            "Redirect short URLs to original URLs",
-            "Web interface for creating short URLs",
-            "REST API endpoints",
-            "Click tracking and analytics",
-            "Custom alias support",
-            "Database storage"
-        ],
-        "bonus_features": [
-            "User authentication and personal URL management",
-            "QR code generation",
-            "Link expiration dates",
-            "Bulk URL shortening",
-            "Advanced analytics dashboard",
-            "API rate limiting"
-        ]
-    },
-    {
-        "title": "Expense Tracker",
-        "description": "Create a personal expense tracking application with categories, budgets, and reporting features.",
-        "difficulty": "Medium",
-        "estimated_time": "3-5 hours",
-        "category": "Desktop/Web Application",
-        "requirements": [
-            "Add, edit, delete expenses",
-            "Categorize expenses (Food, Transport, Entertainment, etc.)",
-            "Set monthly budgets per category",
-            "Generate expense reports",
-            "Data visualization (charts/graphs)",
-            "Export data to CSV/PDF",
-            "Date range filtering"
-        ],
-        "bonus_features": [
-            "Receipt photo attachments",
-            "Currency conversion",
-            "Recurring expense tracking",
-            "Budget alerts and notifications",
-            "Mobile-responsive design",
-            "Multi-user support"
-        ]
-    },
-    {
-        "title": "Code Snippet Manager",
-        "description": "Build a tool for developers to store, organize, and quickly access their code snippets with syntax highlighting and search capabilities.",
-        "difficulty": "Medium",
-        "estimated_time": "2-4 hours",
-        "category": "Developer Tools",
-        "requirements": [
-            "Store code snippets with title and description",
-            "Support multiple programming languages",
-            "Syntax highlighting",
-            "Tag-based organization",
-            "Search functionality",
-            "Copy to clipboard feature",
-            "Import/export snippets"
-        ],
-        "bonus_features": [
-            "Version control for snippets",
-            "Sharing snippets publicly",
-            "Integration with popular editors",
-            "Snippet templates",
-            "Collaborative features",
-            "API for external access"
-        ]
-    },
-    {
-        "title": "Real-time Chat Application",
-        "description": "Develop a real-time chat application with multiple rooms, user authentication, and message history.",
-        "difficulty": "Hard",
-        "estimated_time": "6-10 hours",
-        "category": "Real-time Applications",
-        "requirements": [
-            "User registration and authentication",
-            "Multiple chat rooms",
-            "Real-time messaging",
-            "Message history storage",
-            "Online user indicators",
-            "Private messaging",
-            "File sharing capabilities"
-        ],
-        "bonus_features": [
-            "Message reactions and emojis",
-            "Voice/video calls",
-            "Screen sharing",
-            "Message encryption",
-            "Custom themes",
-            "Bot integration",
-            "Mobile app companion"
-        ]
-    },
-    {
-        "title": "Password Manager",
-        "description": "Create a secure password manager with encryption, password generation, and browser integration.",
-        "difficulty": "Hard",
-        "estimated_time": "5-8 hours",
-        "category": "Security Applications",
-        "requirements": [
-            "Secure password storage with encryption",
-            "Master password authentication",
-            "Password generator with customizable criteria",
-            "Website/application categorization",
-            "Search and filter passwords",
-            "Password strength analyzer",
-            "Backup and restore functionality"
-        ],
-        "bonus_features": [
-            "Browser extension integration",
-            "Two-factor authentication support",
-            "Password breach checking",
-            "Secure notes storage",
-            "Emergency access features",
-            "Cross-platform synchronization"
-        ]
-    },
-    {
-        "title": "API Rate Limiter",
-        "description": "Implement a rate limiting system for APIs with different algorithms and storage backends.",
-        "difficulty": "Hard", 
-        "estimated_time": "4-6 hours",
-        "category": "Backend Systems",
-        "requirements": [
-            "Token bucket algorithm implementation",
-            "Fixed window rate limiting",
-            "Sliding window rate limiting",
-            "Per-user and per-IP limiting",
-            "Redis/Memory storage options",
-            "HTTP middleware integration",
-            "Configuration management"
-        ],
-        "bonus_features": [
-            "Rate limiting analytics",
-            "Dynamic rate limit adjustment",
-            "Multiple rate limit tiers",
-            "Rate limit bypass for premium users",
-            "Distributed rate limiting",
-            "Custom rate limit rules"
-        ]
-    },
-    {
-        "title": "Mini Search Engine",
-        "description": "Build a basic search engine that can crawl, index, and search through a collection of documents or web pages.",
-        "difficulty": "Hard",
-        "estimated_time": "6-10 hours",
-        "category": "Information Retrieval",
-        "requirements": [
-            "Web crawler for collecting documents",
-            "Text indexing and preprocessing",
-            "TF-IDF or similar ranking algorithm",
-            "Search query processing",
-            "Results ranking and pagination",
-            "Basic web interface",
-            "Performance optimization"
-        ],
-        "bonus_features": [
-            "Advanced search operators",
-            "Image and document search",
-            "Autocomplete suggestions",
-            "Search analytics",
-            "Personalized results",
-            "Machine learning ranking"
-        ]
-    },
-    {
-        "title": "Game Leaderboard System",
-        "description": "Design a scalable leaderboard system for games with real-time updates, multiple ranking types, and anti-cheat measures.",
-        "difficulty": "Medium",
-        "estimated_time": "3-6 hours", 
-        "category": "Game Development",
-        "requirements": [
-            "Player score submission and validation",
-            "Real-time leaderboard updates",
-            "Multiple leaderboard types (daily, weekly, all-time)",
-            "Pagination for large leaderboards",
-            "Player ranking and position tracking",
-            "Score history and trends",
-            "Basic anti-cheat validation"
-        ],
-        "bonus_features": [
-            "Tournament bracket systems",
-            "Achievement and badge systems",
-            "Social features (friends, following)",
-            "Advanced anti-cheat algorithms", 
-            "Mobile push notifications",
-            "Analytics dashboard for game developers"
-        ]
-    }
+  {
+    "title": "FizzBuzz Extended",
+    "description": "Write a program that prints numbers from 1 to 100. For multiples of 3 print 'Fizz', for multiples of 5 print 'Buzz', for multiples of 7 print 'Bang', and for multiples of both print the combination (e.g., 'FizzBuzz', 'FizzBang', 'BuzzBang', 'FizzBuzzBang').",
+    "difficulty": "Beginner",
+    "estimated_time": "30-60 minutes",
+    "category": "Logic & Math",
+    "requirements": [
+      "Handle numbers 1 to 100",
+      "Print 'Fizz' for multiples of 3",
+      "Print 'Buzz' for multiples of 5",
+      "Print 'Bang' for multiples of 7",
+      "Combine words for multiple conditions",
+      "Print the number if none of the conditions apply"
+    ],
+    "bonus_features": [
+      "Make it configurable for different ranges",
+      "Add command line arguments",
+      "Create a web interface",
+      "Add more rules dynamically"
+    ]
+  },
+  {
+    "title": "Smart To-Do List",
+    "description": "Create a command-line to-do list application with advanced features like priority levels, due dates, categories, and search functionality.",
+    "difficulty": "Medium",
+    "estimated_time": "2-4 hours",
+    "category": "CLI Applications",
+    "requirements": [
+      "Add, edit, and delete tasks",
+      "Set priority levels (High, Medium, Low)",
+      "Assign due dates to tasks",
+      "Categorize tasks with tags",
+      "Mark tasks as complete/incomplete",
+      "Search and filter tasks",
+      "Save data persistently"
+    ],
+    "bonus_features": [
+      "Color-coded output",
+      "Export to different formats (JSON, CSV)",
+      "Recurring tasks",
+      "Task statistics and analytics",
+      "Integration with calendar APIs"
+    ]
+  },
+  {
+    "title": "URL Shortener Service",
+    "description": "Build a URL shortener service similar to bit.ly with a web interface and API endpoints.",
+    "difficulty": "Hard",
+    "estimated_time": "4-8 hours",
+    "category": "Web Development",
+    "requirements": [
+      "Shorten long URLs to unique short codes",
+      "Redirect short URLs to original URLs",
+      "Web interface for creating short URLs",
+      "REST API endpoints",
+      "Click tracking and analytics",
+      "Custom alias support",
+      "Database storage"
+    ],
+    "bonus_features": [
+      "User authentication and personal URL management",
+      "QR code generation",
+      "Link expiration dates",
+      "Bulk URL shortening",
+      "Advanced analytics dashboard",
+      "API rate limiting"
+    ]
+  },
+  {
+    "title": "Expense Tracker",
+    "description": "Create a personal expense tracking application with categories, budgets, and reporting features.",
+    "difficulty": "Medium",
+    "estimated_time": "3-5 hours",
+    "category": "Desktop/Web Application",
+    "requirements": [
+      "Add, edit, delete expenses",
+      "Categorize expenses (Food, Transport, Entertainment, etc.)",
+      "Set monthly budgets per category",
+      "Generate expense reports",
+      "Data visualization (charts/graphs)",
+      "Export data to CSV/PDF",
+      "Date range filtering"
+    ],
+    "bonus_features": [
+      "Receipt photo attachments",
+      "Currency conversion",
+      "Recurring expense tracking",
+      "Budget alerts and notifications",
+      "Mobile-responsive design",
+      "Multi-user support"
+    ]
+  },
+  {
+    "title": "Code Snippet Manager",
+    "description": "Build a tool for developers to store, organize, and quickly access their code snippets with syntax highlighting and search capabilities.",
+    "difficulty": "Medium",
+    "estimated_time": "2-4 hours",
+    "category": "Developer Tools",
+    "requirements": [
+      "Store code snippets with title and description",
+      "Support multiple programming languages",
+      "Syntax highlighting",
+      "Tag-based organization",
+      "Search functionality",
+      "Copy to clipboard feature",
+      "Import/export snippets"
+    ],
+    "bonus_features": [
+      "Version control for snippets",
+      "Sharing snippets publicly",
+      "Integration with popular editors",
+      "Snippet templates",
+      "Collaborative features",
+      "API for external access"
+    ]
+  },
+  {
+    "title": "Real-time Chat Application",
+    "description": "Develop a real-time chat application with multiple rooms, user authentication, and message history.",
+    "difficulty": "Hard",
+    "estimated_time": "6-10 hours",
+    "category": "Real-time Applications",
+    "requirements": [
+      "User registration and authentication",
+      "Multiple chat rooms",
+      "Real-time messaging",
+      "Message history storage",
+      "Online user indicators",
+      "Private messaging",
+      "File sharing capabilities"
+    ],
+    "bonus_features": [
+      "Message reactions and emojis",
+      "Voice/video calls",
+      "Screen sharing",
+      "Message encryption",
+      "Custom themes",
+      "Bot integration",
+      "Mobile app companion"
+    ]
+  },
+  {
+    "title": "Password Manager",
+    "description": "Create a secure password manager with encryption, password generation, and browser integration.",
+    "difficulty": "Hard",
+    "estimated_time": "5-8 hours",
+    "category": "Security Applications",
+    "requirements": [
+      "Secure password storage with encryption",
+      "Master password authentication",
+      "Password generator with customizable criteria",
+      "Website/application categorization",
+      "Search and filter passwords",
+      "Password strength analyzer",
+      "Backup and restore functionality"
+    ],
+    "bonus_features": [
+      "Browser extension integration",
+      "Two-factor authentication support",
+      "Password breach checking",
+      "Secure notes storage",
+      "Emergency access features",
+      "Cross-platform synchronization"
+    ]
+  },
+  {
+    "title": "API Rate Limiter",
+    "description": "Implement a rate limiting system for APIs with different algorithms and storage backends.",
+    "difficulty": "Hard",
+    "estimated_time": "4-6 hours",
+    "category": "Backend Systems",
+    "requirements": [
+      "Token bucket algorithm implementation",
+      "Fixed window rate limiting",
+      "Sliding window rate limiting",
+      "Per-user and per-IP limiting",
+      "Redis/Memory storage options",
+      "HTTP middleware integration",
+      "Configuration management"
+    ],
+    "bonus_features": [
+      "Rate limiting analytics",
+      "Dynamic rate limit adjustment",
+      "Multiple rate limit tiers",
+      "Rate limit bypass for premium users",
+      "Distributed rate limiting",
+      "Custom rate limit rules"
+    ]
+  },
+  {
+    "title": "Mini Search Engine",
+    "description": "Build a basic search engine that can crawl, index, and search through a collection of documents or web pages.",
+    "difficulty": "Hard",
+    "estimated_time": "6-10 hours",
+    "category": "Information Retrieval",
+    "requirements": [
+      "Web crawler for collecting documents",
+      "Text indexing and preprocessing",
+      "TF-IDF or similar ranking algorithm",
+      "Search query processing",
+      "Results ranking and pagination",
+      "Basic web interface",
+      "Performance optimization"
+    ],
+    "bonus_features": [
+      "Advanced search operators",
+      "Image and document search",
+      "Autocomplete suggestions",
+      "Search analytics",
+      "Personalized results",
+      "Machine learning ranking"
+    ]
+  },
+  {
+    "title": "Game Leaderboard System",
+    "description": "Design a scalable leaderboard system for games with real-time updates, multiple ranking types, and anti-cheat measures.",
+    "difficulty": "Medium",
+    "estimated_time": "3-6 hours",
+    "category": "Game Development",
+    "requirements": [
+      "Player score submission and validation",
+      "Real-time leaderboard updates",
+      "Multiple leaderboard types (daily, weekly, all-time)",
+      "Pagination for large leaderboards",
+      "Player ranking and position tracking",
+      "Score history and trends",
+      "Basic anti-cheat validation"
+    ],
+    "bonus_features": [
+      "Tournament bracket systems",
+      "Achievement and badge systems",
+      "Social features (friends, following)",
+      "Advanced anti-cheat algorithms",
+      "Mobile push notifications",
+      "Analytics dashboard for game developers"
+    ]
+  }
 ]

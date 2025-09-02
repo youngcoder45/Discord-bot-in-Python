@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-02T14:35:07.199019+00:00",
+  "timestamp": "2025-09-02T15:12:48.676803+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -198,7 +198,44 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "id": 1,
+              "guild_id": 1263067254153805905,
+              "user_id": 555666777,
+              "points": 100,
+              "total_earned": 100,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 15:10:44"
+            },
+            {
+              "id": 2,
+              "guild_id": 1263067254153805905,
+              "user_id": 987654321,
+              "points": 75,
+              "total_earned": 75,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 15:10:44"
+            },
+            {
+              "id": 3,
+              "guild_id": 1263067254153805905,
+              "user_id": 123456789,
+              "points": 50,
+              "total_earned": 50,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 15:10:44"
+            },
+            {
+              "id": 4,
+              "guild_id": 1263067254153805905,
+              "user_id": 111222333,
+              "points": 25,
+              "total_earned": 25,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 15:10:44"
+            }
+          ]
         },
         "sqlite_sequence": {
           "schema": [
@@ -219,7 +256,16 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "name": "point_logs",
+              "seq": 4
+            },
+            {
+              "name": "staff_points",
+              "seq": 4
+            }
+          ]
         },
         "points_history": {
           "schema": [
@@ -448,6 +494,166 @@
             ]
           ],
           "data": []
+        },
+        "points": {
+          "schema": [
+            [
+              0,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              1
+            ],
+            [
+              1,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              2
+            ],
+            [
+              2,
+              "points",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              3,
+              "last_updated",
+              "DATETIME",
+              0,
+              "CURRENT_TIMESTAMP",
+              0
+            ]
+          ],
+          "data": [
+            {
+              "user_id": 123456789,
+              "guild_id": 1263067254153805905,
+              "points": 50,
+              "last_updated": "2025-09-02 15:02:35"
+            },
+            {
+              "user_id": 987654321,
+              "guild_id": 1263067254153805905,
+              "points": 75,
+              "last_updated": "2025-09-02 15:02:35"
+            },
+            {
+              "user_id": 555666777,
+              "guild_id": 1263067254153805905,
+              "points": 100,
+              "last_updated": "2025-09-02 15:02:35"
+            },
+            {
+              "user_id": 111222333,
+              "guild_id": 1263067254153805905,
+              "points": 25,
+              "last_updated": "2025-09-02 15:02:35"
+            }
+          ]
+        },
+        "point_logs": {
+          "schema": [
+            [
+              0,
+              "log_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "amount",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "reason",
+              "TEXT",
+              0,
+              null,
+              0
+            ],
+            [
+              5,
+              "admin_id",
+              "INTEGER",
+              0,
+              null,
+              0
+            ],
+            [
+              6,
+              "timestamp",
+              "DATETIME",
+              0,
+              "CURRENT_TIMESTAMP",
+              0
+            ]
+          ],
+          "data": [
+            {
+              "log_id": 1,
+              "user_id": 123456789,
+              "guild_id": 1263067254153805905,
+              "amount": 50,
+              "reason": "Initial aura - Sample staff member 1",
+              "admin_id": 0,
+              "timestamp": "2025-09-02 15:02:35"
+            },
+            {
+              "log_id": 2,
+              "user_id": 987654321,
+              "guild_id": 1263067254153805905,
+              "amount": 75,
+              "reason": "Initial aura - Sample staff member 2",
+              "admin_id": 0,
+              "timestamp": "2025-09-02 15:02:35"
+            },
+            {
+              "log_id": 3,
+              "user_id": 555666777,
+              "guild_id": 1263067254153805905,
+              "amount": 100,
+              "reason": "Initial aura - Sample staff member 3",
+              "admin_id": 0,
+              "timestamp": "2025-09-02 15:02:35"
+            },
+            {
+              "log_id": 4,
+              "user_id": 111222333,
+              "guild_id": 1263067254153805905,
+              "amount": 25,
+              "reason": "Initial aura - Sample staff member 4",
+              "admin_id": 0,
+              "timestamp": "2025-09-02 15:02:35"
+            }
+          ]
         }
       }
     },
@@ -1572,7 +1778,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-02T14:35:07.227745+00:00",
+    "last_backup": "2025-09-02T15:12:48.708801+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }

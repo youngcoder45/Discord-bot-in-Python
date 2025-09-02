@@ -50,7 +50,16 @@ class CodeVerseBot(commands.Bot):
 
     async def setup_hook(self):
         """Async setup tasks (load cogs, etc.)."""
-        # Initialize databases before loading cogs
+        # CRITICAL: Restore data BEFORE initializing databases or loading cogs
+        try:
+            from utils.data_persistence import startup_restore
+            logger.info("🔄 Restoring data before cog initialization...")
+            await startup_restore()
+            logger.info("✅ Data restoration completed")
+        except Exception as e:
+            logger.error(f"⚠️ Data restoration failed: {e}")
+        
+        # Initialize databases AFTER data restoration
         try:
             from utils.database_init import initialize_all_databases
             if initialize_all_databases():
@@ -73,16 +82,13 @@ bot = CodeVerseBot()
 async def on_ready():
     logger.info(f"Logged in as {bot.user} (ID: {bot.user.id}) [Instance: {INSTANCE_ID}]")
     
-    # Restore data from backups on startup
+    # Start periodic backup task (every 6 hours)
     try:
-        from utils.data_persistence import startup_restore, start_periodic_backup
-        await startup_restore()
-        
-        # Start periodic backup task (every 6 hours)
+        from utils.data_persistence import start_periodic_backup
         await start_periodic_backup()
-        logger.info("🔄 Data persistence system initialized")
+        logger.info("🔄 Periodic backup system started")
     except Exception as e:
-        logger.error(f"⚠️ Data persistence system failed to initialize: {e}")
+        logger.error(f"⚠️ Periodic backup system failed to start: {e}")
     
     # Sync slash commands
     try:
