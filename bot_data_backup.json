@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-02T09:55:21.372803+00:00",
+  "timestamp": "2025-09-02T14:47:23.664998+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -112,7 +112,13 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "guild_id": 1263067254153805905,
+              "log_channel_id": 1407256147760517151,
+              "staff_role_ids": "[1403059755001577543]"
+            }
+          ]
         }
       }
     },
@@ -243,7 +249,16 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "name": "staff_points",
+              "seq": 1
+            },
+            {
+              "name": "points_history",
+              "seq": 1
+            }
+          ]
         },
         "staff_points": {
           "schema": [
@@ -304,7 +319,17 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "id": 1,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "points": 4,
+              "total_earned": 4,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 14:46:57"
+            }
+          ]
         },
         "points_history": {
           "schema": [
@@ -373,7 +398,18 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "id": 1,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 955695820999639120,
+              "points_change": 4,
+              "reason": "No reason provided",
+              "action_type": "add",
+              "timestamp": "2025-09-02 14:46:57"
+            }
+          ]
         },
         "staff_config": {
           "schema": [
@@ -426,7 +462,16 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "guild_id": 1263067254153805905,
+              "staff_role_ids": "1403059755001577543",
+              "points_channel_id": null,
+              "auto_rewards": null,
+              "daily_bonus": 0,
+              "weekly_bonus": 0
+            }
+          ]
         }
       }
     },
@@ -1096,7 +1141,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-02T09:55:21.381013+00:00",
+    "last_backup": "2025-09-02T14:47:23.674466+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
