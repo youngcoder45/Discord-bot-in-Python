@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-02T14:47:23.664998+00:00",
+  "timestamp": "2025-09-02T16:07:50.718796+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -59,27 +59,6 @@
               "TEXT",
               0,
               "NULL",
-              0
-            ]
-          ],
-          "data": []
-        },
-        "sqlite_sequence": {
-          "schema": [
-            [
-              0,
-              "name",
-              "",
-              0,
-              null,
-              0
-            ],
-            [
-              1,
-              "seq",
-              "",
-              0,
-              null,
               0
             ]
           ],
@@ -249,16 +228,7 @@
               0
             ]
           ],
-          "data": [
-            {
-              "name": "staff_points",
-              "seq": 1
-            },
-            {
-              "name": "points_history",
-              "seq": 1
-            }
-          ]
+          "data": []
         },
         "staff_points": {
           "schema": [
@@ -319,17 +289,7 @@
               0
             ]
           ],
-          "data": [
-            {
-              "id": 1,
-              "guild_id": 1263067254153805905,
-              "user_id": 955695820999639120,
-              "points": 4,
-              "total_earned": 4,
-              "total_spent": 0,
-              "last_updated": "2025-09-02 14:46:57"
-            }
-          ]
+          "data": []
         },
         "points_history": {
           "schema": [
@@ -398,18 +358,7 @@
               0
             ]
           ],
-          "data": [
-            {
-              "id": 1,
-              "guild_id": 1263067254153805905,
-              "user_id": 955695820999639120,
-              "moderator_id": 955695820999639120,
-              "points_change": 4,
-              "reason": "No reason provided",
-              "action_type": "add",
-              "timestamp": "2025-09-02 14:46:57"
-            }
-          ]
+          "data": []
         },
         "staff_config": {
           "schema": [
@@ -1141,7 +1090,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-02T14:47:23.674466+00:00",
+    "last_backup": "2025-09-02T16:07:50.912058+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
