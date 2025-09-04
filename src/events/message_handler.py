@@ -19,8 +19,8 @@ class MessageHandler(commands.Cog):
         # Check for thanks mentions
         await self.check_thanks_mention(message)
         
-        # Allow other cogs / commands to process
-        await self.bot.process_commands(message)
+        # NOTE: Don't call process_commands here - the bot already does this automatically
+        # Calling it here would cause duplicate responses for prefix commands
 
     async def check_thanks_mention(self, message):
         """Check if message contains 'thanks' and mentions/replies to staff"""
