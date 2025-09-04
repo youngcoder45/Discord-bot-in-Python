@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-02T15:13:07.237406+00:00",
+  "timestamp": "2025-09-04T06:31:10.123151+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -132,6 +132,11 @@
               "guild_id": 123456789,
               "log_channel_id": 987654321,
               "staff_role_ids": "123,456,789"
+            },
+            {
+              "guild_id": 1263067254153805905,
+              "log_channel_id": 1407256147760517151,
+              "staff_role_ids": "[1403059755001577543]"
             }
           ]
         }
@@ -200,40 +205,121 @@
           ],
           "data": [
             {
-              "id": 1,
+              "id": 18,
               "guild_id": 1263067254153805905,
-              "user_id": 555666777,
-              "points": 100,
-              "total_earned": 100,
+              "user_id": 800000000000000001,
+              "points": 27,
+              "total_earned": 27,
               "total_spent": 0,
-              "last_updated": "2025-09-02 15:10:44"
+              "last_updated": "2025-09-02 16:11:39"
             },
             {
-              "id": 2,
+              "id": 19,
               "guild_id": 1263067254153805905,
-              "user_id": 987654321,
-              "points": 75,
-              "total_earned": 75,
+              "user_id": 800000000000000002,
+              "points": 26,
+              "total_earned": 26,
               "total_spent": 0,
-              "last_updated": "2025-09-02 15:10:44"
+              "last_updated": "2025-09-02 16:11:39"
             },
             {
-              "id": 3,
+              "id": 20,
               "guild_id": 1263067254153805905,
-              "user_id": 123456789,
-              "points": 50,
-              "total_earned": 50,
-              "total_spent": 0,
-              "last_updated": "2025-09-02 15:10:44"
-            },
-            {
-              "id": 4,
-              "guild_id": 1263067254153805905,
-              "user_id": 111222333,
+              "user_id": 800000000000000003,
               "points": 25,
               "total_earned": 25,
               "total_spent": 0,
-              "last_updated": "2025-09-02 15:10:44"
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 21,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000004,
+              "points": 24,
+              "total_earned": 24,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 22,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000005,
+              "points": 20,
+              "total_earned": 20,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 23,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000006,
+              "points": 16,
+              "total_earned": 16,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 24,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000007,
+              "points": 13,
+              "total_earned": 13,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 25,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000008,
+              "points": 10,
+              "total_earned": 10,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 26,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000009,
+              "points": 8,
+              "total_earned": 8,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 27,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000010,
+              "points": 5,
+              "total_earned": 5,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 28,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000011,
+              "points": 5,
+              "total_earned": 5,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 29,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000012,
+              "points": 3,
+              "total_earned": 3,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 30,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000013,
+              "points": 2,
+              "total_earned": 2,
+              "total_spent": 0,
+              "last_updated": "2025-09-02 16:11:39"
             }
           ]
         },
@@ -263,7 +349,11 @@
             },
             {
               "name": "staff_points",
-              "seq": 4
+              "seq": 30
+            },
+            {
+              "name": "points_history",
+              "seq": 26
             }
           ]
         },
@@ -334,7 +424,138 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "id": 14,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000001,
+              "moderator_id": 0,
+              "points_change": 27,
+              "reason": "Test aura for TestUser_27_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 15,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000002,
+              "moderator_id": 0,
+              "points_change": 26,
+              "reason": "Test aura for TestUser_26_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 16,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000003,
+              "moderator_id": 0,
+              "points_change": 25,
+              "reason": "Test aura for TestUser_25_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 17,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000004,
+              "moderator_id": 0,
+              "points_change": 24,
+              "reason": "Test aura for TestUser_24_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 18,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000005,
+              "moderator_id": 0,
+              "points_change": 20,
+              "reason": "Test aura for TestUser_20_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 19,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000006,
+              "moderator_id": 0,
+              "points_change": 16,
+              "reason": "Test aura for TestUser_16_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 20,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000007,
+              "moderator_id": 0,
+              "points_change": 13,
+              "reason": "Test aura for TestUser_13_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 21,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000008,
+              "moderator_id": 0,
+              "points_change": 10,
+              "reason": "Test aura for TestUser_10_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 22,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000009,
+              "moderator_id": 0,
+              "points_change": 8,
+              "reason": "Test aura for TestUser_8_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 23,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000010,
+              "moderator_id": 0,
+              "points_change": 5,
+              "reason": "Test aura for TestUser_5A_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 24,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000011,
+              "moderator_id": 0,
+              "points_change": 5,
+              "reason": "Test aura for TestUser_5B_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 25,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000012,
+              "moderator_id": 0,
+              "points_change": 3,
+              "reason": "Test aura for TestUser_3_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            },
+            {
+              "id": 26,
+              "guild_id": 1263067254153805905,
+              "user_id": 800000000000000013,
+              "moderator_id": 0,
+              "points_change": 2,
+              "reason": "Test aura for TestUser_2_Aura",
+              "action_type": "add",
+              "timestamp": "2025-09-02 16:11:39"
+            }
+          ]
         },
         "staff_config": {
           "schema": [
@@ -1778,7 +1999,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-02T15:13:07.281401+00:00",
+    "last_backup": "2025-09-04T06:31:10.171885+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
