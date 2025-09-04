@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-04T07:17:19.133588+00:00",
+  "timestamp": "2025-09-04T13:12:33.663855+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -71,6 +71,15 @@
               "end": null,
               "start_note": null,
               "end_note": null
+            },
+            {
+              "shift_id": 2,
+              "guild_id": 1263067254153805905,
+              "user_id": 825572836181147648,
+              "start": "2025-09-04 08:23:46.155842+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null
             }
           ]
         },
@@ -113,67 +122,6 @@
     },
     "staff_points.db": {
       "tables": {
-        "staff_points": {
-          "schema": [
-            [
-              0,
-              "id",
-              "INTEGER",
-              0,
-              null,
-              1
-            ],
-            [
-              1,
-              "guild_id",
-              "INTEGER",
-              1,
-              null,
-              0
-            ],
-            [
-              2,
-              "user_id",
-              "INTEGER",
-              1,
-              null,
-              0
-            ],
-            [
-              3,
-              "points",
-              "INTEGER",
-              0,
-              "0",
-              0
-            ],
-            [
-              4,
-              "total_earned",
-              "INTEGER",
-              0,
-              "0",
-              0
-            ],
-            [
-              5,
-              "total_spent",
-              "INTEGER",
-              0,
-              "0",
-              0
-            ],
-            [
-              6,
-              "last_updated",
-              "TIMESTAMP",
-              0,
-              "CURRENT_TIMESTAMP",
-              0
-            ]
-          ],
-          "data": []
-        },
         "staff_aura": {
           "schema": [
             [
@@ -301,6 +249,67 @@
           ],
           "data": []
         },
+        "staff_points": {
+          "schema": [
+            [
+              0,
+              "id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "points",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              4,
+              "total_earned",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              5,
+              "total_spent",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              6,
+              "last_updated",
+              "TIMESTAMP",
+              0,
+              "CURRENT_TIMESTAMP",
+              0
+            ]
+          ],
+          "data": []
+        },
         "points_history": {
           "schema": [
             [
@@ -421,81 +430,21 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "guild_id": 1263067254153805905,
+              "staff_role_ids": "1403059755001577543",
+              "points_channel_id": null,
+              "auto_rewards": null,
+              "daily_bonus": 0,
+              "weekly_bonus": 0
+            }
+          ]
         }
       }
     },
     "codeverse_bot.db": {
       "tables": {
-        "users": {
-          "schema": [
-            [
-              0,
-              "user_id",
-              "INTEGER",
-              0,
-              null,
-              1
-            ],
-            [
-              1,
-              "username",
-              "TEXT",
-              0,
-              null,
-              0
-            ],
-            [
-              2,
-              "xp",
-              "INTEGER",
-              0,
-              "0",
-              0
-            ],
-            [
-              3,
-              "level",
-              "INTEGER",
-              0,
-              "1",
-              0
-            ],
-            [
-              4,
-              "message_count",
-              "INTEGER",
-              0,
-              "0",
-              0
-            ],
-            [
-              5,
-              "last_xp_gain",
-              "TEXT",
-              0,
-              null,
-              0
-            ],
-            [
-              6,
-              "join_date",
-              "TEXT",
-              0,
-              null,
-              0
-            ],
-            [
-              7,
-              "total_warnings",
-              "INTEGER",
-              0,
-              "0",
-              0
-            ]
-          ],
-          "data": []
-        },
         "elections": {
           "schema": [
             [
@@ -1160,7 +1109,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-04T07:17:19.532117+00:00",
+    "last_backup": "2025-09-04T13:12:33.839946+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
