@@ -67,25 +67,44 @@ def init_staff_points_db():
     db_path = "data/staff_points.db"
     
     conn = sqlite3.connect(db_path)
+    
+    # Main staff points table
     conn.execute('''
-        CREATE TABLE IF NOT EXISTS staff_aura (
-            user_id INTEGER PRIMARY KEY,
-            aura INTEGER DEFAULT 0,
+        CREATE TABLE IF NOT EXISTS staff_points (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            points INTEGER DEFAULT 0,
             total_earned INTEGER DEFAULT 0,
             total_spent INTEGER DEFAULT 0,
-            last_updated TEXT DEFAULT CURRENT_TIMESTAMP
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(guild_id, user_id)
         )
     ''')
     
+    # Points history table
     conn.execute('''
-        CREATE TABLE IF NOT EXISTS aura_history (
+        CREATE TABLE IF NOT EXISTS points_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
-            change_amount INTEGER NOT NULL,
-            change_type TEXT NOT NULL,
+            moderator_id INTEGER NOT NULL,
+            points_change INTEGER NOT NULL,
             reason TEXT,
-            admin_id INTEGER,
-            timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+            action_type TEXT NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Staff roles configuration
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS staff_config (
+            guild_id INTEGER PRIMARY KEY,
+            staff_role_ids TEXT,
+            points_channel_id INTEGER,
+            auto_rewards TEXT,
+            daily_bonus INTEGER DEFAULT 0,
+            weekly_bonus INTEGER DEFAULT 0
         )
     ''')
     

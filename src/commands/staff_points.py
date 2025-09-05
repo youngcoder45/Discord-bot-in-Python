@@ -870,7 +870,7 @@ class StaffPoints(commands.Cog):
             
             # Log the transaction
             await db.execute("""
-                INSERT INTO points_history (guild_id, user_id, admin_id, amount, reason, action_type)
+                INSERT INTO points_history (guild_id, user_id, moderator_id, points_change, reason, action_type)
                 VALUES (?, ?, ?, 1, ?, 'auto_add')
             """, (member.guild.id, member.id, self.bot.user.id, reason))
             
