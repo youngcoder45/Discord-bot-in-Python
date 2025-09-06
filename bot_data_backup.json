@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-06T12:05:10.072147+00:00",
+  "timestamp": "2025-09-06T18:05:12.408027+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -104,7 +104,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 825572836181147648,
               "start": "2025-09-06 08:42:17.357376+00:00",
-              "end": null,
+              "end": "2025-09-06 12:08:42.106740+00:00",
               "start_note": null,
               "end_note": null
             }
@@ -277,11 +277,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 26
+              "seq": 27
             },
             {
               "name": "points_history",
-              "seq": 26
+              "seq": 27
             }
           ]
         },
@@ -358,10 +358,10 @@
               "id": 2,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 1030,
+              "points": 30,
               "total_earned": 1030,
-              "total_spent": 0,
-              "last_updated": "2025-09-05 15:09:50"
+              "total_spent": 1000,
+              "last_updated": "2025-09-06 14:34:24"
             },
             {
               "id": 3,
@@ -827,6 +827,16 @@
               "reason": "Thanks for bumping",
               "action_type": "add",
               "timestamp": "2025-09-06 04:25:47"
+            },
+            {
+              "id": 27,
+              "guild_id": 1263067254153805905,
+              "user_id": 1186872689038729237,
+              "moderator_id": 955695820999639120,
+              "points_change": -1000,
+              "reason": "No reason provided",
+              "action_type": "remove",
+              "timestamp": "2025-09-06 14:34:24"
             }
           ]
         },
@@ -1560,7 +1570,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-06T12:05:10.336094+00:00",
+    "last_backup": "2025-09-06T18:05:12.674780+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
