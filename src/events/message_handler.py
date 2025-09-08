@@ -69,20 +69,8 @@ class MessageHandler(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         """Handle new member joins (no DM, simplified)."""
-        joins_channel_id = int(os.getenv('JOINS_LEAVES_CHANNEL_ID', 0))
-        if not joins_channel_id:
-            return
-        channel = self.bot.get_channel(joins_channel_id)
-        if not channel:
-            return
-        embed = discord.Embed(
-            title="Welcome to the Server",
-            description=f"Welcome {member.mention} to {member.guild.name}",
-            color=0x3498DB,
-            timestamp=datetime.now(tz=timezone.utc)
-        )
-        embed.set_thumbnail(url=member.display_avatar.url)
-        await channel.send(embed=embed)
+        # Welcome messages removed per user request
+        pass
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):

@@ -69,32 +69,32 @@ class MemberEvents(commands.Cog):
                 
                 await log_channel.send(embed=embed)
         
-        # Check for nickname changes
-        if before.nick != after.nick:
-            embed = discord.Embed(
-                title="📝 Nickname Update",
-                color=discord.Color.orange(),
-                timestamp=datetime.utcnow()
-            )
-            embed.set_thumbnail(url=after.display_avatar.url)
-            
-            embed.add_field(
-                name="Member",
-                value=f"{after.mention} ({after.id})",
-                inline=False
-            )
-            embed.add_field(
-                name="Before",
-                value=before.nick or before.name,
-                inline=True
-            )
-            embed.add_field(
-                name="After",
-                value=after.nick or after.name,
-                inline=True
-            )
-            
-            await log_channel.send(embed=embed)
+        # Check for nickname changes - removed per user request
+        # if before.nick != after.nick:
+        #     embed = discord.Embed(
+        #         title="📝 Nickname Update",
+        #         color=discord.Color.orange(),
+        #         timestamp=datetime.utcnow()
+        #     )
+        #     embed.set_thumbnail(url=after.display_avatar.url)
+        #     
+        #     embed.add_field(
+        #         name="Member",
+        #         value=f"{after.mention} ({after.id})",
+        #         inline=False
+        #     )
+        #     embed.add_field(
+        #         name="Before",
+        #         value=before.nick or before.name,
+        #         inline=True
+        #     )
+        #     embed.add_field(
+        #         name="After",
+        #         value=after.nick or after.name,
+        #         inline=True
+        #     )
+        #     
+        #     await log_channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
@@ -146,24 +146,24 @@ class MemberEvents(commands.Cog):
             # Update cached username
             await add_or_update_user(after.id, str(after))
 
-        # Check for avatar changes
-        if before.avatar != after.avatar:
-            embed = discord.Embed(
-                title="🖼️ Avatar Update",
-                description=f"{after.mention} changed their avatar",
-                color=discord.Color.green(),
-                timestamp=datetime.now(tz=timezone.utc)
-            )
-            
-            if before.avatar:
-                embed.set_thumbnail(url=before.display_avatar.url)
-                embed.add_field(name="Before", value="[Old Avatar](before.display_avatar.url)", inline=True)
-            
-            if after.avatar:
-                embed.set_image(url=after.display_avatar.url)
-                embed.add_field(name="After", value="[New Avatar](after.display_avatar.url)", inline=True)
-            
-            await log_channel.send(embed=embed)
+        # Check for avatar changes - removed per user request
+        # if before.avatar != after.avatar:
+        #     embed = discord.Embed(
+        #         title="🖼️ Avatar Update",
+        #         description=f"{after.mention} changed their avatar",
+        #         color=discord.Color.green(),
+        #         timestamp=datetime.now(tz=timezone.utc)
+        #     )
+        #     
+        #     if before.avatar:
+        #         embed.set_thumbnail(url=before.display_avatar.url)
+        #         embed.add_field(name="Before", value="[Old Avatar](before.display_avatar.url)", inline=True)
+        #     
+        #     if after.avatar:
+        #         embed.set_image(url=after.display_avatar.url)
+        #         embed.add_field(name="After", value="[New Avatar](after.display_avatar.url)", inline=True)
+        #     
+        #     await log_channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, user):
