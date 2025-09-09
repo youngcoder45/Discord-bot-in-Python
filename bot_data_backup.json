@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-09T04:27:19.003974+00:00",
+  "timestamp": "2025-09-09T08:08:16.347453+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -197,6 +197,24 @@
               "end": null,
               "start_note": null,
               "end_note": null
+            },
+            {
+              "shift_id": 16,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-09 05:10:56.438494+00:00",
+              "end": null,
+              "start_note": "I didnt went to school today because am sick so imma moderate lol",
+              "end_note": null
+            },
+            {
+              "shift_id": 17,
+              "guild_id": 1263067254153805905,
+              "user_id": 704912146378653766,
+              "start": "2025-09-09 06:58:55.265402+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null
             }
           ]
         },
@@ -367,11 +385,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 39
+              "seq": 40
             },
             {
               "name": "points_history",
-              "seq": 39
+              "seq": 40
             }
           ]
         },
@@ -601,10 +619,10 @@
               "id": 32,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 6,
-              "total_earned": 6,
+              "points": 9,
+              "total_earned": 9,
               "total_spent": 0,
-              "last_updated": "2025-09-08 17:29:28"
+              "last_updated": "2025-09-09 06:49:52"
             },
             {
               "id": 35,
@@ -1074,6 +1092,16 @@
               "reason": "Thanks from Aditya ✧ YC45",
               "action_type": "auto_add",
               "timestamp": "2025-09-08 17:29:28"
+            },
+            {
+              "id": 40,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 955695820999639120,
+              "points_change": 3,
+              "reason": "No reason provided",
+              "action_type": "add",
+              "timestamp": "2025-09-09 06:49:52"
             }
           ]
         },
@@ -1807,7 +1835,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-09T04:27:19.059813+00:00",
+    "last_backup": "2025-09-09T08:08:16.545304+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
