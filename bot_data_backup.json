@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-10T10:27:29.169909+00:00",
+  "timestamp": "2025-09-10T14:08:26.834415+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -242,6 +242,15 @@
               "end": "2025-09-10 09:31:16.791568+00:00",
               "start_note": "I am not going to school today again lol",
               "end_note": "going to academy"
+            },
+            {
+              "shift_id": 21,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-10 13:30:18.155682+00:00",
+              "end": null,
+              "start_note": "back from academy",
+              "end_note": null
             }
           ]
         },
@@ -1942,7 +1951,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-10T10:27:29.276553+00:00",
+    "last_backup": "2025-09-10T14:08:26.936089+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
