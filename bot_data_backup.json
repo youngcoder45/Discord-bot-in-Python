@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-10T16:27:30.867591+00:00",
+  "timestamp": "2025-09-10T20:08:28.474599+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -248,9 +248,9 @@
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
               "start": "2025-09-10 13:30:18.155682+00:00",
-              "end": null,
+              "end": "2025-09-10 19:04:53.436286+00:00",
               "start_note": "back from academy",
-              "end_note": null
+              "end_note": "going to sleep"
             }
           ]
         },
@@ -421,11 +421,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 49
+              "seq": 54
             },
             {
               "name": "points_history",
-              "seq": 49
+              "seq": 54
             }
           ]
         },
@@ -637,10 +637,10 @@
               "id": 20,
               "guild_id": 1263067254153805905,
               "user_id": 955695820999639120,
-              "points": 4,
-              "total_earned": 6,
+              "points": 5,
+              "total_earned": 7,
               "total_spent": 2,
-              "last_updated": "2025-09-10 15:25:47"
+              "last_updated": "2025-09-10 17:56:52"
             },
             {
               "id": 28,
@@ -655,10 +655,10 @@
               "id": 32,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 15,
-              "total_earned": 15,
+              "points": 19,
+              "total_earned": 19,
               "total_spent": 0,
-              "last_updated": "2025-09-10 03:52:42"
+              "last_updated": "2025-09-10 18:12:54"
             },
             {
               "id": 35,
@@ -1228,6 +1228,56 @@
               "reason": "Thanks from Chaosraph",
               "action_type": "auto_add",
               "timestamp": "2025-09-10 15:25:47"
+            },
+            {
+              "id": 50,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Qadir",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-10 17:56:52"
+            },
+            {
+              "id": 51,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from KillerNurse",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-10 18:11:33"
+            },
+            {
+              "id": 52,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from KillerNurse",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-10 18:12:22"
+            },
+            {
+              "id": 53,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from KillerNurse",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-10 18:12:43"
+            },
+            {
+              "id": 54,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from KillerNurse",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-10 18:12:54"
             }
           ]
         },
@@ -1961,7 +2011,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-10T16:27:31.125989+00:00",
+    "last_backup": "2025-09-10T20:08:28.620331+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
