@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-12T14:08:45.989132+00:00",
+  "timestamp": "2025-09-12T16:27:48.678750+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -311,7 +311,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 704912146378653766,
               "start": "2025-09-12 07:09:42.342893+00:00",
-              "end": null,
+              "end": "2025-09-12 14:45:34.242957+00:00",
               "start_note": null,
               "end_note": null
             }
@@ -484,11 +484,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 79
+              "seq": 84
             },
             {
               "name": "points_history",
-              "seq": 79
+              "seq": 84
             }
           ]
         },
@@ -565,28 +565,28 @@
               "id": 2,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 33,
-              "total_earned": 1033,
+              "points": 36,
+              "total_earned": 1036,
               "total_spent": 1000,
-              "last_updated": "2025-09-12 12:22:56"
+              "last_updated": "2025-09-12 15:15:22"
             },
             {
               "id": 3,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 32,
-              "total_earned": 32,
+              "points": 33,
+              "total_earned": 33,
               "total_spent": 0,
-              "last_updated": "2025-09-11 14:37:10"
+              "last_updated": "2025-09-12 16:12:55"
             },
             {
               "id": 4,
               "guild_id": 1263067254153805905,
               "user_id": 1313117547486515273,
-              "points": 24,
-              "total_earned": 33,
+              "points": 26,
+              "total_earned": 35,
               "total_spent": 9,
-              "last_updated": "2025-09-11 16:55:15"
+              "last_updated": "2025-09-12 16:12:48"
             },
             {
               "id": 5,
@@ -700,10 +700,10 @@
               "id": 20,
               "guild_id": 1263067254153805905,
               "user_id": 955695820999639120,
-              "points": 2,
-              "total_earned": 10,
+              "points": 3,
+              "total_earned": 11,
               "total_spent": 8,
-              "last_updated": "2025-09-12 13:01:16"
+              "last_updated": "2025-09-12 15:53:58"
             },
             {
               "id": 28,
@@ -1591,6 +1591,56 @@
               "reason": "Thanks from Adudakqua",
               "action_type": "auto_add",
               "timestamp": "2025-09-12 13:15:20"
+            },
+            {
+              "id": 80,
+              "guild_id": 1263067254153805905,
+              "user_id": 1186872689038729237,
+              "moderator_id": 955695820999639120,
+              "points_change": 3,
+              "reason": "No reason provided",
+              "action_type": "add",
+              "timestamp": "2025-09-12 15:15:22"
+            },
+            {
+              "id": 81,
+              "guild_id": 1263067254153805905,
+              "user_id": 1313117547486515273,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-12 15:44:00"
+            },
+            {
+              "id": 82,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from echo | Phantom Cult 🎭",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-12 15:53:58"
+            },
+            {
+              "id": 83,
+              "guild_id": 1263067254153805905,
+              "user_id": 1313117547486515273,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-12 16:12:48"
+            },
+            {
+              "id": 84,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Adudakqua",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-12 16:12:55"
             }
           ]
         },
@@ -2324,7 +2374,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-12T14:08:46.263464+00:00",
+    "last_backup": "2025-09-12T16:27:48.976288+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
