@@ -23,27 +23,40 @@ class MessageHandler(commands.Cog):
         # Calling it here would cause duplicate responses for prefix commands
 
     async def check_thanks_mention(self, message):
-        """Check if message contains 'thanks' and mentions/replies to staff"""
+        """Check if message contains 'thanks' and mentions/replies to staff, but only allow admins/staff to thank."""
         content = message.content.lower()
-        
         # Check if message contains the exact word "thanks" using word boundaries
         import re
         has_thanks = bool(re.search(r'\bthanks\b', content))
         if not has_thanks:
             return
+
+        # Only allow admins/staff to thank
+        if not message.guild:
+            return
+        author_member = message.guild.get_member(message.author.id)
+        if not author_member:
+            return
         
+        # Allow server owner and admins
+        is_owner = author_member.id == message.guild.owner_id
+        is_admin = author_member.guild_permissions.administrator
+        
+        if not (is_owner or is_admin):
+            return
+
         # Get staff points cog
         staff_points_cog = self.bot.get_cog('StaffPoints')
         if not staff_points_cog:
             return
-        
+
         mentioned_staff = []
-        
+
         # Check direct mentions
         for mention in message.mentions:
             if await staff_points_cog.is_staff_member(mention):
                 mentioned_staff.append(mention)
-        
+
         # Check if replying to a staff member
         if message.reference and message.reference.message_id:
             try:
@@ -52,7 +65,7 @@ class MessageHandler(commands.Cog):
                     mentioned_staff.append(replied_msg.author)
             except:
                 pass
-        
+
         # Give points to mentioned/replied staff and send confirmation
         for staff_member in set(mentioned_staff):  # Remove duplicates
             success = await staff_points_cog.auto_give_point(staff_member, f"Thanks from {message.author.display_name}")
@@ -82,7 +95,21 @@ class MessageHandler(commands.Cog):
         if isinstance(error, commands.CommandNotFound):
             return  # Ignore command not found errors
         
-        elif isinstance(error, commands.MissingPermissions):
+        # For slash commands, check if interaction was already responded to
+        if hasattr(ctx, 'interaction') and ctx.interaction and ctx.interaction.response.is_done():
+            try:
+                # Try to send a followup instead
+                embed = discord.Embed(
+                    title="❌ An Error Occurred",
+                    description=f"Error: {str(error)}",
+                    color=discord.Color.red()
+                )
+                await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except:
+                pass  # If followup also fails, just ignore
+            return
+        
+        if isinstance(error, commands.MissingPermissions):
             embed = discord.Embed(
                 title="❌ Missing Permissions",
                 description="You don't have permission to use this command!",
@@ -134,7 +161,10 @@ class MessageHandler(commands.Cog):
                            "Please try again later or contact an administrator.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed, delete_after=15)
+            try:
+                await ctx.send(embed=embed, delete_after=15)
+            except:
+                pass  # If sending fails, just ignore
     
     # AFK and XP systems removed per request.
 
