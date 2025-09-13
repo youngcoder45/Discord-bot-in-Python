@@ -22,32 +22,6 @@ class EmbedBuilder(commands.Cog):
             "magenta": discord.Color.magenta(),
         }
 
-    async def check_embed_perms(self, interaction: discord.Interaction) -> bool:
-        """Check if user has permission to use embed commands"""
-        if interaction.guild is None:
-            return False
-        
-        # Get member from the interaction
-        member = interaction.guild.get_member(interaction.user.id)
-        if member is None:
-            member = await interaction.guild.fetch_member(interaction.user.id)
-        if member is None:
-            return False
-            
-        # Always allow server owner
-        if member.id == interaction.guild.owner_id:
-            return True
-            
-        # Allow users with administrator permission
-        if member.guild_permissions.administrator:
-            return True
-            
-        # Allow users with manage messages permission
-        if member.guild_permissions.manage_messages:
-            return True
-            
-        return False
-
     @app_commands.command(
         name="embed",
         description="Create a beautiful embed message with customization options"
@@ -74,6 +48,9 @@ class EmbedBuilder(commands.Cog):
     ):
         """Create a beautiful customized embed message"""
         try:
+            print(f"DEBUG: /embed called by {interaction.user} (ID: {interaction.user.id})")
+            print(f"DEBUG: Guild: {interaction.guild.name if interaction.guild else 'DM'}")
+            
             # Create base embed
             embed = discord.Embed(title=title)
             

@@ -36,6 +36,7 @@ COGS_TO_LOAD = [
     'commands.staff_points',  # Staff aura system with leaderboard
     'commands.election',      # Staff election system
     'commands.data_management',  # Data backup and persistence management
+    'commands.utility',       # Embed builder commands
     'events.member_events',
     'events.message_handler', # Simplified message handler
 ]
@@ -80,7 +81,10 @@ bot = CodeVerseBot()
 
 @bot.event
 async def on_ready():
-    logger.info(f"Logged in as {bot.user} (ID: {bot.user.id}) [Instance: {INSTANCE_ID}]")
+    if bot.user:
+        logger.info(f"Logged in as {bot.user} (ID: {bot.user.id}) [Instance: {INSTANCE_ID}]")
+    else:
+        logger.info(f"Bot logged in [Instance: {INSTANCE_ID}]")
     
     # Start periodic backup task (every 6 hours)
     try:
