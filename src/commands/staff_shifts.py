@@ -220,7 +220,7 @@ class ShiftService:
                 shifts.append(s)
             return shifts
     
-    async def get_shift_history(self, guild_id: int, user_id: int = None, days: int = 30, limit: int = 50) -> list[Shift]:
+    async def get_shift_history(self, guild_id: int, user_id: Optional[int] = None, days: int = 30, limit: int = 50) -> list[Shift]:
         """Get shift history with optional filtering"""
         async with aiosqlite.connect(self.database_path) as db:
             if user_id:
@@ -246,7 +246,7 @@ class ShiftService:
                 shifts.append(s)
             return shifts
     
-    async def get_shift_stats(self, guild_id: int, user_id: int = None, days: int = 30):
+    async def get_shift_stats(self, guild_id: int, user_id: Optional[int] = None, days: int = 30):
         """Get shift statistics"""
         async with aiosqlite.connect(self.database_path) as db:
             if user_id:
@@ -295,7 +295,7 @@ class ShiftService:
             row = await cursor.fetchone()
             return row
     
-    async def force_end_shift(self, guild_id: int, user_id: int, end_note: str = None) -> Shift | None:
+    async def force_end_shift(self, guild_id: int, user_id: int, end_note: Optional[str] = None) -> Shift | None:
         """Force end a user's active shift (admin function)"""
         shift = await self.get_shift(guild_id, user_id)
         if shift:
@@ -401,6 +401,8 @@ class StaffShifts(commands.Cog):
     
     async def send_staff_error(self, ctx: commands.Context):
         """Send helpful error message when user is not staff"""
+        if not ctx.guild:
+            return
         settings = await self.service.get_settings(ctx.guild.id)
         if not settings.staff_role_ids:
             await ctx.send("❌ **No staff roles configured!**\n\nAn admin needs to add staff roles first using:\n`/shift settings addrole @YourModRole`")
@@ -572,7 +574,7 @@ class StaffShifts(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.cooldown(1, 5, commands.BucketType.member)
-    async def shift_admin_history(self, ctx: commands.Context, user: discord.Member = None, days: int = 7):
+    async def shift_admin_history(self, ctx: commands.Context, user: Optional[discord.Member] = None, days: int = 7):
         """Show shift history with optional user and day filters"""
         assert ctx.guild is not None
         await self.ready.wait()
@@ -636,7 +638,7 @@ class StaffShifts(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.cooldown(1, 3, commands.BucketType.member)
-    async def shift_admin_end(self, ctx: commands.Context, user: discord.Member, *, reason: str = None):
+    async def shift_admin_end(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str] = None):
         """Force end a user's active shift"""
         assert ctx.guild is not None
         await self.ready.wait()
@@ -654,7 +656,7 @@ class StaffShifts(commands.Cog):
             end_note = admin_note
         
         ended_shift = await self.service.force_end_shift(ctx.guild.id, user.id, end_note)
-        if ended_shift:
+        if ended_shift and ended_shift.end:
             duration = ended_shift.end - ended_shift.start
             hours, remainder = divmod(int(duration.total_seconds()), 3600)
             minutes = remainder // 60
@@ -682,7 +684,7 @@ class StaffShifts(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.cooldown(1, 5, commands.BucketType.member)
-    async def shift_admin_stats(self, ctx: commands.Context, user: discord.Member = None, days: int = 30):
+    async def shift_admin_stats(self, ctx: commands.Context, user: Optional[discord.Member] = None, days: int = 30):
         """Show shift statistics"""
         assert ctx.guild is not None
         await self.ready.wait()
@@ -710,8 +712,8 @@ class StaffShifts(commands.Cog):
         
         total_shifts = stats[0] if stats else 0
         completed_shifts = stats[1] if stats else 0
-        total_seconds = stats[3] if len(stats) > 3 and stats[3] else 0
-        avg_seconds = stats[4] if len(stats) > 4 and stats[4] else 0
+        total_seconds = stats[3] if stats and len(stats) > 3 and stats[3] else 0
+        avg_seconds = stats[4] if stats and len(stats) > 4 and stats[4] else 0
         
         # Convert seconds to human readable
         total_hours = int(total_seconds // 3600)
@@ -726,7 +728,7 @@ class StaffShifts(commands.Cog):
         if completed_shifts > 0:
             embed.add_field(name="Avg Shift Length", value=f"{avg_hours}h {avg_minutes}m", inline=True)
         
-        if not user and len(stats) > 2:
+        if not user and stats and len(stats) > 2:
             unique_staff = stats[2]
             embed.add_field(name="Active Staff", value=str(unique_staff), inline=True)
         
@@ -934,12 +936,15 @@ class StaffShifts(commands.Cog):
             "The list of staff roles is: " + "\n -".join(["" if len(roles) > 0 else "None"] + [f"<@&{role.id}>" for role in roles])
         )
 
-    # Renamed to avoid conflict with general /embed command
-    @commands.hybrid_command(name="staffembed", help="Send a formatted embed message (Staff only)")
+    @commands.hybrid_command(name="embed", help="Send a formatted embed message (Staff only)")
     @app_commands.describe(message="Message to send (up to 4000 chars)")
-    async def staffembed_cmd(self, ctx: commands.Context, *, message: str):
+    async def embed_cmd(self, ctx: commands.Context, *, message: str):
         """Staff-only embed command with auto-delete."""
         # Check staff role
+        if not isinstance(ctx.author, discord.Member):
+            await ctx.reply("❌ This command can only be used in a server.", ephemeral=True)
+            return
+            
         staff_roles = {"Admin", "Moderator"}
         member_roles = {role.name for role in ctx.author.roles}
         if not staff_roles.intersection(member_roles):
