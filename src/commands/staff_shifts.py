@@ -124,6 +124,7 @@ class ShiftService:
     def __init__(self, database_path: Path):
         self.database_path = database_path
         if not self.database_path.exists():
+            self.database_path.parent.mkdir(parents=True, exist_ok=True)
             self.database_path.touch()
 
     async def init_db(self):
@@ -174,6 +175,14 @@ class ShiftService:
             )
             row = await cursor.fetchone()
             if row:
+                return Shift.from_row(row)
+            return None
+            cursor = await db.execute(
+                "SELECT * FROM shifts WHERE user_id = ? AND guild_id = ? AND end IS NULL",
+                (user_id, guild_id),
+            )
+            row = await cursor.fetchone()
+            if row:
                 s = Shift.from_row(row)
                 s.start = datetime.fromisoformat(s.start) if not isinstance(s.start, datetime) else s.start
                 s.end = datetime.fromisoformat(s.end) if not isinstance(s.end, datetime) and s.end else s.end
@@ -188,10 +197,20 @@ class ShiftService:
                 (shift.guild_id, shift.user_id, shift.start, shift.start_note),
             )
             await db.commit()
+            await db.execute(
+                "INSERT INTO shifts (guild_id, user_id, start, start_note) VALUES (?, ?, ?, ?)",
+                (shift.guild_id, shift.user_id, shift.start, shift.start_note),
+            )
+            await db.commit()
     
     async def end_shift(self, shift: Shift) -> None:
         """Updates a shift in the database"""
         async with aiosqlite.connect(self.database_path) as db:
+            await db.execute(
+                "UPDATE shifts SET end = ?, end_note = ? WHERE shift_id = ?",
+                (shift.end, shift.end_note, shift.shift_id),
+            )
+            await db.commit()
             await db.execute(
                 "UPDATE shifts SET end = ?, end_note = ? WHERE shift_id = ?",
                 (shift.end, shift.end_note, shift.shift_id),
@@ -203,10 +222,21 @@ class ShiftService:
         async with aiosqlite.connect(self.database_path) as db:
             await db.execute("DELETE FROM shifts WHERE shift_id = ?", (shift.shift_id,))
             await db.commit()
+            await db.execute("DELETE FROM shifts WHERE shift_id = ?", (shift.shift_id,))
+            await db.commit()
     
     async def get_active_shifts(self, guild_id: int) -> list[Shift]:
         """Get all currently active shifts in the guild"""
         async with aiosqlite.connect(self.database_path) as db:
+            cursor = await db.execute(
+                "SELECT * FROM shifts WHERE guild_id = ? AND end IS NULL ORDER BY start DESC",
+                (guild_id,)
+            )
+            rows = await cursor.fetchall()
+            shifts = []
+            for row in rows:
+                shifts.append(Shift.from_row(row))
+            return shifts
             cursor = await db.execute(
                 "SELECT * FROM shifts WHERE guild_id = ? AND end IS NULL ORDER BY start DESC",
                 (guild_id,)
