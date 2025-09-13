@@ -934,9 +934,10 @@ class StaffShifts(commands.Cog):
             "The list of staff roles is: " + "\n -".join(["" if len(roles) > 0 else "None"] + [f"<@&{role.id}>" for role in roles])
         )
 
-    @commands.hybrid_command(name="embed", help="Send a formatted embed message (Staff only)")
+    # Renamed to avoid conflict with general /embed command
+    @commands.hybrid_command(name="staffembed", help="Send a formatted embed message (Staff only)")
     @app_commands.describe(message="Message to send (up to 4000 chars)")
-    async def embed_cmd(self, ctx: commands.Context, *, message: str):
+    async def staffembed_cmd(self, ctx: commands.Context, *, message: str):
         """Staff-only embed command with auto-delete."""
         # Check staff role
         staff_roles = {"Admin", "Moderator"}
