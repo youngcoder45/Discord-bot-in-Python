@@ -58,7 +58,13 @@ class Shift:
 
     @classmethod
     def from_row(cls, row):
-        return cls(*row)
+        shift_id, guild_id, user_id, start, end, start_note, end_note = row
+        # Convert string datetimes back to datetime objects
+        if isinstance(start, str):
+            start = datetime.fromisoformat(start.replace('Z', '+00:00'))
+        if end and isinstance(end, str):
+            end = datetime.fromisoformat(end.replace('Z', '+00:00'))
+        return cls(shift_id, guild_id, user_id, start, end, start_note, end_note)
 
 class EmbedProvider(ABC):
     def __init__(self, bot: commands.Bot):
@@ -177,26 +183,10 @@ class ShiftService:
             if row:
                 return Shift.from_row(row)
             return None
-            cursor = await db.execute(
-                "SELECT * FROM shifts WHERE user_id = ? AND guild_id = ? AND end IS NULL",
-                (user_id, guild_id),
-            )
-            row = await cursor.fetchone()
-            if row:
-                s = Shift.from_row(row)
-                s.start = datetime.fromisoformat(s.start) if not isinstance(s.start, datetime) else s.start
-                s.end = datetime.fromisoformat(s.end) if not isinstance(s.end, datetime) and s.end else s.end
-                return s
-            return None
     
     async def start_shift(self, shift: Shift) -> None:
         """Adds a shift to the database"""
         async with aiosqlite.connect(self.database_path) as db:
-            await db.execute(
-                "INSERT INTO shifts (guild_id, user_id, start, start_note) VALUES (?, ?, ?, ?)",
-                (shift.guild_id, shift.user_id, shift.start, shift.start_note),
-            )
-            await db.commit()
             await db.execute(
                 "INSERT INTO shifts (guild_id, user_id, start, start_note) VALUES (?, ?, ?, ?)",
                 (shift.guild_id, shift.user_id, shift.start, shift.start_note),
@@ -211,17 +201,10 @@ class ShiftService:
                 (shift.end, shift.end_note, shift.shift_id),
             )
             await db.commit()
-            await db.execute(
-                "UPDATE shifts SET end = ?, end_note = ? WHERE shift_id = ?",
-                (shift.end, shift.end_note, shift.shift_id),
-            )
-            await db.commit()
     
     async def discard_shift(self, shift: Shift) -> None:
         """Removes a shift from the database"""
         async with aiosqlite.connect(self.database_path) as db:
-            await db.execute("DELETE FROM shifts WHERE shift_id = ?", (shift.shift_id,))
-            await db.commit()
             await db.execute("DELETE FROM shifts WHERE shift_id = ?", (shift.shift_id,))
             await db.commit()
     
@@ -236,18 +219,6 @@ class ShiftService:
             shifts = []
             for row in rows:
                 shifts.append(Shift.from_row(row))
-            return shifts
-            cursor = await db.execute(
-                "SELECT * FROM shifts WHERE guild_id = ? AND end IS NULL ORDER BY start DESC",
-                (guild_id,)
-            )
-            rows = await cursor.fetchall()
-            shifts = []
-            for row in rows:
-                s = Shift.from_row(row)
-                s.start = datetime.fromisoformat(s.start) if not isinstance(s.start, datetime) else s.start
-                s.end = datetime.fromisoformat(s.end) if not isinstance(s.end, datetime) and s.end else s.end
-                shifts.append(s)
             return shifts
     
     async def get_shift_history(self, guild_id: int, user_id: Optional[int] = None, days: int = 30, limit: int = 50) -> list[Shift]:
