@@ -27,11 +27,14 @@ class EmbedBuilder(commands.Cog):
         if interaction.guild is None:
             return False
         
+        # Get member from the interaction
         member = interaction.guild.get_member(interaction.user.id)
+        if member is None:
+            member = await interaction.guild.fetch_member(interaction.user.id)
         if member is None:
             return False
             
-        # Allow server owner
+        # Always allow server owner
         if member.id == interaction.guild.owner_id:
             return True
             
@@ -71,15 +74,6 @@ class EmbedBuilder(commands.Cog):
     ):
         """Create a beautiful customized embed message"""
         try:
-            # Check permissions
-            if not await self.check_embed_perms(interaction):
-                embed = discord.Embed(
-                    title="❌ Permission Denied",
-                    description="You need to be a server owner, administrator, or have manage messages permission to use this command.",
-                    color=discord.Color.red()
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
             # Create base embed
             embed = discord.Embed(title=title)
             
@@ -157,20 +151,11 @@ class EmbedBuilder(commands.Cog):
     ):
         """Create a beautifully formatted rules embed"""
         try:
-            # Check permissions
-            if not await self.check_embed_perms(interaction):
-                embed = discord.Embed(
-                    title="❌ Permission Denied",
-                    description="You need to be a server owner, administrator, or have manage messages permission to use this command.",
-                    color=discord.Color.red()
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
             # Create the embed
             embed = discord.Embed(title=title)
             
             # Process rules text
-            rule_lines = rules.split('\\n')  # Allow \n for line breaks
+            rule_lines = rules.replace('\\n', '\n').split('\n')  # Handle both literal \n and actual newlines
             formatted_rules = []
             
             for line in rule_lines:
@@ -184,7 +169,7 @@ class EmbedBuilder(commands.Cog):
                     else:
                         formatted_rules.append(f"• {line}")
             
-            embed.description = "\\n".join(formatted_rules)
+            embed.description = "\n".join(formatted_rules)
             
             # Set color
             if color.startswith('#'):
@@ -271,7 +256,9 @@ class EmbedBuilder(commands.Cog):
             value="Basic embed:\n"
                   "```/embed title:Welcome! description:Hello everyone! color:blue```\n"
                   "Rules embed:\n"
-                  "```/embedrules rules:1. Be respectful\\n2. No spam```",
+                  "```/embedrules rules:1. Be respectful\n2. No spam\n3. Stay on topic```\n"
+                  "With custom title and color:\n"
+                  "```/embedrules rules:1. Be kind\n2. Have fun title:Community Guidelines color:#FF0000```",
             inline=False
         )
         
