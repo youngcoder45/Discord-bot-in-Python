@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-15T08:42:15.389055+00:00",
+  "timestamp": "2025-09-15T11:07:54.357444+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -338,18 +338,18 @@
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
               "start": "2025-09-15 02:51:11.163983+00:00",
-              "end": null,
+              "end": "2025-09-15 10:06:22.655236+00:00",
               "start_note": "didnt go to school, its been 1 week since I am not going to school but idk man",
-              "end_note": null
+              "end_note": "[Force ended by Aditya ✧ YC45]"
             },
             {
               "shift_id": 32,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
               "start": "2025-09-15 02:51:11.163983+00:00",
-              "end": null,
+              "end": "2025-09-15 10:13:52.898893+00:00",
               "start_note": "didnt go to school, its been 1 week since I am not going to school but idk man",
-              "end_note": null
+              "end_note": "[Force ended by Aditya ✧ YC45]"
             }
           ]
         },
@@ -2699,7 +2699,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-15T08:42:15.758975+00:00",
+    "last_backup": "2025-09-15T11:07:54.475733+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
