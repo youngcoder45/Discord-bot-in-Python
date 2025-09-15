@@ -59,11 +59,33 @@ class Shift:
     @classmethod
     def from_row(cls, row):
         shift_id, guild_id, user_id, start, end, start_note, end_note = row
-        # Convert string datetimes back to datetime objects
+        
+        # Convert string datetimes back to datetime objects if needed
         if isinstance(start, str):
-            start = datetime.fromisoformat(start.replace('Z', '+00:00'))
-        if end and isinstance(end, str):
-            end = datetime.fromisoformat(end.replace('Z', '+00:00'))
+            # Handle various datetime string formats from SQLite
+            start = start.replace('Z', '+00:00')  # Replace Z with proper timezone
+            try:
+                start = datetime.fromisoformat(start)
+            except ValueError:
+                # Fallback for other formats
+                start = datetime.strptime(start.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+        elif not isinstance(start, datetime):
+            # If it's neither string nor datetime, create a default datetime
+            start = datetime.now(timezone.utc)
+            
+        if end:
+            if isinstance(end, str):
+                # Handle various datetime string formats from SQLite
+                end = end.replace('Z', '+00:00')  # Replace Z with proper timezone
+                try:
+                    end = datetime.fromisoformat(end)
+                except ValueError:
+                    # Fallback for other formats
+                    end = datetime.strptime(end.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+            elif not isinstance(end, datetime):
+                # If it's neither string nor datetime, set to None
+                end = None
+                
         return cls(shift_id, guild_id, user_id, start, end, start_note, end_note)
 
 class EmbedProvider(ABC):
@@ -189,16 +211,17 @@ class ShiftService:
         async with aiosqlite.connect(self.database_path) as db:
             await db.execute(
                 "INSERT INTO shifts (guild_id, user_id, start, start_note) VALUES (?, ?, ?, ?)",
-                (shift.guild_id, shift.user_id, shift.start, shift.start_note),
+                (shift.guild_id, shift.user_id, shift.start.isoformat(), shift.start_note),
             )
             await db.commit()
     
     async def end_shift(self, shift: Shift) -> None:
         """Updates a shift in the database"""
         async with aiosqlite.connect(self.database_path) as db:
+            end_time = shift.end.isoformat() if shift.end else None
             await db.execute(
                 "UPDATE shifts SET end = ?, end_note = ? WHERE shift_id = ?",
-                (shift.end, shift.end_note, shift.shift_id),
+                (end_time, shift.end_note, shift.shift_id),
             )
             await db.commit()
     
