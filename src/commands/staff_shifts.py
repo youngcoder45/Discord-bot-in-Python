@@ -117,11 +117,27 @@ class LogEmbedProvider(EmbedProvider):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
     
+    def safe_timestamp(self, dt) -> int:
+        """Safely get timestamp from datetime object or string"""
+        if isinstance(dt, datetime):
+            return round(dt.timestamp())
+        elif isinstance(dt, str):
+            # Try to parse string datetime
+            try:
+                dt_parsed = datetime.fromisoformat(dt.replace('Z', '+00:00'))
+                return round(dt_parsed.timestamp())
+            except (ValueError, AttributeError):
+                # Fallback to current time if parsing fails
+                return round(datetime.now(timezone.utc).timestamp())
+        else:
+            # Fallback to current time for any other type
+            return round(datetime.now(timezone.utc).timestamp())
+    
     async def get_shift_start_embed(self, ctx: commands.Context, shift: Shift):
         embed=discord.Embed(title="Shift Started", description=f"{ctx.author.mention} has just started their shift.", color=0x00ff00)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
         embed.set_thumbnail(url=ctx.author.display_avatar.url)
-        embed.add_field(name="Start Time", value=f"<t:{round(shift.start.timestamp())}:F>", inline=False)
+        embed.add_field(name="Start Time", value=f"<t:{self.safe_timestamp(shift.start)}:F>", inline=False)
         if shift.start_note is not None:
             embed.add_field(name="Start Note", value=f"```\n{shift.start_note}\n```", inline=False)
         return embed
@@ -130,8 +146,9 @@ class LogEmbedProvider(EmbedProvider):
         embed=discord.Embed(title="Shift Ended", description=f"{ctx.author.mention} has just ended their shift.", color=0xff0000)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
         embed.set_thumbnail(url=ctx.author.display_avatar.url)
-        embed.add_field(name="Start Time", value=f"<t:{round(shift.start.timestamp())}:F>", inline=True)
-        embed.add_field(name="End Time", value=f"<t:{round(shift.end.timestamp())}:F>", inline=True) # type: ignore
+        embed.add_field(name="Start Time", value=f"<t:{self.safe_timestamp(shift.start)}:F>", inline=True)
+        if shift.end:
+            embed.add_field(name="End Time", value=f"<t:{self.safe_timestamp(shift.end)}:F>", inline=True)
         if shift.start_note is not None:
             embed.add_field(name="Start Note", value=f"```\n{shift.start_note}\n```", inline=False)
         if shift.end_note is not None:
@@ -142,7 +159,7 @@ class LogEmbedProvider(EmbedProvider):
         embed=discord.Embed(title="Shift Discarded", description=f"{ctx.author.mention} has just discarded their shift.", color=0xFFFF00)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
         embed.set_thumbnail(url=ctx.author.display_avatar.url)
-        embed.add_field(name="Start Time", value=f"<t:{round(shift.start.timestamp())}:F>", inline=True)
+        embed.add_field(name="Start Time", value=f"<t:{self.safe_timestamp(shift.start)}:F>", inline=True)
         if shift.start_note is not None:
             embed.add_field(name="Start Note", value=f"```\n{shift.start_note}\n```", inline=False)
         return embed
@@ -362,6 +379,22 @@ class StaffShifts(commands.Cog):
         self.service = ShiftService(Path("data/staff_shifts.db"))
         self.ready = asyncio.Event()
     
+    def safe_timestamp(self, dt) -> int:
+        """Safely get timestamp from datetime object or string"""
+        if isinstance(dt, datetime):
+            return round(dt.timestamp())
+        elif isinstance(dt, str):
+            # Try to parse string datetime
+            try:
+                dt_parsed = datetime.fromisoformat(dt.replace('Z', '+00:00'))
+                return round(dt_parsed.timestamp())
+            except (ValueError, AttributeError):
+                # Fallback to current time if parsing fails
+                return round(datetime.now(timezone.utc).timestamp())
+        else:
+            # Fallback to current time for any other type
+            return round(datetime.now(timezone.utc).timestamp())
+    
     async def cog_load(self) -> None:
         await self.service.init_db()
         self.ready.set()
@@ -473,11 +506,11 @@ class StaffShifts(commands.Cog):
         user_id = ctx.author.id
         existing_shift = await self.service.get_shift(ctx.guild.id, user_id)
         if existing_shift:
-            await ctx.send(f"You already have a shift in progress since <t:{round(existing_shift.start.timestamp())}:F>. Use `{ctx.prefix}shift end` to end it now or `{ctx.prefix}shift discard` to discard it.")
+            await ctx.send(f"You already have a shift in progress since <t:{self.safe_timestamp(existing_shift.start)}:F>. Use `{ctx.prefix}shift end` to end it now or `{ctx.prefix}shift discard` to discard it.")
             return
         start = datetime.now(timezone.utc)
         await self.service.start_shift(Shift.new(ctx.guild.id, user_id, start, note))
-        await ctx.send(f"The start of your shift has been logged at <t:{round(start.timestamp())}:F>. Use `{ctx.prefix}shift end` to log its end.")
+        await ctx.send(f"The start of your shift has been logged at <t:{self.safe_timestamp(start)}:F>. Use `{ctx.prefix}shift end` to log its end.")
         await self.log_start(ctx, Shift.new(ctx.guild.id, user_id, start, note))
     
     @shift.command(
@@ -527,7 +560,7 @@ class StaffShifts(commands.Cog):
         current_shift.end = datetime.now(timezone.utc)
         current_shift.end_note = reason
         await self.service.end_shift(current_shift)
-        await ctx.send(f"The end of your shift has been logged at <t:{round(current_shift.end.timestamp())}:F>.")
+        await ctx.send(f"The end of your shift has been logged at <t:{self.safe_timestamp(current_shift.end)}:F>.")
         await self.log_end(ctx, current_shift)
     
     @shift.group("admin")
@@ -570,11 +603,24 @@ class StaffShifts(commands.Cog):
         for shift in active_shifts:
             user = ctx.guild.get_member(shift.user_id)
             if user:
-                duration = datetime.now(timezone.utc) - shift.start
+                # Ensure shift.start is a datetime object for calculation
+                if isinstance(shift.start, str):
+                    try:
+                        start_str = str(shift.start)  # Ensure it's treated as string
+                        start_dt = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+                    except ValueError:
+                        start_str = str(shift.start)
+                        start_dt = datetime.strptime(start_str.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                elif isinstance(shift.start, datetime):
+                    start_dt = shift.start
+                else:
+                    start_dt = datetime.now(timezone.utc)
+                
+                duration = datetime.now(timezone.utc) - start_dt
                 hours, remainder = divmod(int(duration.total_seconds()), 3600)
                 minutes = remainder // 60
                 
-                value = f"**Started:** <t:{round(shift.start.timestamp())}:R>\n"
+                value = f"**Started:** <t:{self.safe_timestamp(shift.start)}:R>\n"
                 value += f"**Duration:** {hours}h {minutes}m"
                 if shift.start_note:
                     value += f"\n**Note:** {shift.start_note[:100]}{'...' if len(shift.start_note) > 100 else ''}"
@@ -629,14 +675,35 @@ class StaffShifts(commands.Cog):
             username = member.display_name if member else f"Unknown User ({shift.user_id})"
             
             if shift.end:
-                duration = shift.end - shift.start
+                # Ensure both start and end are datetime objects for calculation
+                if isinstance(shift.start, str):
+                    try:
+                        start_str = str(shift.start)
+                        start_dt = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+                    except ValueError:
+                        start_str = str(shift.start)
+                        start_dt = datetime.strptime(start_str.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                else:
+                    start_dt = shift.start
+                
+                if isinstance(shift.end, str):
+                    try:
+                        end_str = str(shift.end)
+                        end_dt = datetime.fromisoformat(end_str.replace('Z', '+00:00'))
+                    except ValueError:
+                        end_str = str(shift.end)
+                        end_dt = datetime.strptime(end_str.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                else:
+                    end_dt = shift.end
+                
+                duration = end_dt - start_dt
                 hours, remainder = divmod(int(duration.total_seconds()), 3600)
                 minutes = remainder // 60
                 status = f"✅ {hours}h {minutes}m"
             else:
                 status = "🔄 Ongoing"
             
-            value = f"**Started:** <t:{round(shift.start.timestamp())}:R>\n**Status:** {status}"
+            value = f"**Started:** <t:{self.safe_timestamp(shift.start)}:R>\n**Status:** {status}"
             if shift.start_note:
                 value += f"\n**Note:** {shift.start_note[:50]}{'...' if len(shift.start_note) > 50 else ''}"
             
