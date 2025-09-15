@@ -61,32 +61,45 @@ class Shift:
         shift_id, guild_id, user_id, start, end, start_note, end_note = row
         
         # Convert string datetimes back to datetime objects if needed
-        if isinstance(start, str):
-            # Handle various datetime string formats from SQLite
-            start = start.replace('Z', '+00:00')  # Replace Z with proper timezone
-            try:
-                start = datetime.fromisoformat(start)
-            except ValueError:
-                # Fallback for other formats
-                start = datetime.strptime(start.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-        elif not isinstance(start, datetime):
-            # If it's neither string nor datetime, create a default datetime
-            start = datetime.now(timezone.utc)
-            
-        if end:
-            if isinstance(end, str):
-                # Handle various datetime string formats from SQLite
-                end = end.replace('Z', '+00:00')  # Replace Z with proper timezone
+        def parse_datetime(dt_value, default_time=None):
+            """Helper function to safely parse datetime values"""
+            if isinstance(dt_value, datetime):
+                return dt_value
+            elif isinstance(dt_value, str) and dt_value:
                 try:
-                    end = datetime.fromisoformat(end)
-                except ValueError:
-                    # Fallback for other formats
-                    end = datetime.strptime(end.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-            elif not isinstance(end, datetime):
-                # If it's neither string nor datetime, set to None
-                end = None
+                    # Handle various datetime string formats from SQLite
+                    dt_str = str(dt_value)
+                    if dt_str.endswith('Z'):
+                        dt_str = dt_str[:-1] + '+00:00'
+                    
+                    # Try fromisoformat first
+                    try:
+                        return datetime.fromisoformat(dt_str)
+                    except ValueError:
+                        pass
+                    
+                    # Try without timezone and add UTC
+                    clean_str = dt_str.replace('+00:00', '').replace('Z', '')
+                    if 'T' in clean_str:
+                        return datetime.strptime(clean_str, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+                    else:
+                        return datetime.strptime(clean_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                        
+                except (ValueError, TypeError, AttributeError) as e:
+                    print(f"Error parsing datetime '{dt_value}': {e}")
+                    return default_time or datetime.now(timezone.utc)
+            else:
+                return default_time
+        
+        # Parse start time (required) - ensure it's never None
+        start_dt = parse_datetime(start, datetime.now(timezone.utc))
+        if start_dt is None:
+            start_dt = datetime.now(timezone.utc)
+        
+        # Parse end time (optional)
+        end_dt = parse_datetime(end, None) if end else None
                 
-        return cls(shift_id, guild_id, user_id, start, end, start_note, end_note)
+        return cls(shift_id, guild_id, user_id, start_dt, end_dt, start_note, end_note)
 
 class EmbedProvider(ABC):
     def __init__(self, bot: commands.Bot):
@@ -119,18 +132,51 @@ class LogEmbedProvider(EmbedProvider):
     
     def safe_timestamp(self, dt) -> int:
         """Safely get timestamp from datetime object or string"""
-        if isinstance(dt, datetime):
-            return round(dt.timestamp())
-        elif isinstance(dt, str):
-            # Try to parse string datetime
-            try:
-                dt_parsed = datetime.fromisoformat(dt.replace('Z', '+00:00'))
-                return round(dt_parsed.timestamp())
-            except (ValueError, AttributeError):
-                # Fallback to current time if parsing fails
+        try:
+            # If it's already a datetime object, use it directly
+            if isinstance(dt, datetime):
+                return round(dt.timestamp())
+            
+            # If it's a string, try to parse it
+            elif isinstance(dt, str):
+                # Handle common datetime string formats
+                dt_str = str(dt)  # Ensure it's a string
+                
+                # Replace Z with proper timezone offset
+                if dt_str.endswith('Z'):
+                    dt_str = dt_str[:-1] + '+00:00'
+                
+                # Try parsing with fromisoformat first (most common)
+                try:
+                    dt_parsed = datetime.fromisoformat(dt_str)
+                    return round(dt_parsed.timestamp())
+                except (ValueError, TypeError):
+                    pass
+                
+                # Try parsing without timezone info and add UTC
+                try:
+                    # Remove any timezone suffix for basic parsing
+                    clean_str = dt_str.replace('+00:00', '').replace('Z', '')
+                    if 'T' in clean_str:
+                        dt_parsed = datetime.strptime(clean_str, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+                    else:
+                        dt_parsed = datetime.strptime(clean_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                    return round(dt_parsed.timestamp())
+                except (ValueError, TypeError):
+                    pass
+                
+                # If all parsing fails, return current time
+                print(f"Warning: Could not parse datetime string: {dt_str}")
                 return round(datetime.now(timezone.utc).timestamp())
-        else:
-            # Fallback to current time for any other type
+            
+            # For any other type (None, int, etc.), return current time
+            else:
+                print(f"Warning: Unexpected datetime type: {type(dt)} with value: {dt}")
+                return round(datetime.now(timezone.utc).timestamp())
+                
+        except Exception as e:
+            # Ultimate fallback - should never reach here
+            print(f"Error in safe_timestamp: {e}, input: {dt}, type: {type(dt)}")
             return round(datetime.now(timezone.utc).timestamp())
     
     async def get_shift_start_embed(self, ctx: commands.Context, shift: Shift):
@@ -381,20 +427,53 @@ class StaffShifts(commands.Cog):
     
     def safe_timestamp(self, dt) -> int:
         """Safely get timestamp from datetime object or string"""
-        if isinstance(dt, datetime):
-            return round(dt.timestamp())
-        elif isinstance(dt, str):
-            # Try to parse string datetime
-            try:
-                dt_parsed = datetime.fromisoformat(dt.replace('Z', '+00:00'))
-                return round(dt_parsed.timestamp())
-            except (ValueError, AttributeError):
-                # Fallback to current time if parsing fails
+        try:
+            # If it's already a datetime object, use it directly
+            if isinstance(dt, datetime):
+                return round(dt.timestamp())
+            
+            # If it's a string, try to parse it
+            elif isinstance(dt, str):
+                # Handle common datetime string formats
+                dt_str = str(dt)  # Ensure it's a string
+                
+                # Replace Z with proper timezone offset
+                if dt_str.endswith('Z'):
+                    dt_str = dt_str[:-1] + '+00:00'
+                
+                # Try parsing with fromisoformat first (most common)
+                try:
+                    dt_parsed = datetime.fromisoformat(dt_str)
+                    return round(dt_parsed.timestamp())
+                except (ValueError, TypeError):
+                    pass
+                
+                # Try parsing without timezone info and add UTC
+                try:
+                    # Remove any timezone suffix for basic parsing
+                    clean_str = dt_str.replace('+00:00', '').replace('Z', '')
+                    if 'T' in clean_str:
+                        dt_parsed = datetime.strptime(clean_str, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+                    else:
+                        dt_parsed = datetime.strptime(clean_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                    return round(dt_parsed.timestamp())
+                except (ValueError, TypeError):
+                    pass
+                
+                # If all parsing fails, return current time
+                print(f"Warning: Could not parse datetime string: {dt_str}")
                 return round(datetime.now(timezone.utc).timestamp())
-        else:
-            # Fallback to current time for any other type
+            
+            # For any other type (None, int, etc.), return current time
+            else:
+                print(f"Warning: Unexpected datetime type: {type(dt)} with value: {dt}")
+                return round(datetime.now(timezone.utc).timestamp())
+                
+        except Exception as e:
+            # Ultimate fallback - should never reach here
+            print(f"Error in safe_timestamp: {e}, input: {dt}, type: {type(dt)}")
             return round(datetime.now(timezone.utc).timestamp())
-    
+
     async def cog_load(self) -> None:
         await self.service.init_db()
         self.ready.set()
@@ -557,10 +636,21 @@ class StaffShifts(commands.Cog):
         if not current_shift:
             await ctx.send("You don't have an active shift.")
             return
-        current_shift.end = datetime.now(timezone.utc)
+        
+        # Validate the shift object
+        if not isinstance(current_shift, Shift):
+            await ctx.send("❌ Error: Invalid shift data. Please contact an administrator.")
+            return
+        
+        # Ensure we have a proper datetime object for the end time
+        end_time = datetime.now(timezone.utc)
+        current_shift.end = end_time
         current_shift.end_note = reason
+        
         await self.service.end_shift(current_shift)
-        await ctx.send(f"The end of your shift has been logged at <t:{self.safe_timestamp(current_shift.end)}:F>.")
+        
+        # Use the end_time variable directly to avoid any potential issues
+        await ctx.send(f"The end of your shift has been logged at <t:{self.safe_timestamp(end_time)}:F>.")
         await self.log_end(ctx, current_shift)
     
     @shift.group("admin")
