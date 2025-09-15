@@ -215,7 +215,7 @@ class Core(commands.Cog):
         )
         
         embed.set_footer(text=f"CodeVerse Bot • {len([cmd for cmd in self.bot.commands if not cmd.hidden])} commands available")
-        embed.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user.avatar else None)
+        embed.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user and self.bot.user.avatar else None)
         
         await ctx.reply(embed=embed, mention_author=False)
 

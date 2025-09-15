@@ -241,10 +241,7 @@ class ShiftService:
             rows = await cursor.fetchall()
             shifts = []
             for row in rows:
-                s = Shift.from_row(row)
-                s.start = datetime.fromisoformat(s.start) if not isinstance(s.start, datetime) else s.start
-                s.end = datetime.fromisoformat(s.end) if not isinstance(s.end, datetime) and s.end else s.end
-                shifts.append(s)
+                shifts.append(Shift.from_row(row))
             return shifts
     
     async def get_shift_stats(self, guild_id: int, user_id: Optional[int] = None, days: int = 30):

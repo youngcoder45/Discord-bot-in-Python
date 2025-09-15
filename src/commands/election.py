@@ -4,7 +4,7 @@ from discord import app_commands
 from typing import List, Dict, Tuple
 import asyncio
 from datetime import datetime, timedelta, timezone
-from utils.helpers import create_success_embed, create_error_embed
+from ..utils.helpers import create_success_embed, create_error_embed
 
 class Election(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -37,6 +37,10 @@ class Election(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def create(self, ctx: commands.Context, title: str, candidates: str, duration: int = 60):
         """Create a new election poll."""
+        if not ctx.guild:
+            await ctx.reply("This command can only be used in servers!", ephemeral=True)
+            return
+            
         # Validation
         if duration < 1 or duration > 1440:  # Max 24 hours
             await ctx.reply("Duration must be between 1 and 1440 minutes (24 hours).", ephemeral=True)
@@ -106,6 +110,10 @@ class Election(commands.Cog):
     @election.command(name="results", description="View current election results.")
     async def results(self, ctx: commands.Context):
         """Show current election results."""
+        if not ctx.guild:
+            await ctx.reply("This command can only be used in servers!", ephemeral=True)
+            return
+            
         if ctx.guild.id not in self.active_elections:
             await ctx.reply("❌ No active election in this server.", ephemeral=True)
             return
@@ -137,6 +145,10 @@ class Election(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def end(self, ctx: commands.Context):
         """Force end the current election."""
+        if not ctx.guild:
+            await ctx.reply("This command can only be used in servers!", ephemeral=True)
+            return
+            
         if ctx.guild.id not in self.active_elections:
             await ctx.reply("❌ No active election in this server.", ephemeral=True)
             return
@@ -309,12 +321,20 @@ class VoteButton(discord.ui.Button):
         self.results = results
 
     async def callback(self, interaction: discord.Interaction):
+        if not interaction.guild:
+            await interaction.response.send_message("❌ This command can only be used in servers!", ephemeral=True)
+            return
+            
         user = interaction.user
         member = interaction.guild.get_member(user.id)
         
+        if not member:
+            await interaction.response.send_message("❌ Could not find your member data!", ephemeral=True)
+            return
+        
         # Check if election is still active
-        election_cog = interaction.client.get_cog("Election")
-        if interaction.guild.id not in election_cog.active_elections:
+        election_cog = interaction.client.get_cog("Election")  # type: ignore
+        if not election_cog or interaction.guild.id not in election_cog.active_elections:
             await interaction.response.send_message("❌ This election has ended.", ephemeral=True)
             return
         
@@ -350,22 +370,23 @@ class VoteButton(discord.ui.Button):
         total_votes = sum(sum(w for _, w in votes) for votes in self.results.values())
         
         # Update the embed with new total vote count
-        embed = interaction.message.embeds[0]
-        
-        # Find and update the Total Votes field
-        for i, field in enumerate(embed.fields):
-            if field.name == "Total Votes":
-                embed.set_field_at(i, name="Total Votes", value=str(int(total_votes)), inline=True)
-                break
-        
-        # Update the message with new embed
-        try:
-            await interaction.message.edit(embed=embed)
-        except discord.errors.HTTPException as e:
-            if e.code == 50027:  # Invalid Webhook Token - interaction expired
-                pass  # Can't update the message, but the vote was still recorded
-            else:
-                raise e
+        if interaction.message and interaction.message.embeds:
+            embed = interaction.message.embeds[0]
+            
+            # Find and update the Total Votes field
+            for i, field in enumerate(embed.fields):
+                if field.name == "Total Votes":
+                    embed.set_field_at(i, name="Total Votes", value=str(int(total_votes)), inline=True)
+                    break
+            
+            # Update the message with new embed
+            try:
+                await interaction.message.edit(embed=embed)
+            except discord.errors.HTTPException as e:
+                if e.code == 50027:  # Invalid Webhook Token - interaction expired
+                    pass  # Can't update the message, but the vote was still recorded
+                else:
+                    raise e
         
         # Send appropriate response message
         if previous_vote and previous_vote != self.candidate:

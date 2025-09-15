@@ -6,9 +6,11 @@ from discord.ext import commands
 from discord import app_commands
 import aiosqlite
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, cast
+from sqlite3 import Row
+import discord.abc
 import asyncio
-from utils.helpers import create_success_embed, create_error_embed, create_warning_embed
+from ..utils.helpers import create_success_embed, create_error_embed, create_warning_embed
 
 class StaffPoints(commands.Cog):
     """Staff Points (Aura) System for tracking and rewarding staff performance"""
@@ -16,6 +18,14 @@ class StaffPoints(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db_path = "data/staff_points.db"
+        
+    def check_guild_context(self, ctx: commands.Context) -> Tuple[discord.Guild, discord.Member]:
+        """Validate guild context and return guild and author as Member"""
+        if not ctx.guild:
+            raise commands.NoPrivateMessage("This command cannot be used in DMs")
+        if not isinstance(ctx.author, discord.Member):
+            raise commands.CheckFailure("Command user must be a guild member")
+        return ctx.guild, ctx.author
         
     async def cog_load(self):
         """Initialize the database when the cog loads"""
@@ -70,8 +80,14 @@ class StaffPoints(commands.Cog):
     @commands.guild_only()
     async def aura(self, ctx: commands.Context):
         """Main aura command group"""
+        if not ctx.guild:
+            await ctx.send(embed=create_error_embed("Error", "This command can only be used in a server."), ephemeral=True)
+            return
         if ctx.invoked_subcommand is None:
             # Show user's own aura
+            if not ctx.guild or not isinstance(ctx.author, discord.Member):
+                await ctx.send("❌ This command can only be used by server members!", ephemeral=True)
+                return
             await self.show_user_points(ctx, ctx.author)
 
     @aura.command(name="add", description="Add aura to a staff member")
@@ -81,8 +97,10 @@ class StaffPoints(commands.Cog):
         reason="Reason for awarding aura"
     )
     @commands.has_permissions(administrator=True)
+    @commands.guild_only()
     async def add_points(self, ctx: commands.Context, member: discord.Member, amount: int, *, reason: str = "No reason provided"):
         """Add aura to a staff member"""
+        guild, author = self.check_guild_context(ctx)
         if amount <= 0 or amount > 1000:
             await ctx.reply("❌ Points amount must be between 1 and 1000!", ephemeral=True)
             return
@@ -91,8 +109,8 @@ class StaffPoints(commands.Cog):
         if not await self.is_staff_member(member):
             await ctx.reply("❌ You can only give points to staff members!", ephemeral=True)
             return
-        
-        await self.modify_points(ctx.guild.id, member.id, amount, ctx.author.id, reason, "add")
+
+        await self.modify_points(guild.id, member.id, amount, author.id, reason, "add")
         
         embed = create_success_embed(
             "Points Added! ⭐",
@@ -101,14 +119,14 @@ class StaffPoints(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         
         # Get new total
-        total = await self.get_user_points(ctx.guild.id, member.id)
+        total = await self.get_user_points(guild.id, member.id)
         embed.add_field(name="New Total", value=f"{total} points", inline=True)
-        embed.add_field(name="Awarded by", value=ctx.author.mention, inline=True)
+        embed.add_field(name="Awarded by", value=author.mention, inline=True)
         
         await ctx.reply(embed=embed)
         
         # Log to points channel if configured
-        await self.log_points_change(ctx.guild, member, amount, ctx.author, reason, "add")
+        await self.log_points_change(guild, member, amount, author, reason, "add")
 
     @aura.command(name="remove", description="Remove aura from a staff member")
     @app_commands.describe(
@@ -117,8 +135,10 @@ class StaffPoints(commands.Cog):
         reason="Reason for removing aura"
     )
     @commands.has_permissions(administrator=True)
+    @commands.guild_only()
     async def remove_points(self, ctx: commands.Context, member: discord.Member, amount: int, *, reason: str = "No reason provided"):
         """Remove points from a staff member"""
+        guild, author = self.check_guild_context(ctx)
         if amount <= 0 or amount > 1000:
             await ctx.reply("❌ Points amount must be between 1 and 1000!", ephemeral=True)
             return
@@ -128,12 +148,12 @@ class StaffPoints(commands.Cog):
             await ctx.reply("❌ You can only remove points from staff members!", ephemeral=True)
             return
         
-        current_points = await self.get_user_points(ctx.guild.id, member.id)
-        if current_points < amount:
+        current_points = await self.get_user_points(guild.id, member.id)
+        if amount > current_points:
             await ctx.reply(f"❌ {member.display_name} only has {current_points} points available!", ephemeral=True)
             return
         
-        await self.modify_points(ctx.guild.id, member.id, -amount, ctx.author.id, reason, "remove")
+        await self.modify_points(guild.id, member.id, -amount, author.id, reason, "remove")
         
         embed = create_warning_embed(
             "Points Removed ⚠️",
@@ -142,14 +162,14 @@ class StaffPoints(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         
         # Get new total
-        total = await self.get_user_points(ctx.guild.id, member.id)
+        total = await self.get_user_points(guild.id, member.id)
         embed.add_field(name="New Total", value=f"{total} points", inline=True)
-        embed.add_field(name="Removed by", value=ctx.author.mention, inline=True)
+        embed.add_field(name="Removed by", value=author.mention, inline=True)
         
         await ctx.reply(embed=embed)
         
         # Log to points channel if configured
-        await self.log_points_change(ctx.guild, member, -amount, ctx.author, reason, "remove")
+        await self.log_points_change(guild, member, -amount, author, reason, "remove")
 
     @aura.command(name="set", description="Set a staff member's aura to a specific amount")
     @app_commands.describe(
@@ -158,8 +178,11 @@ class StaffPoints(commands.Cog):
         reason="Reason for setting aura"
     )
     @commands.has_permissions(administrator=True)
+    @commands.guild_only()
     async def set_points(self, ctx: commands.Context, member: discord.Member, amount: int, *, reason: str = "Points adjustment"):
         """Set a staff member's points to a specific amount"""
+        guild, author = self.check_guild_context(ctx)
+        
         if amount < 0 or amount > 10000:
             await ctx.reply("❌ Points amount must be between 0 and 10000!", ephemeral=True)
             return
@@ -169,10 +192,10 @@ class StaffPoints(commands.Cog):
             await ctx.reply("❌ You can only set points for staff members!", ephemeral=True)
             return
         
-        current_points = await self.get_user_points(ctx.guild.id, member.id)
+        current_points = await self.get_user_points(guild.id, member.id)
         difference = amount - current_points
         
-        await self.set_user_points(ctx.guild.id, member.id, amount, ctx.author.id, reason)
+        await self.set_user_points(guild.id, member.id, amount, author.id, reason)
         
         embed = discord.Embed(
             title="Points Set 🎯",
@@ -183,16 +206,19 @@ class StaffPoints(commands.Cog):
         embed.add_field(name="Previous Total", value=f"{current_points} points", inline=True)
         embed.add_field(name="New Total", value=f"{amount} points", inline=True)
         embed.add_field(name="Change", value=f"{'+' if difference >= 0 else ''}{difference} points", inline=True)
-        embed.add_field(name="Set by", value=ctx.author.mention, inline=False)
+        embed.add_field(name="Set by", value=author.mention, inline=False)
         
         await ctx.reply(embed=embed)
 
     @aura.command(name="check", description="Check a staff member's aura")
     @app_commands.describe(member="The staff member to check aura for")
-    async def check_points(self, ctx: commands.Context, member: discord.Member = None):
+    async def check_points(self, ctx: commands.Context, member: Optional[discord.Member] = None):
         """Check a staff member's points"""
+        assert ctx.guild is not None, "This command can only be used in a guild"
+        assert isinstance(ctx.author, discord.Member), "Command user must be a guild member"
         if member is None:
-            member = ctx.author
+            member = ctx.author  # type: ignore # we know author is Member because of guild_only
+        assert isinstance(member, discord.Member), "Target must be a guild member"
             
         await self.show_user_points(ctx, member)
 
@@ -202,10 +228,13 @@ class StaffPoints(commands.Cog):
         limit="Number of recent entries to show (default: 10, max: 50)"
     )
     @commands.has_permissions(manage_messages=True)
-    async def points_history(self, ctx: commands.Context, member: discord.Member = None, limit: int = 10):
+    async def points_history(self, ctx: commands.Context, member: Optional[discord.Member] = None, limit: int = 10):
         """View points history for a staff member"""
+        assert ctx.guild is not None, "This command can only be used in a guild"
+        assert isinstance(ctx.author, discord.Member), "Command user must be a guild member"
         if member is None:
-            member = ctx.author
+            member = ctx.author  # type: ignore # we know author is Member because of guild_only
+        assert isinstance(member, discord.Member), "Target must be a guild member"
             
         if limit < 1 or limit > 50:
             limit = 10
@@ -218,9 +247,9 @@ class StaffPoints(commands.Cog):
                 ORDER BY timestamp DESC 
                 LIMIT ?
             """, (ctx.guild.id, member.id, limit)) as cursor:
-                history = await cursor.fetchall()
+                history_rows = list(await cursor.fetchall())
         
-        if not history:
+        if not history_rows:
             await ctx.reply(f"❌ No points history found for {member.display_name}.", ephemeral=True)
             return
         
@@ -229,12 +258,12 @@ class StaffPoints(commands.Cog):
             color=0x3498DB
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        
+
         current_points = await self.get_user_points(ctx.guild.id, member.id)
         embed.add_field(name="Current Points", value=f"{current_points} points", inline=True)
         
         history_text = ""
-        for points_change, reason, action_type, timestamp, moderator_id in history:
+        for points_change, reason, action_type, timestamp, moderator_id in history_rows:
             moderator = self.bot.get_user(moderator_id)
             mod_name = moderator.display_name if moderator else "Unknown"
             
@@ -255,13 +284,14 @@ class StaffPoints(commands.Cog):
             history_text = history_text[:1021] + "..."
             
         embed.add_field(name="Recent Activity", value=history_text or "No activity", inline=False)
-        embed.set_footer(text=f"Showing last {len(history)} entries")
+        embed.set_footer(text=f"Showing last {len(history_rows)} entries")
         
         await ctx.reply(embed=embed)
 
     @aura.command(name="leaderboard", description="Show all staff members with aura")
     async def leaderboard(self, ctx: commands.Context):
         """Show all staff members with points"""
+        assert ctx.guild is not None
             
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute("""
@@ -270,9 +300,9 @@ class StaffPoints(commands.Cog):
                 WHERE guild_id = ? AND points > 0
                 ORDER BY points DESC, total_earned DESC
             """, (ctx.guild.id,)) as cursor:
-                leaderboard = await cursor.fetchall()
+                leaderboard_rows = list(await cursor.fetchall())
         
-        if not leaderboard:
+        if not leaderboard_rows:
             await ctx.reply("❌ No staff members with points found!", ephemeral=True)
             return
         
@@ -283,7 +313,7 @@ class StaffPoints(commands.Cog):
         )
         
         leaderboard_text = ""
-        for i, (user_id, points, total_earned, last_updated) in enumerate(leaderboard, 1):
+        for i, (user_id, points, total_earned, last_updated) in enumerate(leaderboard_rows, 1):
             user = self.bot.get_user(user_id)
             if user:
                 leaderboard_text += f"{i}. {user.display_name} - {points} aura\n"
@@ -311,7 +341,7 @@ class StaffPoints(commands.Cog):
             total_staff, total_points, total_earned = stats
             embed.add_field(name="Server Stats", value=f"Staff Members: {total_staff}\nTotal Points: {total_points or 0}\nTotal Earned: {total_earned or 0}", inline=True)
         
-        embed.set_footer(text=f"Showing top {len(leaderboard)} staff members")
+        embed.set_footer(text=f"Showing top {len(leaderboard_rows)} staff members")
         embed.timestamp = datetime.now(timezone.utc)
         
         await ctx.reply(embed=embed)
@@ -319,6 +349,7 @@ class StaffPoints(commands.Cog):
     @aura.command(name="top", description="Show top 3 staff members")
     async def top_staff(self, ctx: commands.Context):
         """Show top 3 staff members"""
+        assert ctx.guild is not None
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute("""
                 SELECT user_id, points, total_earned
@@ -354,10 +385,12 @@ class StaffPoints(commands.Cog):
 
     @aura.command(name="stats", description="Show detailed statistics for a staff member")
     @app_commands.describe(member="The staff member to show stats for")
-    async def staff_stats(self, ctx: commands.Context, member: discord.Member = None):
+    async def staff_stats(self, ctx: commands.Context, member: Optional[discord.Member] = None):
         """Show detailed statistics for a staff member"""
+        assert ctx.guild is not None
+        assert isinstance(ctx.author, discord.Member)
         if member is None:
-            member = ctx.author
+            member = ctx.author  # type: ignore
             
         if not await self.is_staff_member(member):
             await ctx.reply("❌ This command is only for staff members!", ephemeral=True)
@@ -463,6 +496,7 @@ class StaffPoints(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def reset_points(self, ctx: commands.Context, member: discord.Member, *, reason: str = "Points reset"):
         """Reset a staff member's points to zero"""
+        assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
         current_points = await self.get_user_points(ctx.guild.id, member.id)
         
         if current_points == 0:
@@ -507,8 +541,10 @@ class StaffPoints(commands.Cog):
         value="Configuration value"
     )
     @commands.has_permissions(administrator=True)
-    async def config_points(self, ctx: commands.Context, action: str = None, *, value: str = None):
+    @commands.guild_only()
+    async def config_points(self, ctx: commands.Context, action: Optional[str] = None, *, value: Optional[str] = None):
         """Configure staff aura settings"""
+        assert ctx.guild is not None
         if action is None:
             # Show current configuration
             await self.show_config(ctx)
@@ -666,6 +702,7 @@ class StaffPoints(commands.Cog):
 
     async def show_user_points(self, ctx: commands.Context, member: discord.Member):
         """Show a user's points information"""
+        assert ctx.guild is not None
         points = await self.get_user_points(ctx.guild.id, member.id)
         
         if points == 0 and member != ctx.author:
@@ -698,6 +735,7 @@ class StaffPoints(commands.Cog):
 
     async def log_points_change(self, guild: discord.Guild, member: discord.Member, points_change: int, moderator: discord.Member, reason: str, action_type: str):
         """Log points changes to the configured channel"""
+        assert isinstance(moderator, discord.Member), "Moderator must be a guild member"
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute("""
                 SELECT points_channel_id FROM staff_config 
@@ -742,12 +780,18 @@ class StaffPoints(commands.Cog):
         embed.add_field(name="New Total", value=f"{new_total} points", inline=True)
         
         try:
-            await channel.send(embed=embed)
+            if isinstance(channel, discord.TextChannel):
+                await channel.send(embed=embed)
+            elif isinstance(channel, discord.Thread):
+                await channel.send(embed=embed)
+            else:
+                return
         except discord.errors.Forbidden:
             pass  # Channel not accessible
 
     async def show_config(self, ctx: commands.Context):
         """Show current configuration"""
+        assert ctx.guild is not None
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute("""
                 SELECT staff_role_ids, points_channel_id FROM staff_config 
@@ -834,25 +878,13 @@ class StaffPoints(commands.Cog):
             """, (guild_id, new_roles))
             await db.commit()
 
-    async def is_staff_member(self, member: discord.Member) -> bool:
-        """Check if a member is a staff member"""
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("""
-                SELECT staff_role_ids FROM staff_config WHERE guild_id = ?
-            """, (member.guild.id,)) as cursor:
-                result = await cursor.fetchone()
-        
-        if not result or not result[0]:
-            return False
-        
-        staff_role_ids = [int(role_id) for role_id in result[0].split(',')]
-        member_role_ids = [role.id for role in member.roles]
-        
-        return any(role_id in member_role_ids for role_id in staff_role_ids)
+
 
     async def auto_give_point(self, member: discord.Member, reason: str = "Thanks received"):
         """Automatically give an aura to a staff member"""
         if not await self.is_staff_member(member):
+            return False
+        if not self.bot.user:
             return False
         
         # Add point to database

@@ -7,7 +7,8 @@ import asyncio
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime, timezone, timedelta
-from utils.helpers import create_success_embed, create_error_embed, create_warning_embed, log_action
+from typing import Optional
+from ..utils.helpers import create_success_embed, create_error_embed, create_warning_embed, log_action
 
 class Moderation(commands.Cog):
     """Basic moderation commands for server management"""
@@ -21,7 +22,8 @@ class Moderation(commands.Cog):
         user="Optional: Only delete messages from this user"
     )
     @commands.has_permissions(manage_messages=True)
-    async def purge(self, ctx: commands.Context, amount: int, user: discord.Member = None):
+    @commands.guild_only()
+    async def purge(self, ctx: commands.Context, amount: int, user: Optional[discord.Member] = None):
         """Delete a specified number of messages"""
         if amount < 1 or amount > 100:
             await ctx.send(embed=create_error_embed("Invalid Amount", "Please specify between 1 and 100 messages."), ephemeral=True)
@@ -37,7 +39,7 @@ class Moderation(commands.Cog):
             if ctx.interaction is None:
                 await ctx.message.delete()
             
-            deleted = await ctx.channel.purge(limit=amount, check=check)
+            deleted = await ctx.channel.purge(limit=amount, check=check)  # type: ignore
             deleted_count = len(deleted)
             
             # Send confirmation message that auto-deletes
@@ -55,13 +57,13 @@ class Moderation(commands.Cog):
             embed.set_footer(text="This message will be deleted in 5 seconds")
             
             if ctx.interaction:
-                await ctx.followup.send(embed=embed, ephemeral=True)
+                await ctx.followup.send(embed=embed, ephemeral=True)  # type: ignore
             else:
                 msg = await ctx.send(embed=embed)
                 await asyncio.sleep(5)
                 await msg.delete()
             
-            await log_action("PURGE", ctx.author.id, f"Deleted {deleted_count} messages in #{ctx.channel.name}")
+            await log_action("PURGE", ctx.author.id, f"Deleted {deleted_count} messages in #{ctx.channel.name}")  # type: ignore
             
         except discord.Forbidden:
             await ctx.send(embed=create_error_embed("Permission Error", "I don't have permission to delete messages in this channel."), ephemeral=True)
@@ -74,17 +76,18 @@ class Moderation(commands.Cog):
         reason="Reason for the kick"
     )
     @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
     async def kick(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Kick a member from the server"""
         if member == ctx.author:
             await ctx.send(embed=create_error_embed("Error", "You cannot kick yourself."), ephemeral=True)
             return
         
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:  # type: ignore
             await ctx.send(embed=create_error_embed("Permission Error", "You cannot kick someone with a higher or equal role."), ephemeral=True)
             return
         
-        if member.top_role >= ctx.guild.me.top_role:
+        if member.top_role >= ctx.guild.me.top_role:  # type: ignore
             await ctx.send(embed=create_error_embed("Permission Error", "I cannot kick someone with a higher or equal role than mine."), ephemeral=True)
             return
         
@@ -93,7 +96,7 @@ class Moderation(commands.Cog):
             try:
                 dm_embed = discord.Embed(
                     title="🦵 You were kicked",
-                    description=f"You have been kicked from **{ctx.guild.name}**",
+                    description=f"You have been kicked from **{ctx.guild.name}**",  # type: ignore
                     color=discord.Color.orange(),
                     timestamp=datetime.now(timezone.utc)
                 )
@@ -127,17 +130,18 @@ class Moderation(commands.Cog):
         delete_days="Number of days of messages to delete (0-7)"
     )
     @commands.has_permissions(ban_members=True)
+    @commands.guild_only()
     async def ban(self, ctx: commands.Context, member: discord.Member, delete_days: int = 0, *, reason: str = "No reason provided"):
         """Ban a member from the server"""
         if member == ctx.author:
             await ctx.send(embed=create_error_embed("Error", "You cannot ban yourself."), ephemeral=True)
             return
         
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:  # type: ignore
             await ctx.send(embed=create_error_embed("Permission Error", "You cannot ban someone with a higher or equal role."), ephemeral=True)
             return
         
-        if member.top_role >= ctx.guild.me.top_role:
+        if member.top_role >= ctx.guild.me.top_role:  # type: ignore
             await ctx.send(embed=create_error_embed("Permission Error", "I cannot ban someone with a higher or equal role than mine."), ephemeral=True)
             return
         
@@ -150,7 +154,7 @@ class Moderation(commands.Cog):
             try:
                 dm_embed = discord.Embed(
                     title="🔨 You were banned",
-                    description=f"You have been banned from **{ctx.guild.name}**",
+                    description=f"You have been banned from **{ctx.guild.name}**",  # type: ignore
                     color=discord.Color.red(),
                     timestamp=datetime.now(timezone.utc)
                 )
@@ -185,6 +189,7 @@ class Moderation(commands.Cog):
         reason="Reason for the unban"
     )
     @commands.has_permissions(ban_members=True)
+    @commands.guild_only()
     async def unban(self, ctx: commands.Context, user: str, *, reason: str = "No reason provided"):
         """Unban a user from the server"""
         try:
@@ -194,7 +199,7 @@ class Moderation(commands.Cog):
                 banned_user = await self.bot.fetch_user(user_id)
             except ValueError:
                 # Try to find by username#discriminator
-                banned_users = [entry async for entry in ctx.guild.bans()]
+                banned_users = [entry async for entry in ctx.guild.bans()]  # type: ignore
                 banned_user = None
                 for ban_entry in banned_users:
                     if str(ban_entry.user) == user:
@@ -207,12 +212,12 @@ class Moderation(commands.Cog):
             
             # Check if user is actually banned
             try:
-                await ctx.guild.fetch_ban(banned_user)
+                await ctx.guild.fetch_ban(banned_user)  # type: ignore
             except discord.NotFound:
                 await ctx.send(embed=create_error_embed("Not Banned", f"{banned_user} is not banned from this server."), ephemeral=True)
                 return
             
-            await ctx.guild.unban(banned_user, reason=f"{reason} - Unbanned by {ctx.author}")
+            await ctx.guild.unban(banned_user, reason=f"{reason} - Unbanned by {ctx.author}")  # type: ignore
             
             embed = create_success_embed(
                 "Member Unbanned",
@@ -236,17 +241,18 @@ class Moderation(commands.Cog):
         reason="Reason for the timeout"
     )
     @commands.has_permissions(moderate_members=True)
+    @commands.guild_only()
     async def timeout(self, ctx: commands.Context, member: discord.Member, duration: int, *, reason: str = "No reason provided"):
         """Timeout a member for a specified duration"""
         if member == ctx.author:
             await ctx.send(embed=create_error_embed("Error", "You cannot timeout yourself."), ephemeral=True)
             return
         
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:  # type: ignore
             await ctx.send(embed=create_error_embed("Permission Error", "You cannot timeout someone with a higher or equal role."), ephemeral=True)
             return
         
-        if member.top_role >= ctx.guild.me.top_role:
+        if member.top_role >= ctx.guild.me.top_role:  # type: ignore
             await ctx.send(embed=create_error_embed("Permission Error", "I cannot timeout someone with a higher or equal role than mine."), ephemeral=True)
             return
         
@@ -261,7 +267,7 @@ class Moderation(commands.Cog):
             try:
                 dm_embed = discord.Embed(
                     title="⏰ You were timed out",
-                    description=f"You have been timed out in **{ctx.guild.name}**",
+                    description=f"You have been timed out in **{ctx.guild.name}**",  # type: ignore
                     color=discord.Color.orange(),
                     timestamp=datetime.now(timezone.utc)
                 )
@@ -298,6 +304,7 @@ class Moderation(commands.Cog):
         reason="Reason for removing the timeout"
     )
     @commands.has_permissions(moderate_members=True)
+    @commands.guild_only()
     async def untimeout(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Remove timeout from a member"""
         if not member.is_timed_out():
@@ -328,6 +335,7 @@ class Moderation(commands.Cog):
         reason="Reason for the warning"
     )
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     async def warn(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Issue a warning to a member"""
         if member == ctx.author:
@@ -339,7 +347,7 @@ class Moderation(commands.Cog):
             try:
                 dm_embed = discord.Embed(
                     title="⚠️ Warning",
-                    description=f"You have received a warning in **{ctx.guild.name}**",
+                    description=f"You have received a warning in **{ctx.guild.name}**",  # type: ignore
                     color=discord.Color.yellow(),
                     timestamp=datetime.now(timezone.utc)
                 )
@@ -371,32 +379,33 @@ class Moderation(commands.Cog):
         channel="Channel to apply slowmode to (current channel if not specified)"
     )
     @commands.has_permissions(manage_channels=True)
-    async def slowmode(self, ctx: commands.Context, seconds: int, channel: discord.TextChannel = None):
+    @commands.guild_only()
+    async def slowmode(self, ctx: commands.Context, seconds: int, channel: Optional[discord.TextChannel] = None):
         """Set slowmode for a channel"""
         if channel is None:
-            channel = ctx.channel
+            channel = ctx.channel  # type: ignore
         
         if seconds < 0 or seconds > 21600:  # 6 hours max
             await ctx.send(embed=create_error_embed("Invalid Duration", "Slowmode must be between 0 and 21600 seconds (6 hours)."), ephemeral=True)
             return
         
         try:
-            await channel.edit(slowmode_delay=seconds)
+            await channel.edit(slowmode_delay=seconds)  # type: ignore
             
             if seconds == 0:
                 embed = create_success_embed(
                     "Slowmode Disabled",
-                    f"Slowmode has been disabled in {channel.mention}."
+                    f"Slowmode has been disabled in {channel.mention}."  # type: ignore
                 )
             else:
                 embed = create_success_embed(
                     "Slowmode Enabled",
-                    f"Slowmode set to {seconds} seconds in {channel.mention}."
+                    f"Slowmode set to {seconds} seconds in {channel.mention}."  # type: ignore
                 )
             
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
             await ctx.send(embed=embed)
-            await log_action("SLOWMODE", ctx.author.id, f"Set slowmode to {seconds} seconds in #{channel.name}")
+            await log_action("SLOWMODE", ctx.author.id, f"Set slowmode to {seconds} seconds in #{channel.name}")  # type: ignore
             
         except discord.Forbidden:
             await ctx.send(embed=create_error_embed("Permission Error", "I don't have permission to edit this channel."), ephemeral=True)
@@ -409,13 +418,14 @@ class Moderation(commands.Cog):
         nickname="New nickname (leave empty to remove nickname)"
     )
     @commands.has_permissions(manage_nicknames=True)
-    async def nick(self, ctx: commands.Context, member: discord.Member, *, nickname: str = None):
+    @commands.guild_only()
+    async def nick(self, ctx: commands.Context, member: discord.Member, *, nickname: Optional[str] = None):
         """Change a member's nickname"""
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner and member != ctx.author:
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner and member != ctx.author:  # type: ignore
             await ctx.send(embed=create_error_embed("Permission Error", "You cannot change the nickname of someone with a higher or equal role."), ephemeral=True)
             return
         
-        if member.top_role >= ctx.guild.me.top_role and member != ctx.guild.me:
+        if member.top_role >= ctx.guild.me.top_role and member != ctx.guild.me:  # type: ignore
             await ctx.send(embed=create_error_embed("Permission Error", "I cannot change the nickname of someone with a higher or equal role than mine."), ephemeral=True)
             return
         

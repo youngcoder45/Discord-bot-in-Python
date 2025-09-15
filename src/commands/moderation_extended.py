@@ -11,7 +11,7 @@ import re
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime, timezone, timedelta
-from utils.helpers import create_success_embed, create_error_embed, create_warning_embed, log_action
+from ..utils.helpers import create_success_embed, create_error_embed, create_warning_embed, log_action
 from typing import Optional, Union
 
 class ModerationExtended(commands.Cog):
@@ -26,15 +26,17 @@ class ModerationExtended(commands.Cog):
     
     @commands.hybrid_command(name="serverinfo", help="Get detailed server information")
     @app_commands.describe()
+    @commands.guild_only()
     async def serverinfo(self, ctx: commands.Context):
         """Get comprehensive server information"""
         guild = ctx.guild
+        assert guild is not None  # Since we have @commands.guild_only()
         
         # Calculate server stats
-        total_members = guild.member_count
+        total_members = guild.member_count or len(guild.members)
         online_members = sum(1 for member in guild.members if member.status != discord.Status.offline)
         bot_count = sum(1 for member in guild.members if member.bot)
-        human_count = total_members - bot_count
+        human_count = len([m for m in guild.members if not m.bot])
         
         # Channel counts
         text_channels = len(guild.text_channels)
@@ -91,9 +93,12 @@ class ModerationExtended(commands.Cog):
             inline=True
         )
         
+        owner = guild.owner or (guild.get_member(guild.owner_id) if guild.owner_id else None)
+        owner_mention = owner.mention if isinstance(owner, (discord.Member, discord.User)) else "Unknown"
+        owner_display = str(owner) if owner else "Unknown"
         embed.add_field(
             name="👑 Server Owner",
-            value=f"{guild.owner.mention}\n{guild.owner}",
+            value=f"{owner_mention}\n{owner_display}",
             inline=True
         )
         
@@ -127,10 +132,15 @@ class ModerationExtended(commands.Cog):
 
     @commands.hybrid_command(name="userinfo", help="Get detailed user information")
     @app_commands.describe(user="The user to get information about")
-    async def userinfo(self, ctx: commands.Context, user: discord.Member = None):
+    @commands.guild_only()
+    async def userinfo(self, ctx: commands.Context, user: Optional[discord.Member] = None):
         """Get comprehensive user information"""
+        assert ctx.guild is not None  # Since we have @commands.guild_only()
+        
         if user is None:
-            user = ctx.author
+            user = ctx.author  # type: ignore
+        
+        assert user is not None  # Should always be true in guild context
         
         # User status and activity
         status_emoji = {
@@ -233,6 +243,7 @@ class ModerationExtended(commands.Cog):
 
     @commands.hybrid_command(name="roleinfo", help="Get information about a specific role")
     @app_commands.describe(role="The role to get information about")
+    @commands.guild_only()
     async def roleinfo(self, ctx: commands.Context, *, role: discord.Role):
         """Get detailed role information"""
         # Count members with this role
@@ -306,10 +317,18 @@ class ModerationExtended(commands.Cog):
 
     @commands.hybrid_command(name="channelinfo", help="Get information about a channel")
     @app_commands.describe(channel="The channel to get information about")
-    async def channelinfo(self, ctx: commands.Context, channel: Union[discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel] = None):
+    @commands.guild_only()
+    async def channelinfo(self, ctx: commands.Context, channel: Optional[Union[discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel]] = None):
         """Get detailed channel information"""
+        assert ctx.guild is not None
         if channel is None:
-            channel = ctx.channel
+            if isinstance(ctx.channel, (discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel)):
+                channel = ctx.channel
+            elif isinstance(ctx.channel, discord.Thread) and isinstance(ctx.channel.parent, (discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel)):
+                channel = ctx.channel.parent
+            else:
+                await ctx.send(embed=create_error_embed("Unsupported Channel", "This command must be used in a guild text/voice/category channel or a thread within one."), ephemeral=True)
+                return
         
         embed = discord.Embed(
             title=f"📺 Channel Information",
@@ -386,10 +405,18 @@ class ModerationExtended(commands.Cog):
         reason="Reason for the lockdown"
     )
     @commands.has_permissions(manage_channels=True)
-    async def lockdown(self, ctx: commands.Context, channel: discord.TextChannel = None, *, reason: str = "No reason provided"):
+    @commands.guild_only()
+    async def lockdown(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None, *, reason: str = "No reason provided"):
         """Lock down a channel to prevent normal users from speaking"""
+        assert ctx.guild is not None
         if channel is None:
-            channel = ctx.channel
+            if isinstance(ctx.channel, discord.TextChannel):
+                channel = ctx.channel
+            elif isinstance(ctx.channel, discord.Thread) and isinstance(ctx.channel.parent, discord.TextChannel):
+                channel = ctx.channel.parent
+            else:
+                await ctx.send(embed=create_error_embed("Unsupported Channel", "Please specify a text channel or run this in a text channel/thread."), ephemeral=True)
+                return
         
         # Store original permissions for @everyone
         everyone = ctx.guild.default_role
@@ -425,10 +452,18 @@ class ModerationExtended(commands.Cog):
         reason="Reason for unlocking"
     )
     @commands.has_permissions(manage_channels=True)
-    async def unlock(self, ctx: commands.Context, channel: discord.TextChannel = None, *, reason: str = "No reason provided"):
+    @commands.guild_only()
+    async def unlock(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None, *, reason: str = "No reason provided"):
         """Unlock a previously locked channel"""
+        assert ctx.guild is not None
         if channel is None:
-            channel = ctx.channel
+            if isinstance(ctx.channel, discord.TextChannel):
+                channel = ctx.channel
+            elif isinstance(ctx.channel, discord.Thread) and isinstance(ctx.channel.parent, discord.TextChannel):
+                channel = ctx.channel.parent
+            else:
+                await ctx.send(embed=create_error_embed("Unsupported Channel", "Please specify a text channel or run this in a text channel/thread."), ephemeral=True)
+                return
         
         everyone = ctx.guild.default_role
         overwrites = channel.overwrites_for(everyone)
@@ -463,10 +498,18 @@ class ModerationExtended(commands.Cog):
         reason="Reason for nuking the channel"
     )
     @commands.has_permissions(manage_channels=True)
-    async def nuke(self, ctx: commands.Context, channel: discord.TextChannel = None, *, reason: str = "No reason provided"):
+    @commands.guild_only()
+    async def nuke(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None, *, reason: str = "No reason provided"):
         """Delete and recreate a channel (nuclear option)"""
+        assert ctx.guild is not None
         if channel is None:
-            channel = ctx.channel
+            if isinstance(ctx.channel, discord.TextChannel):
+                channel = ctx.channel
+            elif isinstance(ctx.channel, discord.Thread) and isinstance(ctx.channel.parent, discord.TextChannel):
+                channel = ctx.channel.parent
+            else:
+                await ctx.send(embed=create_error_embed("Unsupported Channel", "Please specify a text channel or run this in a text channel/thread."), ephemeral=True)
+                return
         
         # Store channel information
         channel_name = channel.name
@@ -506,12 +549,14 @@ class ModerationExtended(commands.Cog):
                 await channel.delete(reason=f"Nuked by {ctx.author}: {reason}")
                 
                 # Restore properties
-                await new_channel.edit(
-                    topic=channel_topic,
-                    position=channel_position,
-                    slowmode_delay=channel_slowmode,
-                    nsfw=channel_nsfw
-                )
+                edit_kwargs = {
+                    "position": channel_position,
+                    "slowmode_delay": channel_slowmode,
+                    "nsfw": channel_nsfw,
+                }
+                if channel_topic is not None:
+                    edit_kwargs["topic"] = channel_topic
+                await new_channel.edit(**edit_kwargs)
                 
                 # Send confirmation in new channel
                 embed = discord.Embed(
@@ -541,6 +586,7 @@ class ModerationExtended(commands.Cog):
     @commands.has_permissions(ban_members=True)
     async def massban(self, ctx: commands.Context, user_ids: str, delete_days: int = 1, *, reason: str = "Mass ban"):
         """Ban multiple users by their IDs"""
+        assert ctx.guild is not None
         if delete_days < 0 or delete_days > 7:
             await ctx.send(embed=create_error_embed("Invalid Days", "Delete days must be between 0 and 7."), ephemeral=True)
             return
@@ -566,8 +612,8 @@ class ModerationExtended(commands.Cog):
                 
                 # Check if user is already banned
                 try:
-                    banned_users = [ban_entry.user async for ban_entry in ctx.guild.bans()]
-                    if any(ban.user.id == user_id for ban in banned_users):
+                    banned_entries = [ban_entry async for ban_entry in ctx.guild.bans()]
+                    if any(ban_entry.user.id == user_id for ban_entry in banned_entries):
                         failed_bans.append(f"{user_id} (already banned)")
                         continue
                 except:
@@ -632,6 +678,7 @@ class ModerationExtended(commands.Cog):
     @commands.has_permissions(ban_members=True)
     async def listbans(self, ctx: commands.Context):
         """List all banned users in the server"""
+        assert ctx.guild is not None
         try:
             ban_list = []
             async for ban_entry in ctx.guild.bans():
@@ -686,6 +733,9 @@ class ModerationExtended(commands.Cog):
     @commands.has_permissions(manage_roles=True)
     async def addrole(self, ctx: commands.Context, user: discord.Member, role: discord.Role, *, reason: str = "No reason provided"):
         """Add a role to a user"""
+        assert ctx.guild is not None
+        assert isinstance(ctx.author, discord.Member)
+        assert ctx.guild.me is not None
         # Permission checks
         if role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
             await ctx.send(embed=create_error_embed("Permission Error", "You cannot assign a role higher than or equal to your highest role."), ephemeral=True)
@@ -726,6 +776,9 @@ class ModerationExtended(commands.Cog):
     @commands.has_permissions(manage_roles=True)
     async def removerole(self, ctx: commands.Context, user: discord.Member, role: discord.Role, *, reason: str = "No reason provided"):
         """Remove a role from a user"""
+        assert ctx.guild is not None
+        assert isinstance(ctx.author, discord.Member)
+        assert ctx.guild.me is not None
         # Permission checks
         if role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
             await ctx.send(embed=create_error_embed("Permission Error", "You cannot remove a role higher than or equal to your highest role."), ephemeral=True)

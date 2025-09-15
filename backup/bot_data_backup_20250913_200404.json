@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-05T06:01:34.219624+00:00",
+  "timestamp": "2025-09-13T14:34:04.150074+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -65,11 +65,254 @@
           "data": [
             {
               "shift_id": 1,
-              "guild_id": 123456789,
-              "user_id": 111222333,
-              "start": 1756624553,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-03 23:25:24.435376+00:00",
+              "end": "2025-09-05 04:54:06.422779+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 2,
+              "guild_id": 1263067254153805905,
+              "user_id": 825572836181147648,
+              "start": "2025-09-04 08:23:46.155842+00:00",
+              "end": "2025-09-05 13:09:42.335043+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 3,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "start": "2025-09-05 12:58:57.576653+00:00",
+              "end": "2025-09-05 16:14:25.373523+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 4,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-06 00:34:02.372674+00:00",
+              "end": "2025-09-06 05:25:14.890711+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 5,
+              "guild_id": 1263067254153805905,
+              "user_id": 825572836181147648,
+              "start": "2025-09-06 08:42:17.357376+00:00",
+              "end": "2025-09-06 12:08:42.106740+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 6,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "start": "2025-09-07 07:01:58.010470+00:00",
+              "end": "2025-09-07 15:44:53.860118+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 7,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-07 15:26:49.963929+00:00",
+              "end": "2025-09-08 04:56:51.532939+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 8,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "start": "2025-09-07 17:06:42.667284+00:00",
+              "end": "2025-09-07 20:41:44.252627+00:00",
+              "start_note": null,
+              "end_note": "going to sleep"
+            },
+            {
+              "shift_id": 9,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-07 19:03:21.477573+00:00",
+              "end": "2025-09-07 20:32:50.129956+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 10,
+              "guild_id": 1263067254153805905,
+              "user_id": 704912146378653766,
+              "start": "2025-09-08 07:42:45.087513+00:00",
+              "end": "2025-09-08 09:50:55.423553+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 11,
+              "guild_id": 1263067254153805905,
+              "user_id": 1272204966416748698,
+              "start": "2025-09-08 08:55:25.085680+00:00",
+              "end": "2025-09-08 16:27:54.451011+00:00",
+              "start_note": "Work",
+              "end_note": null
+            },
+            {
+              "shift_id": 12,
+              "guild_id": 1263067254153805905,
+              "user_id": 825572836181147648,
+              "start": "2025-09-08 11:15:15.646019+00:00",
+              "end": "2025-09-10 04:32:09.115985+00:00",
+              "start_note": null,
+              "end_note": "[Force ended by Aditya ✧ YC45]"
+            },
+            {
+              "shift_id": 13,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "start": "2025-09-08 11:15:35.728145+00:00",
+              "end": "2025-09-08 14:59:12.694336+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 14,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-08 14:11:18.573556+00:00",
+              "end": "2025-09-08 20:25:10.248932+00:00",
+              "start_note": null,
+              "end_note": "Am going to sleep"
+            },
+            {
+              "shift_id": 15,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-09 02:04:31.843053+00:00",
+              "end": "2025-09-10 04:22:13.410497+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 16,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-09 05:10:56.438494+00:00",
+              "end": "2025-09-09 13:37:17.984658+00:00",
+              "start_note": "I didnt went to school today because am sick so imma moderate lol",
+              "end_note": "am really tired rn, will resume in some hours"
+            },
+            {
+              "shift_id": 17,
+              "guild_id": 1263067254153805905,
+              "user_id": 704912146378653766,
+              "start": "2025-09-09 06:58:55.265402+00:00",
+              "end": "2025-09-09 16:07:01.333611+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 18,
+              "guild_id": 1263067254153805905,
+              "user_id": 1272204966416748698,
+              "start": "2025-09-09 13:53:59.246261+00:00",
+              "end": "2025-09-10 04:32:34.088895+00:00",
+              "start_note": null,
+              "end_note": "[Force ended by Aditya ✧ YC45]"
+            },
+            {
+              "shift_id": 19,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-09 14:46:09.541054+00:00",
+              "end": "2025-09-09 19:37:07.386322+00:00",
+              "start_note": "back to the job",
+              "end_note": "am going to sleep, got school tomorrow. Also sorry if I disconnect or disappear mid shift, its because my internet sucks and it stops anytime"
+            },
+            {
+              "shift_id": 20,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-10 02:43:11.908095+00:00",
+              "end": "2025-09-10 09:31:16.791568+00:00",
+              "start_note": "I am not going to school today again lol",
+              "end_note": "going to academy"
+            },
+            {
+              "shift_id": 21,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-10 13:30:18.155682+00:00",
+              "end": "2025-09-10 19:04:53.436286+00:00",
+              "start_note": "back from academy",
+              "end_note": "going to sleep"
+            },
+            {
+              "shift_id": 22,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-11 01:04:32.270681+00:00",
+              "end": "2025-09-11 04:54:41.813575+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 23,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-11 05:50:04.216276+00:00",
+              "end": "2025-09-11 10:08:54.559475+00:00",
+              "start_note": "still didnt go to school",
+              "end_note": "going to academy"
+            },
+            {
+              "shift_id": 24,
+              "guild_id": 1263067254153805905,
+              "user_id": 825572836181147648,
+              "start": "2025-09-11 11:53:10.841392+00:00",
               "end": null,
-              "start_note": "Test shift start",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 25,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-11 13:35:25.957162+00:00",
+              "end": "2025-09-11 20:33:48.472267+00:00",
+              "start_note": "am tired",
+              "end_note": "going to sleep"
+            },
+            {
+              "shift_id": 26,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-12 01:52:38.493378+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 27,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-12 06:40:02.123212+00:00",
+              "end": "2025-09-12 20:27:30.152454+00:00",
+              "start_note": "meow",
+              "end_note": "going to sleep"
+            },
+            {
+              "shift_id": 28,
+              "guild_id": 1263067254153805905,
+              "user_id": 704912146378653766,
+              "start": "2025-09-12 07:09:42.342893+00:00",
+              "end": "2025-09-12 14:45:34.242957+00:00",
+              "start_note": null,
               "end_note": null
             }
           ]
@@ -96,7 +339,7 @@
           "data": [
             {
               "name": "shifts",
-              "seq": 1
+              "seq": 28
             }
           ]
         },
@@ -129,14 +372,9 @@
           ],
           "data": [
             {
-              "guild_id": 123456789,
-              "log_channel_id": 987654321,
-              "staff_role_ids": "123,456,789"
-            },
-            {
               "guild_id": 1263067254153805905,
               "log_channel_id": 1407256147760517151,
-              "staff_role_ids": "[1403059755001577543]"
+              "staff_role_ids": "[1403059755001577543, 1263076642234961941]"
             }
           ]
         }
@@ -601,6 +839,51 @@
               "INTEGER",
               0,
               "0",
+              0
+            ]
+          ],
+          "data": []
+        },
+        "staff_aura": {
+          "schema": [
+            [
+              0,
+              "user_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "aura",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              2,
+              "total_earned",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              3,
+              "total_spent",
+              "INTEGER",
+              0,
+              "0",
+              0
+            ],
+            [
+              4,
+              "last_updated",
+              "TEXT",
+              0,
+              "CURRENT_TIMESTAMP",
               0
             ]
           ],
@@ -1729,7 +2012,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-05T06:01:34.253629+00:00",
+    "last_backup": "2025-09-13T14:34:04.226152+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }

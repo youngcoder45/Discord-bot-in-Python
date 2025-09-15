@@ -9,6 +9,7 @@ from discord import app_commands
 import random
 import asyncio
 from datetime import datetime, timezone
+from typing import Optional
 
 # Professional data sets without emojis
 COMPLIMENTS = [
@@ -69,9 +70,9 @@ class Fun(commands.Cog):
     
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
     @commands.hybrid_command(name="compliment", help="Receive a professional programming compliment")
-    async def compliment(self, ctx: commands.Context, member: discord.Member = None):
+    async def compliment(self, ctx: commands.Context, member: Optional[discord.Member] = None):
+        """Give a professional compliment to yourself or another member."""
         """Give a professional compliment to yourself or another member."""
         target = member or ctx.author
         compliment = random.choice(COMPLIMENTS)
@@ -142,7 +143,7 @@ class Fun(commands.Cog):
         try:
             await message.edit(embed=answer_embed)
         except:
-            await ctx.followup.send(embed=answer_embed)
+            await ctx.send(embed=answer_embed)
 
     @commands.hybrid_command(name="flip", help="Flip a coin")
     async def flip(self, ctx: commands.Context):
