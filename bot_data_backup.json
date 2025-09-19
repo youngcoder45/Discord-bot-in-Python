@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-19T11:35:04.848805+00:00",
+  "timestamp": "2025-09-19T17:35:06.855964+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -482,9 +482,9 @@
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
               "start": "2025-09-19T10:34:53.804335+00:00",
-              "end": null,
+              "end": "2025-09-19T15:07:10.051490+00:00",
               "start_note": "I completely forgot I programmed this. Lol signing in.",
-              "end_note": null
+              "end_note": "gonna go play silk song"
             },
             {
               "shift_id": 48,
@@ -493,6 +493,15 @@
               "start": "2025-09-19T10:59:27.676089+00:00",
               "end": null,
               "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 49,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-19T13:25:23.385183+00:00",
+              "end": null,
+              "start_note": "got early from academy because its raining. Life feels so beautiful when it rains",
               "end_note": null
             }
           ]
@@ -664,11 +673,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 130
+              "seq": 133
             },
             {
               "name": "points_history",
-              "seq": 130
+              "seq": 133
             }
           ]
         },
@@ -754,10 +763,10 @@
               "id": 3,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 38,
-              "total_earned": 38,
+              "points": 39,
+              "total_earned": 39,
               "total_spent": 0,
-              "last_updated": "2025-09-16 01:41:35"
+              "last_updated": "2025-09-19 11:58:01"
             },
             {
               "id": 4,
@@ -799,10 +808,10 @@
               "id": 8,
               "guild_id": 1263067254153805905,
               "user_id": 1239292183136174121,
-              "points": 18,
-              "total_earned": 18,
+              "points": 19,
+              "total_earned": 19,
               "total_spent": 0,
-              "last_updated": "2025-09-18 17:17:12"
+              "last_updated": "2025-09-19 14:46:11"
             },
             {
               "id": 9,
@@ -898,10 +907,10 @@
               "id": 32,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 21,
-              "total_earned": 30,
+              "points": 22,
+              "total_earned": 31,
               "total_spent": 9,
-              "last_updated": "2025-09-16 01:46:23"
+              "last_updated": "2025-09-19 15:26:56"
             },
             {
               "id": 35,
@@ -2290,6 +2299,36 @@
               "reason": "Thanks from Aditya ✧ YC45",
               "action_type": "auto_add",
               "timestamp": "2025-09-19 09:52:09"
+            },
+            {
+              "id": 131,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-19 11:58:01"
+            },
+            {
+              "id": 132,
+              "guild_id": 1263067254153805905,
+              "user_id": 1239292183136174121,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-19 14:46:11"
+            },
+            {
+              "id": 133,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-19 15:26:56"
             }
           ]
         },
@@ -3023,7 +3062,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-19T11:35:04.935767+00:00",
+    "last_backup": "2025-09-19T17:35:07.036337+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
