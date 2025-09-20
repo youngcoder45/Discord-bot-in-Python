@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-19T23:35:10.634343+00:00",
+  "timestamp": "2025-09-20T05:35:12.923619+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -491,17 +491,35 @@
               "guild_id": 1263067254153805905,
               "user_id": 1272204966416748698,
               "start": "2025-09-19T10:59:27.676089+00:00",
-              "end": null,
+              "end": "2025-09-20T05:05:05.491594+00:00",
               "start_note": null,
-              "end_note": null
+              "end_note": "[Force ended by Aditya ✧ YC45]"
             },
             {
               "shift_id": 49,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
               "start": "2025-09-19T13:25:23.385183+00:00",
-              "end": null,
+              "end": "2025-09-20T05:05:24.744684+00:00",
               "start_note": "got early from academy because its raining. Life feels so beautiful when it rains",
+              "end_note": "uh it wasnt working before so forgot to stop it"
+            },
+            {
+              "shift_id": 50,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-20T00:47:33.695777+00:00",
+              "end": "2025-09-20T05:14:59.642041+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 51,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "start": "2025-09-20T05:05:33.926694+00:00",
+              "end": null,
+              "start_note": "starting new",
               "end_note": null
             }
           ]
@@ -3072,7 +3090,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-19T23:35:10.874432+00:00",
+    "last_backup": "2025-09-20T05:35:12.973197+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
