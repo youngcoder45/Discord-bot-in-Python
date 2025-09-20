@@ -86,6 +86,29 @@ async def on_ready():
     else:
         logger.info(f"Bot logged in [Instance: {INSTANCE_ID}]")
     
+    # Security check: Ensure bot is only in authorized servers
+    if GUILD_ID:
+        unauthorized_servers = []
+        for guild in bot.guilds:
+            if guild.id != GUILD_ID:
+                unauthorized_servers.append(guild)
+        
+        # Leave any unauthorized servers
+        for guild in unauthorized_servers:
+            logger.warning(f"🚫 Found bot in unauthorized server: {guild.name} (ID: {guild.id})")
+            try:
+                await guild.leave()
+                logger.info(f"✅ Left unauthorized server: {guild.name}")
+            except Exception as e:
+                logger.error(f"❌ Failed to leave server {guild.name}: {e}")
+        
+        # Check if bot is in the correct server
+        authorized_guild = bot.get_guild(GUILD_ID)
+        if authorized_guild:
+            logger.info(f"✅ Bot is operating in authorized server: {authorized_guild.name}")
+        else:
+            logger.warning(f"⚠️ Bot is not in the configured server (ID: {GUILD_ID})")
+    
     # Start periodic backup task (every 6 hours)
     try:
         from utils.data_persistence import start_periodic_backup
@@ -109,6 +132,42 @@ async def on_ready():
         logger.error(f"Failed to sync slash commands: {e}")
     
     # Both prefix (?ping) and slash (/ping) commands are now available
+
+@bot.event
+async def on_guild_join(guild):
+    """Security: Auto-leave any unauthorized servers"""
+    # The allowed server ID is loaded from GUILD_ID in .env file
+    # Currently set to: 1263067254153805905 (your server)
+    ALLOWED_SERVER_ID = GUILD_ID
+    
+    if guild.id != ALLOWED_SERVER_ID:
+        logger.warning(f"🚫 Bot was added to unauthorized server: {guild.name} (ID: {guild.id})")
+        
+        # Try to send a message to the owner if possible
+        try:
+            if guild.owner:
+                embed = discord.Embed(
+                    title="🚫 Unauthorized Server Access",
+                    description=f"This bot is exclusive to a specific server and cannot be used here.\n\n"
+                               f"Server: {guild.name}\n"
+                               f"Server ID: {guild.id}\n\n"
+                               f"The bot will now leave this server automatically.",
+                    color=discord.Color.red()
+                )
+                await guild.owner.send(embed=embed)
+        except Exception as e:
+            logger.warning(f"Could not notify server owner: {e}")
+        
+        # Leave the unauthorized server
+        await guild.leave()
+        logger.info(f"✅ Successfully left unauthorized server: {guild.name}")
+    else:
+        logger.info(f"✅ Bot joined authorized server: {guild.name}")
+
+@bot.event
+async def on_guild_remove(guild):
+    """Log when bot is removed from servers"""
+    logger.info(f"📤 Bot was removed from server: {guild.name} (ID: {guild.id})")
 
 async def main():
     if not TOKEN:
