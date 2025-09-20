@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-20T14:34:02.743399+00:00",
+  "timestamp": "2025-09-20T20:34:05.180916+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -700,11 +700,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 136
+              "seq": 137
             },
             {
               "name": "points_history",
-              "seq": 136
+              "seq": 137
             }
           ]
         },
@@ -934,10 +934,10 @@
               "id": 32,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 22,
-              "total_earned": 31,
+              "points": 23,
+              "total_earned": 32,
               "total_spent": 9,
-              "last_updated": "2025-09-19 15:26:56"
+              "last_updated": "2025-09-20 14:55:09"
             },
             {
               "id": 35,
@@ -2386,6 +2386,16 @@
               "reason": "Thanks from Aditya ✧ YC45",
               "action_type": "auto_add",
               "timestamp": "2025-09-20 08:15:59"
+            },
+            {
+              "id": 137,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Adudakqua",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-20 14:55:09"
             }
           ]
         },
@@ -3119,7 +3129,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-20T14:34:03.021338+00:00",
+    "last_backup": "2025-09-20T20:34:05.456026+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
