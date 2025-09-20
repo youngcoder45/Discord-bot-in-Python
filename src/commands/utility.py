@@ -4,6 +4,95 @@ from discord import app_commands
 from typing import Optional
 import json
 import re
+from datetime import datetime, timezone
+
+class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
+    """Interactive modal for creating embeds"""
+    
+    def __init__(self, cog):
+        super().__init__()
+        self.cog = cog
+    
+    # Input fields for the modal
+    embed_title = discord.ui.TextInput(
+        label='Embed Title',
+        placeholder='Enter the title for your embed...',
+        required=True,
+        max_length=256
+    )
+    
+    embed_description = discord.ui.TextInput(
+        label='Description',
+        placeholder='Enter the main content of your embed...',
+        style=discord.TextStyle.paragraph,
+        required=True,
+        max_length=4000
+    )
+    
+    embed_color = discord.ui.TextInput(
+        label='Color (optional)',
+        placeholder='red, blue, green, gold, purple, orange, teal, #FF0000',
+        required=False,
+        max_length=50,
+        default='blue'
+    )
+    
+    embed_footer = discord.ui.TextInput(
+        label='Footer Text (optional)',
+        placeholder='Enter footer text...',
+        required=False,
+        max_length=2048
+    )
+    
+    embed_image = discord.ui.TextInput(
+        label='Image URL (optional)',
+        placeholder='https://example.com/image.png',
+        required=False,
+        max_length=500
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        """Handle the form submission and create the embed"""
+        try:
+            # Create the embed with the provided data
+            embed = discord.Embed(
+                title=self.embed_title.value,
+                description=self.embed_description.value,
+                timestamp=datetime.now(timezone.utc)
+            )
+            
+            # Set color
+            color_value = self.embed_color.value.strip().lower() if self.embed_color.value else 'blue'
+            if color_value.startswith('#'):
+                try:
+                    color_int = int(color_value[1:], 16)
+                    embed.color = discord.Color(color_int)
+                except ValueError:
+                    embed.color = discord.Color.blue()
+            else:
+                embed.color = self.cog.colors.get(color_value, discord.Color.blue())
+            
+            # Add footer if provided
+            if self.embed_footer.value:
+                embed.set_footer(text=self.embed_footer.value)
+            
+            # Add image if provided
+            if self.embed_image.value:
+                try:
+                    embed.set_image(url=self.embed_image.value)
+                except:
+                    pass  # Invalid URL, skip image
+            
+            # Send the beautiful embed
+            await interaction.response.send_message(embed=embed)
+            
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ Embed Creation Failed",
+                description=f"Error: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
 
 class EmbedBuilder(commands.Cog):
     """Advanced embed creation and management commands"""
@@ -24,7 +113,26 @@ class EmbedBuilder(commands.Cog):
 
     @app_commands.command(
         name="embed",
-        description="Create a beautiful embed message with customization options"
+        description="Create a beautiful embed with an interactive form"
+    )
+    async def create_embed_interactive(self, interaction: discord.Interaction):
+        """Create a beautiful embed using an interactive modal form"""
+        try:
+            # Show the modal form to the user
+            modal = EmbedCreatorModal(self)
+            await interaction.response.send_modal(modal)
+            
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ Error Opening Embed Creator",
+                description=f"Error: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+
+    @app_commands.command(
+        name="embedquick",
+        description="Create a quick embed with command parameters (legacy method)"
     )
     @app_commands.describe(
         title="The title of the embed",
@@ -35,7 +143,7 @@ class EmbedBuilder(commands.Cog):
         footer="Footer text (optional)",
         timestamp="Add current timestamp? (yes/no)",
     )
-    async def create_embed(
+    async def create_embed_quick(
         self, 
         interaction: discord.Interaction,
         title: str,
@@ -46,7 +154,7 @@ class EmbedBuilder(commands.Cog):
         footer: Optional[str] = None,
         timestamp: Optional[str] = "no"
     ):
-        """Create a beautiful customized embed message"""
+        """Create a beautiful customized embed message (quick method with parameters)"""
         try:
             print(f"DEBUG: /embed called by {interaction.user} (ID: {interaction.user.id})")
             print(f"DEBUG: Guild: {interaction.guild.name if interaction.guild else 'DM'}")
@@ -209,10 +317,19 @@ class EmbedBuilder(commands.Cog):
             color=discord.Color.gold()
         )
         
-        # Basic usage with better formatting
         help_embed.add_field(
-            name="🔧 **Basic Usage**",
-            value="\n**Use `/embed` to create custom embeds:**\n"
+            name="🔧 **Interactive Embed Creator**",
+            value="\n**Use `/embed` for an interactive form:**\n"
+                  "• Opens a popup form with input fields\n"
+                  "• Fill in title, description, color, footer, and image\n"
+                  "• Creates beautiful, professional embeds\n"
+                  "• Easy to use - just type `/embed` and fill the form!\n",
+            inline=False
+        )
+        
+        help_embed.add_field(
+            name="⚡ **Quick Embed Creator**",
+            value="\n**Use `/embedquick` for command-line style:**\n"
                   "• `title` - The embed title\n"
                   "• `description` - Main content (supports \\n for new lines)\n"
                   "• `color` - Color name or hex (blue, red, #FF0000)\n"
@@ -226,9 +343,9 @@ class EmbedBuilder(commands.Cog):
         # Separator
         help_embed.add_field(name="\u200b", value="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", inline=False)
         
-        # Field syntax
+        # Field syntax (for embedquick)
         help_embed.add_field(
-            name="📋 **Adding Fields**",
+            name="📋 **Adding Fields (embedquick only)**",
             value="\n**Add fields in description using:**\n"
                   "`{field|Field Name|Field Value|true}`\n"
                   "*The last 'true/false' controls if fields are inline*\n",
@@ -261,8 +378,11 @@ class EmbedBuilder(commands.Cog):
         # Examples
         help_embed.add_field(
             name="💡 **Example Commands**",
-            value="\n**Basic embed:**\n"
-                  "```/embed title:Welcome! description:Hello everyone!\\n\\nEnjoy your stay! color:blue```\n"
+            value="\n**Interactive embed:**\n"
+                  "```/embed```\n"
+                  "*Then fill out the popup form!*\n"
+                  "\n**Quick embed:**\n"
+                  "```/embedquick title:Welcome! description:Hello everyone!\\n\\nEnjoy your stay! color:blue```\n"
                   "\n**Rules embed:**\n"
                   "```/embedrules rules:1. Be respectful\\n2. No spam\\n3. Stay on topic```\n",
             inline=True
