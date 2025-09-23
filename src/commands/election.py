@@ -102,7 +102,7 @@ class Election(commands.Cog):
             "creator": ctx.author.id
         }
         
-        await ctx.reply(f"✅ Election started! Voting open for **{duration} minutes**.", ephemeral=True)
+        await ctx.reply(f"Election started! Voting open for **{duration} minutes**.", ephemeral=True)
         
         # Schedule automatic end
         asyncio.create_task(self._auto_end_election(ctx.guild.id, duration * 60))
@@ -125,7 +125,7 @@ class Election(commands.Cog):
     async def test(self, ctx: commands.Context):
         """Test election system."""
         embed = discord.Embed(
-            title="✅ Election System Test",
+            title="Election System Test",
             description="Election system is working correctly!",
             color=discord.Color.green()
         )
@@ -156,7 +156,7 @@ class Election(commands.Cog):
         try:
             election_data = self.active_elections[ctx.guild.id]
             await self._end_election(ctx.guild.id)
-            await ctx.reply("✅ Election ended manually.")
+            await ctx.reply("Election ended manually.")
         except Exception as e:
             await ctx.reply(f"⚠️ Election ended but there was an issue updating the message: {str(e)[:100]}...", ephemeral=True)
 
@@ -392,7 +392,7 @@ class VoteButton(discord.ui.Button):
         if previous_vote and previous_vote != self.candidate:
             # Vote was changed
             await interaction.response.send_message(
-                f"✅ Your vote has been changed to **{self.candidate}**!",
+                f"Your vote has been changed to **{self.candidate}**!",
                 ephemeral=True
             )
         elif previous_vote == self.candidate:
@@ -404,7 +404,7 @@ class VoteButton(discord.ui.Button):
         else:
             # New vote
             await interaction.response.send_message(
-                f"✅ Vote registered for **{self.candidate}**!",
+                f"Vote registered for **{self.candidate}**!",
                 ephemeral=True
             )
 

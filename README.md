@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤖 CodeVerse Bot
+# CodeVerse Bot
 
 **Enterprise-grade Discord bot for programming communities with comprehensive management tools**
 
@@ -10,17 +10,17 @@
 
 </div>
 
-## ✨ Features Overview
+## Features Overview
 
-### 🎯 Core Commands
+### Core Commands
 - **`?ping`** / **`/ping`** - Check bot latency and responsiveness
 - **`?info`** / **`/info`** - View bot information, uptime, and instance details
 - **`?diag`** / **`/diag`** - Comprehensive bot diagnostics and health status
 - **`?help`** / **`/help`** - Display all available commands with usage
 
-### 🛡️ Advanced Moderation System
+### Advanced Moderation System
 
-#### 📊 Server Information Commands
+#### Server Information Commands
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
 | `?serverinfo` / `/serverinfo` | Detailed server statistics and info | None |
@@ -28,7 +28,7 @@
 | `?roleinfo <role>` / `/roleinfo <role>` | Detailed role information | None |
 | `?channelinfo [#channel]` / `/channelinfo [#channel]` | Channel information and stats | None |
 
-#### ⚔️ Basic Moderation Commands
+#### Basic Moderation Commands
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
 | `?purge <amount> [@user]` / `/purge <amount> [@user]` | Delete 1-100 messages | Manage Messages |
@@ -41,7 +41,7 @@
 | `?slowmode <seconds> [#channel]` / `/slowmode <seconds> [#channel]` | Set channel slowmode (0-6hrs) | Manage Channels |
 | `?nick <member> [nickname]` / `/nick <member> [nickname]` | Change member nickname | Manage Nicknames |
 
-#### 🔥 Advanced Moderation Commands
+#### Advanced Moderation Commands
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
 | `?lockdown [#channel] [reason]` / `/lockdown [#channel] [reason]` | Lock channel (prevent normal users from speaking) | Manage Channels |
@@ -52,7 +52,7 @@
 | `?addrole <@user> <role> [reason]` / `/addrole <@user> <role> [reason]` | Add role to user | Manage Roles |
 | `?removerole <@user> <role> [reason]` / `/removerole <@user> <role> [reason]` | Remove role from user | Manage Roles |
 
-### ⭐ Staff Aura System (Points & Recognition)
+### Staff Aura System (Points & Recognition)
 **Comprehensive staff recognition and promotion system** with leaderboards and statistics
 - **`?aura check [@user]`** / **`/aura check [@user]`** - Check aura balance
 - **`?aura leaderboard`** / **`/aura leaderboard`** - View staff rankings (all staff with aura)
@@ -66,7 +66,7 @@
 - **`?aura config <action> [value]`** / **`/aura config <action> [value]`** - Configure system (Admin only)
 - **Automatic aura for "thanks"** - Staff get +1 aura when thanked via mention/reply
 
-### ⏰ Staff Shift Tracking System
+### Staff Shift Tracking System
 **Professional staff shift logging system** for tracking on-duty time with comprehensive admin controls
 - **`?shift start [note]`** / **`/shift start [note]`** - Start your staff shift (Staff only)
 - **`?shift end [note]`** / **`/shift end [note]`** - End your staff shift (Staff only)
@@ -82,7 +82,7 @@
 - **`?shift settings clearroles`** / **`/shift settings clearroles`** - Clear all staff roles (Admin only)
 - **`?shift settings listroles`** / **`/shift settings listroles`** - List staff roles
 
-### 🗳️ Election System
+### Election System
 **Professional staff election system** with weighted voting and comprehensive management
 - **`?election create <title> <candidates> [duration]`** / **`/election create <title> <candidates> [duration]`** - Create new election (Manage Messages+)
 - **`?election results`** / **`/election results`** - View current election results
@@ -92,7 +92,7 @@
 - **Multiple candidate support** (up to 10 candidates per election)
 - **Automatic result calculation** with percentage breakdown
 
-### 🔄 Data Persistence & Backup System
+### Data Persistence & Backup System
 **Enterprise-grade data backup and restoration** - Never lose your data on deployments!
 - **`?data status`** / **`/data status`** - Check backup system status and health
 - **`?data backup`** / **`/data backup`** - Create immediate backup (Admin only)
@@ -103,13 +103,13 @@
 - **Complete data protection** for staff shifts, points, elections, and configurations
 - **Zero-downtime deployment** support with automatic data restoration
 
-### 🎪 Community & Engagement
+### Community & Engagement
 - **`?quote`** / **`/quote`** - Get inspirational programming quotes
 - **`?question`** / **`/question`** - Random programming questions for learning
 - **`?meme`** / **`/meme`** - Programming memes and jokes from multiple sources
 - **`?suggest <text>`** / **`/suggest <text>`** - Submit suggestions (ephemeral acknowledgment)
 
-### 🎮 Fun & Games
+### Fun & Games
 **Professional entertainment commands** with programming themes
 | Command | Description |
 |---------|-------------|
@@ -121,7 +121,7 @@
 | `?roll [NdN]` / `/roll [NdN]` | Advanced dice rolling (e.g., 2d6, 1d20) |
 | `?choose <options>` / `/choose <options>` | Choose between comma-separated options |
 
-### 🛠️ Utility Commands
+### Utility Commands
 **Advanced utility and embed generation tools**
 - **`?embed create`** / **`/embed create`** - Interactive embed builder with form
 - **`?embed json <json>`** / **`/embed json <json>`** - Create embed from JSON data
@@ -130,7 +130,7 @@
 - **JSON import/export** for embed templates
 - **Message editing capabilities** for dynamic content
 
-### 💤 AFK System
+### AFK System
 **Away From Keyboard status management with auto-responses**
 - **`?afk [reason]`** / **`/afk [reason]`** - Set yourself as AFK with optional reason
 - **`?unafk`** / **`/unafk`** - Manually remove your AFK status
@@ -140,7 +140,7 @@
 - **Duration tracking** and mention counters
 - **Server-specific** AFK status per guild
 
-### 💻 Programming Utilities (Coming Soon)
+### Programming Utilities (Coming Soon)
 *Advanced programming utilities and code tools are planned for future releases*
 - Code snippet generation and management
 - Regex pattern helpers and validation
@@ -154,7 +154,7 @@
 - UUID generation
 - Timestamp conversion tools
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Python 3.12+
@@ -235,7 +235,7 @@ After the bot is running, configure your server:
    /diag
    ```
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 codeverse-bot/
@@ -293,7 +293,7 @@ codeverse-bot/
 └── README_DEPLOY.md             # Deployment-specific instructions
 ```
 
-## 🛠️ Development
+## Development
 
 ### Adding New Commands
 
@@ -335,7 +335,7 @@ python quick_test.py
 2. Set up systemd service or PM2
 3. Configure reverse proxy if needed
 
-## 🔧 Configuration
+## Configuration
 
 ### Required Environment Variables
 - `DISCORD_TOKEN` - Your Discord bot token (from Discord Developer Portal)
@@ -440,7 +440,7 @@ python main.py
 /info          # Bot information and uptime
 ```
 
-## 📊 Design Philosophy & Architecture
+## Design Philosophy & Architecture
 
 This bot follows **enterprise-grade design principles** for scalability and maintainability:
 
@@ -485,7 +485,7 @@ Advanced moderation tools including channel lockdown, mass operations, and compr
 #### Developer-Friendly Architecture
 Clean, modular code with full type hints, comprehensive documentation, and easy extensibility.
 
-### 🏗️ Technical Stack
+### Technical Stack
 - **Language**: Python 3.12+ with async/await
 - **Discord Library**: discord.py with full hybrid command support
 - **Database**: SQLite for local storage, JSON for configuration

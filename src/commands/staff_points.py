@@ -521,7 +521,7 @@ class StaffPoints(commands.Cog):
             await self.set_user_points(ctx.guild.id, member.id, 0, ctx.author.id, reason)
             
             embed = create_success_embed(
-                "Points Reset ✅",
+                "Points Reset",
                 f"**{member.display_name}**'s points have been reset to 0.\n\n**Reason:** {reason}"
             )
             embed.add_field(name="Previous Points", value=f"{current_points} points", inline=True)
@@ -566,7 +566,7 @@ class StaffPoints(commands.Cog):
                 channel = ctx.guild.get_channel(int(value))
             elif value.lower() in ["none", "disable", "off"]:
                 await self.set_config(ctx.guild.id, "points_channel_id", None)
-                await ctx.reply("✅ Points logging channel disabled.", ephemeral=True)
+                await ctx.reply("Points logging channel disabled.", ephemeral=True)
                 return
             
             if channel is None:
@@ -574,7 +574,7 @@ class StaffPoints(commands.Cog):
                 return
             
             await self.set_config(ctx.guild.id, "points_channel_id", channel.id)
-            await ctx.reply(f"✅ Points logging channel set to {channel.mention}", ephemeral=True)
+            await ctx.reply(f"Points logging channel set to {channel.mention}", ephemeral=True)
         
         elif action in ["addrole", "add_role", "role"]:
             if value is None:
@@ -597,7 +597,7 @@ class StaffPoints(commands.Cog):
                 return
             
             await self.add_staff_role(ctx.guild.id, role.id)
-            await ctx.reply(f"✅ Added {role.mention} as a staff role.", ephemeral=True)
+            await ctx.reply(f"Added {role.mention} as a staff role.", ephemeral=True)
         
         else:
             await ctx.reply("❌ Unknown configuration action. Use: `channel`, `addrole`", ephemeral=True)
@@ -918,7 +918,7 @@ class ConfirmView(discord.ui.View):
         super().__init__(timeout=30)
         self.value = None
     
-    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger, emoji="✅")
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.value = True
         self.stop()

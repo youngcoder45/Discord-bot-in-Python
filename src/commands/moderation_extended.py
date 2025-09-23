@@ -523,12 +523,12 @@ class ModerationExtended(commands.Cog):
         try:
             # Create confirmation embed
             embed = discord.Embed(
-                title="⚠️ Nuclear Option Confirmation",
+                title="Nuclear Option Confirmation",
                 description=f"This will **permanently delete** all messages in {channel.mention} and recreate it.\n\n**This action cannot be undone!**",
                 color=discord.Color.red()
             )
             embed.add_field(name="Reason", value=reason, inline=False)
-            embed.set_footer(text="React with ✅ to confirm or ❌ to cancel (30s timeout)")
+            embed.set_footer(text="React with ✓ to confirm or ✗ to cancel (30s timeout)")
             
             msg = await ctx.send(embed=embed)
             await msg.add_reaction("✅")
@@ -639,24 +639,24 @@ class ModerationExtended(commands.Cog):
         
         # Final result
         result_embed = discord.Embed(
-            title="📊 Mass Ban Results",
+            title="Mass Ban Results",
             color=discord.Color.green() if banned_count > 0 else discord.Color.red()
         )
         
         result_embed.add_field(
-            name="✅ Successfully Banned",
+            name="Successfully Banned",
             value=str(banned_count),
             inline=True
         )
         
         result_embed.add_field(
-            name="❌ Failed",
+            name="Failed",
             value=str(len(failed_bans)),
             inline=True
         )
         
         result_embed.add_field(
-            name="📝 Reason",
+            name="Reason",
             value=reason,
             inline=True
         )

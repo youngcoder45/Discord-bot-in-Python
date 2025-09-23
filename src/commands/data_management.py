@@ -42,7 +42,7 @@ class DataManagement(commands.Cog):
             await backup_data()
             
             embed = create_success_embed(
-                "✅ Backup Completed",
+                "Backup Completed",
                 "All bot data has been successfully backed up!"
             )
             embed.add_field(name="Backup Includes", value="• Staff shift data\n• Staff points data\n• Election data\n• Configuration settings\n• JSON data files", inline=False)
@@ -97,7 +97,7 @@ class DataManagement(commands.Cog):
                 await startup_restore()
                 
                 embed = create_success_embed(
-                    "✅ Restore Completed",
+                    "Restore Completed",
                     "All bot data has been successfully restored from backup!"
                 )
                 embed.add_field(name="Restored Data", value="• Staff shift data\n• Staff points data\n• Election data\n• Configuration settings\n• JSON data files", inline=False)

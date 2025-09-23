@@ -365,7 +365,7 @@ class Moderation(commands.Cog):
             )
             embed.add_field(name="Reason", value=reason, inline=False)
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
-            embed.add_field(name="DM Sent", value="✅ Yes" if dm_sent else "❌ No", inline=True)
+            embed.add_field(name="DM Sent", value="Yes" if dm_sent else "No", inline=True)
             
             await ctx.send(embed=embed)
             await log_action("WARN", member.id, f"Warned by {ctx.author} - Reason: {reason}")

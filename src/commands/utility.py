@@ -107,7 +107,7 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
             
             # Send confirmation
             success_embed = discord.Embed(
-                title="✅ Embed Updated Successfully",
+                title="Embed Updated Successfully",
                 description=f"The embed has been updated!\n[Jump to message]({self.original_message.jump_url})",
                 color=discord.Color.green()
             )
@@ -115,21 +115,21 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
             
         except discord.Forbidden:
             error_embed = discord.Embed(
-                title="❌ Permission Error",
+                title="Permission Error",
                 description="I don't have permission to edit that message. Make sure I sent the original message.",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
         except discord.NotFound:
             error_embed = discord.Embed(
-                title="❌ Message Not Found",
+                title="Message Not Found",
                 description="The message could not be found. It may have been deleted.",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
         except Exception as e:
             error_embed = discord.Embed(
-                title="❌ Embed Edit Failed",
+                title="Embed Edit Failed",
                 description=f"Error: {str(e)}",
                 color=discord.Color.red()
             )

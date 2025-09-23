@@ -147,14 +147,14 @@ class AFKSystem(commands.Cog):
             
         # Check if user is already AFK
         if self.is_afk(ctx.author.id):
-            await ctx.send("🔄 You're already AFK! Use the command again to update your reason.")
+            await ctx.send("You're already AFK! Use the command again to update your reason.")
         
         # Set user as AFK
         await self.set_afk(ctx.author.id, ctx.guild.id, reason)
         
         # Create response embed
         embed = discord.Embed(
-            title="💤 AFK Status Set",
+            title="AFK Status Set",
             color=discord.Color.orange()
         )
         
@@ -164,7 +164,7 @@ class AFKSystem(commands.Cog):
             embed.description = f"**{ctx.author.display_name}** is now AFK"
             
         embed.add_field(
-            name="📝 Note",
+            name="Note",
             value="You'll automatically return when you send a message!",
             inline=False
         )
@@ -185,7 +185,7 @@ class AFKSystem(commands.Cog):
         
         if not self.is_afk(ctx.author.id):
             embed = discord.Embed(
-                title="❌ Not AFK",
+                title="Not AFK",
                 description="You're not currently set as AFK.",
                 color=discord.Color.red()
             )
@@ -198,7 +198,7 @@ class AFKSystem(commands.Cog):
         
         # Create welcome back embed
         embed = discord.Embed(
-            title="👋 Welcome Back!",
+            title="Welcome Back!",
             description=f"**{ctx.author.display_name}** is no longer AFK",
             color=discord.Color.green()
         )
@@ -208,12 +208,12 @@ class AFKSystem(commands.Cog):
             mention_count = afk_info['mention_count']
             
             embed.add_field(
-                name="⏰ AFK Duration",
+                name="AFK Duration",
                 value=duration,
                 inline=True
             )
             embed.add_field(
-                name="📬 Mentions Received",
+                name="Mentions Received",
                 value=str(mention_count),
                 inline=True
             )
@@ -232,7 +232,7 @@ class AFKSystem(commands.Cog):
         await self.ready.wait()
         
         if not ctx.guild:
-            await ctx.send("❌ This command can only be used in a server.")
+            await ctx.send("This command can only be used in a server.")
             return
             
         # Get AFK users in this guild
@@ -251,7 +251,7 @@ class AFKSystem(commands.Cog):
                     
         if not guild_afk_users:
             embed = discord.Embed(
-                title="💤 AFK Users",
+                title="AFK Users",
                 description="No users are currently AFK in this server.",
                 color=discord.Color.blue()
             )
@@ -260,7 +260,7 @@ class AFKSystem(commands.Cog):
             
         # Create embed with AFK users
         embed = discord.Embed(
-            title="💤 Currently AFK Users",
+            title="Currently AFK Users",
             description=f"Found {len(guild_afk_users)} AFK user(s) in **{ctx.guild.name}**",
             color=discord.Color.orange()
         )
@@ -274,7 +274,7 @@ class AFKSystem(commands.Cog):
             field_value += f"**Mentions:** {afk_user['mentions']}"
             
             embed.add_field(
-                name=f"👤 {member.display_name}",
+                name=f"{member.display_name}",
                 value=field_value,
                 inline=True
             )
@@ -312,13 +312,13 @@ class AFKSystem(commands.Cog):
                 
                 # Send welcome back message
                 embed = discord.Embed(
-                    title="👋 Welcome Back!",
+                    title="Welcome Back!",
                     description=f"**{message.author.display_name}** is no longer AFK",
                     color=discord.Color.green()
                 )
-                embed.add_field(name="⏰ Was AFK for", value=duration, inline=True)
+                embed.add_field(name="Was AFK for", value=duration, inline=True)
                 if mention_count > 0:
-                    embed.add_field(name="📬 Mentions received", value=str(mention_count), inline=True)
+                    embed.add_field(name="Mentions received", value=str(mention_count), inline=True)
                 
                 try:
                     await message.channel.send(embed=embed, delete_after=10)
@@ -343,7 +343,7 @@ class AFKSystem(commands.Cog):
                         reason = afk_info['reason']
                         
                         embed = discord.Embed(
-                            title="💤 User is AFK",
+                            title="User is AFK",
                             color=discord.Color.orange()
                         )
                         
@@ -353,12 +353,12 @@ class AFKSystem(commands.Cog):
                             embed.description = f"**{mentioned_user.display_name}** is currently AFK"
                             
                         embed.add_field(
-                            name="⏰ AFK Duration",
+                            name="AFK Duration",
                             value=duration,
                             inline=True
                         )
                         embed.add_field(
-                            name="📬 Mentions",
+                            name="Mentions",
                             value=str(afk_info['mention_count'] + 1),  # +1 for current mention
                             inline=True
                         )

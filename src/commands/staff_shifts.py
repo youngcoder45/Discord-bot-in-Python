@@ -789,7 +789,7 @@ class StaffShifts(commands.Cog):
                 duration = end_dt - start_dt
                 hours, remainder = divmod(int(duration.total_seconds()), 3600)
                 minutes = remainder // 60
-                status = f"✅ {hours}h {minutes}m"
+                status = f"Active ({hours}h {minutes}m)"
             else:
                 status = "🔄 Ongoing"
             
