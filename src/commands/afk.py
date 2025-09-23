@@ -142,33 +142,59 @@ class AFKSystem(commands.Cog):
         await self.ready.wait()
         
         if not ctx.guild:
-            await ctx.send("❌ This command can only be used in a server.")
+            embed = discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
             return
             
         # Check if user is already AFK
-        if self.is_afk(ctx.author.id):
-            await ctx.send("You're already AFK! Use the command again to update your reason.")
+        was_afk = self.is_afk(ctx.author.id)
+        if was_afk:
+            old_info = self.get_afk_info(ctx.author.id)
+            action_text = "updated"
+        else:
+            action_text = "set"
         
         # Set user as AFK
         await self.set_afk(ctx.author.id, ctx.guild.id, reason)
         
         # Create response embed
         embed = discord.Embed(
-            title="AFK Status Set",
+            title=f"✅ AFK Status {action_text.title()}",
             color=discord.Color.orange()
         )
         
         if reason:
-            embed.description = f"**{ctx.author.display_name}** is now AFK: {reason}"
+            # Truncate reason if too long
+            display_reason = reason[:200] + "..." if len(reason) > 200 else reason
+            embed.description = f"**{ctx.author.display_name}** is now AFK: {display_reason}"
         else:
             embed.description = f"**{ctx.author.display_name}** is now AFK"
             
         embed.add_field(
-            name="Note",
-            value="You'll automatically return when you send a message!",
-            inline=False
+            name="💡 Auto-Return",
+            value="You'll automatically return when you send any message!",
+            inline=True
         )
-        embed.set_footer(text="I'll respond to mentions while you're away")
+        embed.add_field(
+            name="🔔 Mentions",
+            value="I'll respond to mentions while you're away",
+            inline=True
+        )
+        
+        if was_afk and old_info:
+            old_reason = old_info['reason']
+            if old_reason != reason:
+                embed.add_field(
+                    name="📝 Previous Reason",
+                    value=old_reason[:100] + "..." if len(old_reason) > 100 else old_reason,
+                    inline=False
+                )
+        
+        embed.set_footer(text=f"Use /unafk to manually return • Set at")
         embed.timestamp = datetime.now(timezone.utc)
         
         await ctx.send(embed=embed)
@@ -178,6 +204,7 @@ class AFKSystem(commands.Cog):
         help="Remove your AFK status manually",
         aliases=["back", "return"]
     )
+    @app_commands.describe()
     @commands.guild_only()
     async def remove_afk_command(self, ctx: commands.Context):
         """Manually remove AFK status"""
@@ -185,11 +212,16 @@ class AFKSystem(commands.Cog):
         
         if not self.is_afk(ctx.author.id):
             embed = discord.Embed(
-                title="Not AFK",
+                title="ℹ️ Not AFK",
                 description="You're not currently set as AFK.",
-                color=discord.Color.red()
+                color=discord.Color.blue()
             )
-            await ctx.send(embed=embed)
+            embed.add_field(
+                name="💡 Tip",
+                value="Use `/afk [reason]` to set yourself as AFK",
+                inline=False
+            )
+            await ctx.send(embed=embed, ephemeral=True)
             return
             
         # Get AFK info before removing
@@ -198,7 +230,7 @@ class AFKSystem(commands.Cog):
         
         # Create welcome back embed
         embed = discord.Embed(
-            title="Welcome Back!",
+            title="🎉 Welcome Back!",
             description=f"**{ctx.author.display_name}** is no longer AFK",
             color=discord.Color.green()
         )
@@ -206,18 +238,27 @@ class AFKSystem(commands.Cog):
         if afk_info:
             duration = self.format_afk_duration(afk_info['set_time'])
             mention_count = afk_info['mention_count']
+            reason = afk_info['reason']
             
             embed.add_field(
-                name="AFK Duration",
+                name="⏱️ AFK Duration",
                 value=duration,
                 inline=True
             )
             embed.add_field(
-                name="Mentions Received",
+                name="🔔 Mentions Received",
                 value=str(mention_count),
                 inline=True
             )
             
+            if reason and reason != "No reason provided":
+                embed.add_field(
+                    name="📝 Previous Reason",
+                    value=reason[:200] + "..." if len(reason) > 200 else reason,
+                    inline=False
+                )
+            
+        embed.set_footer(text="Manually returned from AFK")
         embed.timestamp = datetime.now(timezone.utc)
         await ctx.send(embed=embed)
 
@@ -226,13 +267,19 @@ class AFKSystem(commands.Cog):
         help="List all currently AFK users in the server",
         aliases=["afkstatus", "whoafk"]
     )
+    @app_commands.describe()
     @commands.guild_only()
     async def afk_list_command(self, ctx: commands.Context):
         """Show all currently AFK users in the server"""
         await self.ready.wait()
         
         if not ctx.guild:
-            await ctx.send("This command can only be used in a server.")
+            embed = discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in a server.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
             return
             
         # Get AFK users in this guild
@@ -251,39 +298,57 @@ class AFKSystem(commands.Cog):
                     
         if not guild_afk_users:
             embed = discord.Embed(
-                title="AFK Users",
+                title="😴 AFK Users",
                 description="No users are currently AFK in this server.",
                 color=discord.Color.blue()
+            )
+            embed.add_field(
+                name="💡 Tip",
+                value="Use `/afk [reason]` to set yourself as AFK",
+                inline=False
             )
             await ctx.send(embed=embed)
             return
             
+        # Sort by AFK duration (longest first)
+        guild_afk_users.sort(key=lambda x: x['duration'], reverse=True)
+        
         # Create embed with AFK users
         embed = discord.Embed(
-            title="Currently AFK Users",
-            description=f"Found {len(guild_afk_users)} AFK user(s) in **{ctx.guild.name}**",
+            title="😴 Currently AFK Users",
+            description=f"Found **{len(guild_afk_users)}** AFK user(s) in **{ctx.guild.name}**",
             color=discord.Color.orange()
         )
         
-        for i, afk_user in enumerate(guild_afk_users[:10]):  # Limit to 10 for embed space
+        # Show up to 10 users
+        display_count = min(len(guild_afk_users), 10)
+        for i in range(display_count):
+            afk_user = guild_afk_users[i]
             member = afk_user['member']
-            reason = afk_user['reason'][:100] + "..." if len(afk_user['reason']) > 100 else afk_user['reason']
+            reason = afk_user['reason']
+            
+            # Truncate long reasons
+            if len(reason) > 150:
+                reason = reason[:150] + "..."
             
             field_value = f"**Reason:** {reason}\n"
             field_value += f"**Duration:** {afk_user['duration']}\n"
             field_value += f"**Mentions:** {afk_user['mentions']}"
             
             embed.add_field(
-                name=f"{member.display_name}",
+                name=f"👤 {member.display_name}",
                 value=field_value,
                 inline=True
             )
             
         if len(guild_afk_users) > 10:
-            embed.set_footer(text=f"Showing 10 of {len(guild_afk_users)} AFK users")
-        else:
-            embed.set_footer(text=f"Total: {len(guild_afk_users)} AFK users")
+            embed.add_field(
+                name="📋 Note",
+                value=f"Showing first 10 of {len(guild_afk_users)} AFK users.\nUse this command again to refresh the list.",
+                inline=False
+            )
             
+        embed.set_footer(text=f"Total: {len(guild_afk_users)} AFK users • Auto-updates every message")
         embed.timestamp = datetime.now(timezone.utc)
         await ctx.send(embed=embed)
 
