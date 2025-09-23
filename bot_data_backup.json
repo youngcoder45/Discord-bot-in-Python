@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-23T16:19:15.761066+00:00",
+  "timestamp": "2025-09-23T22:19:21.377066+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -629,6 +629,15 @@
               "end": null,
               "start_note": null,
               "end_note": null
+            },
+            {
+              "shift_id": 64,
+              "guild_id": 1263067254153805905,
+              "user_id": 937048771420885062,
+              "start": "2025-09-23T18:15:56.498758+00:00",
+              "end": "2025-09-23T20:12:31.084996+00:00",
+              "start_note": null,
+              "end_note": null
             }
           ]
         },
@@ -799,11 +808,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 140
+              "seq": 141
             },
             {
               "name": "points_history",
-              "seq": 140
+              "seq": 141
             }
           ]
         },
@@ -889,10 +898,10 @@
               "id": 3,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 40,
-              "total_earned": 40,
+              "points": 41,
+              "total_earned": 41,
               "total_spent": 0,
-              "last_updated": "2025-09-22 13:38:26"
+              "last_updated": "2025-09-23 17:22:51"
             },
             {
               "id": 4,
@@ -2525,6 +2534,16 @@
               "reason": "Thanks from Aditya ✧ YC45",
               "action_type": "auto_add",
               "timestamp": "2025-09-22 16:23:34"
+            },
+            {
+              "id": 141,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-23 17:22:51"
             }
           ]
         },
@@ -3258,7 +3277,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-23T16:19:15.784335+00:00",
+    "last_backup": "2025-09-23T22:19:21.471003+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
