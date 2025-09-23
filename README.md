@@ -121,7 +121,7 @@
 | `?roll [NdN]` / `/roll [NdN]` | Advanced dice rolling (e.g., 2d6, 1d20) |
 | `?choose <options>` / `/choose <options>` | Choose between comma-separated options |
 
-### �️ Utility Commands
+### 🛠️ Utility Commands
 **Advanced utility and embed generation tools**
 - **`?embed create`** / **`/embed create`** - Interactive embed builder with form
 - **`?embed json <json>`** / **`/embed json <json>`** - Create embed from JSON data
@@ -129,6 +129,16 @@
 - **Advanced embed customization** with colors, fields, footers, and images
 - **JSON import/export** for embed templates
 - **Message editing capabilities** for dynamic content
+
+### 💤 AFK System
+**Away From Keyboard status management with auto-responses**
+- **`?afk [reason]`** / **`/afk [reason]`** - Set yourself as AFK with optional reason
+- **`?unafk`** / **`/unafk`** - Manually remove your AFK status
+- **`?afklist`** / **`/afklist`** - View all currently AFK users in the server
+- **Auto-return** when you send any message
+- **Automatic responses** when AFK users are mentioned
+- **Duration tracking** and mention counters
+- **Server-specific** AFK status per guild
 
 ### 💻 Programming Utilities (Coming Soon)
 *Advanced programming utilities and code tools are planned for future releases*
@@ -243,6 +253,7 @@ codeverse-bot/
 │   │   ├── staff_shifts.py      # Staff shift tracking system
 │   │   ├── election.py          # Staff election system with weighted voting
 │   │   ├── data_management.py   # Data backup/restore/export system
+│   │   ├── afk.py               # AFK system with auto-responses and tracking
 │   │   └── diagnostics.py       # Bot diagnostics and health monitoring
 │   ├── events/                  # Event listeners
 │   │   ├── member_events.py     # Member tracking and logging
@@ -263,7 +274,8 @@ codeverse-bot/
 ├── data/                        # Database files (SQLite)
 │   ├── codeverse_bot.db         # Main bot database
 │   ├── staff_shifts.db          # Staff shift tracking data
-│   └── staff_points.db          # Staff aura/points data
+│   ├── staff_points.db          # Staff aura/points data
+│   └── afk.db                   # AFK system database
 ├── backup/                      # Local backup storage
 │   └── bot_data_backup_*.json   # Automated backup files
 ├── requirements.txt             # Python dependencies

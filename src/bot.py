@@ -37,6 +37,7 @@ COGS_TO_LOAD = [
     'commands.election',      # Staff election system
     'commands.data_management',  # Data backup and persistence management
     'commands.utility',       # Embed builder commands
+    'commands.afk',           # AFK system for away message responses
     'events.member_events',
     'events.message_handler', # Simplified message handler
 ]
