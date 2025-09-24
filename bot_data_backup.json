@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-24T04:19:23.234201+00:00",
+  "timestamp": "2025-09-24T05:58:07.327050+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -644,7 +644,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 1135729930366357536,
               "start": "2025-09-24T01:13:43.797990+00:00",
-              "end": null,
+              "end": "2025-09-24T05:01:21.651874+00:00",
               "start_note": null,
               "end_note": null
             },
@@ -826,11 +826,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 143
+              "seq": 144
             },
             {
               "name": "points_history",
-              "seq": 143
+              "seq": 144
             }
           ]
         },
@@ -1082,6 +1082,15 @@
               "total_earned": 1,
               "total_spent": 0,
               "last_updated": "2025-09-16 01:50:04"
+            },
+            {
+              "id": 144,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
+              "points": 1,
+              "total_earned": 1,
+              "total_spent": 0,
+              "last_updated": "2025-09-24 05:27:46"
             }
           ]
         },
@@ -2582,6 +2591,16 @@
               "reason": "No reason provided",
               "action_type": "add",
               "timestamp": "2025-09-24 03:59:53"
+            },
+            {
+              "id": 144,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Script | Former Cult Leader",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-24 05:27:46"
             }
           ]
         },
@@ -3315,7 +3334,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-24T04:19:23.293094+00:00",
+    "last_backup": "2025-09-24T05:58:07.342391+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
