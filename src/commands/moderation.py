@@ -57,7 +57,8 @@ class Moderation(commands.Cog):
             embed.set_footer(text="This message will be deleted in 5 seconds")
             
             if ctx.interaction:
-                await ctx.followup.send(embed=embed, ephemeral=True)  # type: ignore
+                # for slash/hybrid commands: send initial response (ephemeral)
+                await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
             else:
                 msg = await ctx.send(embed=embed)
                 await asyncio.sleep(5)
@@ -199,7 +200,7 @@ class Moderation(commands.Cog):
                 banned_user = await self.bot.fetch_user(user_id)
             except ValueError:
                 # Try to find by username#discriminator
-                banned_users = [entry async for entry in ctx.guild.bans()]  # type: ignore
+                banned_users = await ctx.guild.bans()  # returns list[BanEntry]
                 banned_user = None
                 for ban_entry in banned_users:
                     if str(ban_entry.user) == user:
@@ -465,12 +466,27 @@ class Moderation(commands.Cog):
     @untimeout.error
     @warn.error
     @slowmode.error
-    @nick.error
     async def moderation_error(self, ctx: commands.Context, error):
+        # helper to send ephemeral when appropriate
+        async def _send(embed):
+            if getattr(ctx, "interaction", None):
+                # try to send initial response
+                try:
+                    await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+                except Exception:
+                    # if already responded, fallback to followup
+                    await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            else:
+                await ctx.send(embed=embed)
+
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send(embed=create_error_embed("Missing Permissions", "You don't have the required permissions to use this command."), ephemeral=True)
+            await _send(create_error_embed("Missing Permissions", "You don't have the required permissions to use this command."))
         elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send(embed=create_error_embed("Bot Missing Permissions", "I don't have the required permissions to execute this command."), ephemeral=True)
+            await _send(create_error_embed("Bot Missing Permissions", "I don't have the required permissions to execute this command."))
+        else:
+            # fallback: log or send a generic message
+            # print(error)  # uncomment or log properly in production
+            await _send(create_error_embed("Error", f"An error occurred: {str(error)}"))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Moderation(bot))
