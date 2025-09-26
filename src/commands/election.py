@@ -4,7 +4,7 @@ from discord import app_commands
 from typing import List, Dict, Tuple
 import asyncio
 from datetime import datetime, timedelta, timezone
-from ..utils.helpers import create_success_embed, create_error_embed
+from utils.helpers import create_success_embed, create_error_embed
 
 class Election(commands.Cog):
     def __init__(self, bot: commands.Bot):
