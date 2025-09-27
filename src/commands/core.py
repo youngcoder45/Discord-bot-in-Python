@@ -37,12 +37,93 @@ class Core(commands.Cog):
         embed.set_footer(text=f"Instance: {instance_id}")
         await ctx.reply(embed=embed, mention_author=False)
 
-    @commands.hybrid_command(name="help", help="Show all bot commands organized by category")
-    async def help_cmd(self, ctx: commands.Context):
-        """Enhanced interactive help command with organized categories."""
+    @commands.hybrid_command(name="help", help="Get information about the bot or a specific command (Dyno style)")
+    @app_commands.describe(command="Optional command name to get detailed help about")
+    async def help_cmd(self, ctx: commands.Context, command: str | None = None):
+        """Dyno-style help:
+        ?help            -> DM the user a categorized help overview
+        ?help ping       -> Show detailed help for the 'ping' command in the current channel/interaction
+
+        For slash usage: /help [command]
+        """
+        # If a specific command is requested, show detailed info inline
+        if command:
+            cmd = self.bot.get_command(command.lower())
+            if not cmd or cmd.hidden:
+                await ctx.reply(f"❌ Command `{command}` not found.", mention_author=False)
+                return
+            embed = discord.Embed(
+                title=f"Help: {cmd.qualified_name}",
+                color=discord.Color.blurple()
+            )
+            # Basic description
+            desc = cmd.help or "No description provided."
+            if cmd.brief:
+                desc = f"{cmd.brief}\n\n{desc}" if cmd.brief not in desc else desc
+            embed.description = desc
+
+            # Usage (build from signature if available)
+            signature = getattr(cmd, 'signature', '')
+            if signature:
+                embed.add_field(name="Usage", value=f"`?{cmd.qualified_name} {signature}`", inline=False)
+            else:
+                embed.add_field(name="Usage", value=f"`?{cmd.qualified_name}`", inline=False)
+
+            # Cog / category
+            if cmd.cog_name:
+                embed.add_field(name="Category", value=cmd.cog_name, inline=True)
+
+            # Slash compatibility
+            embed.add_field(name="Slash", value=f"`/{cmd.qualified_name}`", inline=True)
+
+            # Aliases
+            if getattr(cmd, 'aliases', None):
+                embed.add_field(name="Aliases", value=", ".join(f"`{a}`" for a in cmd.aliases), inline=False)
+
+            embed.set_footer(text="Use ?help for the full categorized list in DM")
+            await ctx.reply(embed=embed, mention_author=False)
+            return
+
+        # No specific command: send categorized help via DM
+        overview_embed = discord.Embed(
+            title="📬 CodeVerse Bot Command Reference",
+            description=(
+                "You are receiving this because you used `?help` with no arguments.\n"
+                "All commands support both prefix `?` and slash `/`.\n"
+                "Use `?help <command>` to see details about a specific command."
+            ),
+            color=discord.Color.green()
+        )
+        # Basic core commands quick list
+        core_list = ["`ping`", "`info`", "`help`", "`commands`"]
+        overview_embed.add_field(name="🏠 Core", value=" • ".join(core_list), inline=False)
+        # Provide link to interactive help menu
+        overview_embed.add_field(
+            name="Interactive Menu",
+            value="Use `?helpmenu` or `/helpmenu` for the rich dropdown help interface.",
+            inline=False
+        )
+        overview_embed.set_footer(text="Some administrative commands require specific permissions.")
+
+        sent_dm = True
+        try:
+            await ctx.author.send(embed=overview_embed)
+        except Exception:
+            sent_dm = False
+
+        # Acknowledge in channel / interaction
+        if sent_dm:
+            await ctx.reply("📨 I've sent you a DM with the command reference! Use `?help <command>` for specifics.", mention_author=False)
+        else:
+            # Fall back to channel if DM blocked
+            await ctx.reply(embed=overview_embed, mention_author=False)
+
+    @commands.hybrid_command(name="helpmenu", help="Open the interactive dropdown help center")
+    async def helpmenu(self, ctx: commands.Context):
+        """Interactive categorized help (original menu)."""
         view = HelpView(self.bot)
         embed = await view.get_main_embed()
-        await ctx.send(embed=embed, view=view)
+        await ctx.reply(embed=embed, view=view, mention_author=False)
 
     @commands.hybrid_command(name="bothelp", help="Show all bot commands organized by category (legacy)")
     async def help_cmd_legacy(self, ctx: commands.Context):
