@@ -29,7 +29,6 @@ COGS_TO_LOAD = [
     'commands.core',          # Core hybrid commands (ping, info, help)
     'commands.diagnostics',   # Diagnostics (?diag, /diag)
     'commands.community',     # quote, question, meme, suggest
-    'commands.fun',           # fun & game commands
     'commands.moderation',    # basic moderation commands (purge, kick, ban, etc.)
     'commands.moderation_extended',  # advanced moderation (serverinfo, userinfo, lockdown, etc.)
     'commands.staff_shifts',  # Staff shift tracking and logging system
@@ -41,8 +40,6 @@ COGS_TO_LOAD = [
     'commands.utility_extra', # Extra utility (emotes, inviteinfo, membercount, remindme, roll, etc.)
     'commands.highlights',    # Message highlight / keyword notification system
     'commands.roles',         # Self-assignable ranks / role info
-    'commands.tags',          # Tag storage & retrieval system
-    'commands.starboard',     # Starboard feature (modern embeds)
     'commands.whois_alias',   # Alias for user info (whois)
     'commands.afk',           # AFK system for away message responses
     'events.member_events',
