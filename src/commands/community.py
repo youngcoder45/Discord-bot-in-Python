@@ -124,7 +124,7 @@ class CommunityCommands(commands.Cog):
         embed.set_footer(text='CodeVerse Bot | Community Feedback')
         await ctx.reply(embed=embed, mention_author=False)
 
-    @commands.command(name='reload-data', help='Reload quotes & questions (Admin only)')
+    @commands.hybrid_command(name='reload-data', help='Reload quotes & questions (Admin only)')
     @commands.has_permissions(administrator=True)
     async def reload_data(self, ctx: commands.Context):
         try:
