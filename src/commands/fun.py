@@ -159,10 +159,10 @@ class Fun(commands.Cog):
         embed.set_footer(text="CodeVerse Bot | Random Utilities")
         await ctx.reply(embed=embed, mention_author=False)
 
-    @commands.hybrid_command(name="roll", help="Roll a dice")
-    @app_commands.describe(sides="Number of sides on the dice (default: 6)")
-    async def roll(self, ctx: commands.Context, sides: int = 6):
-        """Roll a virtual dice with specified number of sides."""
+    @commands.hybrid_command(name="singledice", help="Roll a single die (basic). For multi-dice use /roll")
+    @app_commands.describe(sides="Number of sides on the die (default: 6)")
+    async def single_dice(self, ctx: commands.Context, sides: int = 6):
+        """Roll a single die (basic variant). Advanced multi-dice available via /roll."""
         if sides < 2 or sides > 100:
             embed = discord.Embed(
                 title="Invalid Dice",
