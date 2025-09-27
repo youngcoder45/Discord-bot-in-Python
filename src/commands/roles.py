@@ -137,11 +137,12 @@ class Roles(commands.Cog):
         roles_display = ", ".join(r.name for r in roles[:100])
         await ctx.reply(f"Roles ({len(roles)}): {roles_display}")
 
-    @commands.hybrid_command(name="roleinfo", help="Get information about a role.")
+    @commands.hybrid_command(name="rolemeta", help="Basic role metadata (simple version). For advanced use /roleinfo")
     @app_commands.describe(role="Role to inspect")
     @commands.guild_only()
-    async def roleinfo(self, ctx: commands.Context, role: discord.Role):
-        embed = discord.Embed(title=f"Role: {role.name}", color=role.color)
+    async def rolemeta(self, ctx: commands.Context, role: discord.Role):
+        """Simplified role metadata (kept separate from advanced /roleinfo)."""
+        embed = discord.Embed(title=f"Role: {role.name}", color=role.color or discord.Color.blue())
         embed.add_field(name="ID", value=str(role.id), inline=True)
         embed.add_field(name="Members", value=str(len(role.members)), inline=True)
         embed.add_field(name="Color", value=f"#{role.color.value:06X}", inline=True)
