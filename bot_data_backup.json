@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-27T15:47:04.797952+00:00",
+  "timestamp": "2025-09-27T21:47:10.784606+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -734,7 +734,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 1135729930366357536,
               "start": "2025-09-27T01:32:02.801296+00:00",
-              "end": null,
+              "end": "2025-09-27T17:49:20.528334+00:00",
               "start_note": null,
               "end_note": null
             },
@@ -770,6 +770,15 @@
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
               "start": "2025-09-27T14:54:18.546151+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 80,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-27T17:49:23.012411+00:00",
               "end": null,
               "start_note": null,
               "end_note": null
@@ -3541,7 +3550,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-27T15:47:04.827521+00:00",
+    "last_backup": "2025-09-27T21:47:11.005634+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
