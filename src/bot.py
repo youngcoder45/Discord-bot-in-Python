@@ -37,6 +37,13 @@ COGS_TO_LOAD = [
     'commands.election',      # Staff election system
     'commands.data_management',  # Data backup and persistence management
     'commands.utility',       # Embed builder commands
+    # Newly added feature cogs (ensure these stay after core/utility for dependencies)
+    'commands.utility_extra', # Extra utility (emotes, inviteinfo, membercount, remindme, roll, etc.)
+    'commands.highlights',    # Message highlight / keyword notification system
+    'commands.roles',         # Self-assignable ranks / role info
+    'commands.tags',          # Tag storage & retrieval system
+    'commands.starboard',     # Starboard feature (modern embeds)
+    'commands.whois_alias',   # Alias for user info (whois)
     'commands.afk',           # AFK system for away message responses
     'events.member_events',
     'events.message_handler', # Simplified message handler
