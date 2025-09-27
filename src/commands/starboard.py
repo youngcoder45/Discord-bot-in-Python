@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Tuple
 import os
 from pathlib import Path
-from ..utils.helpers import create_success_embed, create_error_embed, create_warning_embed
+from utils.helpers import create_success_embed, create_error_embed, create_warning_embed
 
 class StarboardSystem(commands.Cog):
     @commands.hybrid_command(name="starboard_info", description="Show starboard usage tips and quick setup guide")
