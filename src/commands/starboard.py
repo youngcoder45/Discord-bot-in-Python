@@ -14,6 +14,31 @@ from pathlib import Path
 from ..utils.helpers import create_success_embed, create_error_embed, create_warning_embed
 
 class StarboardSystem(commands.Cog):
+    @commands.hybrid_command(name="starboard_info", description="Show starboard usage tips and quick setup guide")
+    async def starboard_info(self, ctx: commands.Context):
+        """Show starboard usage tips and quick setup guide"""
+        embed = discord.Embed(
+            title="⭐ Modern Starboard Guide",
+            description=(
+                "Highlight popular messages with stars!\n"
+                "\n**How it works:**\n"
+                "• React to any message with the configured star emoji (default: ⭐)\n"
+                "• When a message reaches the threshold, it appears in the starboard channel\n"
+                "• Self-starring is allowed\n"
+                "• Attachments and images are supported\n"
+                "• Footer shows who starred and when\n"
+                "\n**Quick Setup:**\n"
+                "`/starboard setup #starboard 3 ⭐`\n"
+                "• Change channel: `/starboard channel #starboard`\n"
+                "• Change threshold: `/starboard threshold 5`\n"
+                "• Change emoji: `/starboard emoji 🌟`\n"
+                "• View stats: `/starboard stats`\n"
+                "• Clean up: `/starboard_cleanup confirm`\n"
+            ),
+            color=discord.Color.blurple()
+        )
+        embed.set_footer(text="Starboard by Codeverse Bot • Modern & Professional")
+        await ctx.send(embed=embed)
     """Starboard system for highlighting popular messages with star reactions"""
     
     def __init__(self, bot: commands.Bot):
@@ -176,6 +201,10 @@ class StarboardSystem(commands.Cog):
             return
             
         # Check bot permissions in starboard channel
+        if self.bot.user is None:
+            await ctx.send(embed=create_error_embed("Error", "Bot is not fully initialized yet."))
+            return
+            
         bot_member = ctx.guild.get_member(self.bot.user.id)
         if not bot_member:
             await ctx.send(embed=create_error_embed("Error", "Could not find bot member in guild."))
@@ -565,70 +594,70 @@ class StarboardSystem(commands.Cog):
     async def create_starboard_embed(self, message: discord.Message, star_count: int, settings: Dict) -> discord.Embed:
         """Create embed for starboard message"""
         star_emoji = settings.get('star_emoji', '⭐')
-        
         embed = discord.Embed(
             description=message.content or "*No text content*",
-            color=discord.Color.gold(),
+            color=discord.Color.blurple(),
             timestamp=message.created_at
         )
-        
-        # Author info
+        # Modern author header
         embed.set_author(
-            name=message.author.display_name,
+            name=f"{message.author.display_name} • {star_emoji} {star_count}",
             icon_url=message.author.display_avatar.url
         )
-        
-        # Star count and original message link
+        # Add jump link as a field
         embed.add_field(
-            name=f"{star_emoji} Stars",
-            value=str(star_count),
+            name="Jump to Message",
+            value=f"[Click here]({message.jump_url})",
             inline=True
         )
-        
-        embed.add_field(
-            name="📍 Original",
-            value=f"[Jump to message]({message.jump_url})",
-            inline=True
-        )
-        
-        # Handle channel mention safely
+        # Channel info
         if isinstance(message.channel, (discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.Thread)):
             channel_name = message.channel.mention
         elif hasattr(message.channel, 'name'):
             channel_name = f"#{getattr(message.channel, 'name', 'Unknown')}"
         else:
             channel_name = "Unknown Channel"
-            
         embed.add_field(
-            name="📅 Channel",
+            name="Channel",
             value=channel_name,
             inline=True
         )
-        
-        # Handle attachments
+        # Attachments
         if message.attachments:
             attachment = message.attachments[0]
             if attachment.content_type and attachment.content_type.startswith('image'):
                 embed.set_image(url=attachment.url)
             else:
                 embed.add_field(
-                    name="📎 Attachment",
+                    name="Attachment",
                     value=f"[{attachment.filename}]({attachment.url})",
                     inline=False
                 )
-                
-        # Handle multiple attachments
         if len(message.attachments) > 1:
             other_attachments = message.attachments[1:]
             attachment_list = [f"[{att.filename}]({att.url})" for att in other_attachments]
             embed.add_field(
-                name=f"📎 Additional Attachments ({len(other_attachments)})",
-                value="\n".join(attachment_list[:5]),  # Limit to 5
+                name=f"Additional Attachments ({len(other_attachments)})",
+                value="\n".join(attachment_list[:5]),
                 inline=False
             )
-            
-        embed.set_footer(text=f"Message ID: {message.id}")
-        
+        # Starred by avatars (footer)
+        async with aiosqlite.connect(self.database_path) as db:
+            cursor = await db.execute("SELECT user_id, starred_at FROM user_stars WHERE message_id = ? ORDER BY starred_at ASC", (message.id,))
+            star_users = list(await cursor.fetchall())
+        if star_users:
+            user_mentions = []
+            guild = message.guild
+            for row in star_users[:10]:
+                user_id, starred_at = row
+                user = guild.get_member(user_id) if guild else None
+                if user:
+                    user_mentions.append(user.display_name)
+            first_star = star_users[0][1]
+            last_star = star_users[-1][1]
+            embed.set_footer(text=f"Starred by: {', '.join(user_mentions)}\nFirst: {first_star} • Last: {last_star}\nMsg ID: {message.id}")
+        else:
+            embed.set_footer(text=f"Msg ID: {message.id}")
         return embed
 
     # ==================== ADMIN UTILITIES ====================
