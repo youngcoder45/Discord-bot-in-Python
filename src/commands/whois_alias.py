@@ -20,9 +20,11 @@ class WhoisAlias(commands.Cog):
         # Fallback minimal info
         embed = discord.Embed(title=f"User Info: {target}", color=discord.Color.blurple())
         embed.add_field(name="ID", value=str(target.id), inline=True)
-        embed.add_field(name="Joined", value=f"<t:{int(target.joined_at.timestamp())}:R>" if target.joined_at else "Unknown", inline=True)
+        joined_at = getattr(target, "joined_at", None)
+        embed.add_field(name="Joined", value=f"<t:{int(joined_at.timestamp())}:R>" if joined_at else "Unknown", inline=True)
         embed.add_field(name="Created", value=f"<t:{int(target.created_at.timestamp())}:R>", inline=True)
-        roles = [r.mention for r in target.roles[1:25]]
+        roles_attr = getattr(target, "roles", None)
+        roles = [r.mention for r in roles_attr[1:25]] if roles_attr else []
         if roles:
             embed.add_field(name="Roles", value=" ".join(roles), inline=False)
         embed.set_thumbnail(url=target.display_avatar.url)

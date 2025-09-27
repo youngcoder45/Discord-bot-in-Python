@@ -45,20 +45,33 @@ class Tags(commands.Cog):
     @app_commands.describe(name="Tag name to fetch")
     @commands.guild_only()
     async def tag(self, ctx: commands.Context, name: str):
+        if ctx.guild is None:
+            return await ctx.reply("This command can only be used in a server.")
+        guild_id = ctx.guild.id
         async with aiosqlite.connect(DB_PATH) as db:
-            cursor = await db.execute("SELECT content, uses FROM tags WHERE guild_id = ? AND name = ?", (ctx.guild.id, name.lower()))
+            cursor = await db.execute(
+                "SELECT content, uses FROM tags WHERE guild_id = ? AND name = ?",
+                (guild_id, name.lower())
+            )
             row = await cursor.fetchone()
             if not row:
                 return await ctx.reply("Tag not found.")
             content, uses = row
-            await db.execute("UPDATE tags SET uses = ? WHERE guild_id = ? AND name = ?", (uses + 1, ctx.guild.id, name.lower()))
+            await db.execute(
+                "UPDATE tags SET uses = ? WHERE guild_id = ? AND name = ?",
+                (uses + 1, guild_id, name.lower())
+            )
             await db.commit()
         await ctx.reply(content[:2000])
 
     @tags_group.command(name="create", description="Create a new tag.")
     @app_commands.describe(name="Tag name", content="Tag content")
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     async def tags_create(self, ctx: commands.Context, name: str, *, content: str):
+        guild = ctx.guild
+        if guild is None:
+            return await ctx.reply("This command can only be used in a server.")
         if len(name) > 50:
             return await ctx.reply("Tag name too long (max 50).")
         if len(content) > 2000:
@@ -66,31 +79,42 @@ class Tags(commands.Cog):
         async with aiosqlite.connect(DB_PATH) as db:
             try:
                 await db.execute("INSERT INTO tags (guild_id, name, content, author_id, uses, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)",
-                                 (ctx.guild.id, name.lower(), content, ctx.author.id, datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+                                 (guild.id, name.lower(), content, ctx.author.id, datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
                 await db.commit()
             except aiosqlite.IntegrityError:
                 return await ctx.reply("A tag with that name already exists.")
         await ctx.reply(f"Created tag '{name}'.")
-
     @tags_group.command(name="edit", description="Edit an existing tag.")
     @app_commands.describe(name="Tag name", content="New content")
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     async def tags_edit(self, ctx: commands.Context, name: str, *, content: str):
+        guild = ctx.guild
+        if guild is None:
+            return await ctx.reply("This command can only be used in a server.")
+        if len(content) > 2000:
+            return await ctx.reply("Content too long (max 2000).")
         async with aiosqlite.connect(DB_PATH) as db:
-            cursor = await db.execute("SELECT 1 FROM tags WHERE guild_id = ? AND name = ?", (ctx.guild.id, name.lower()))
-            exists = await cursor.fetchone()
-            if not exists:
+            cursor = await db.execute("SELECT 1 FROM tags WHERE guild_id = ? AND name = ?", (guild.id, name.lower()))
+            if not await cursor.fetchone():
                 return await ctx.reply("Tag not found.")
-            await db.execute("UPDATE tags SET content = ?, updated_at = ? WHERE guild_id = ? AND name = ?", (content, datetime.now(timezone.utc).isoformat(), ctx.guild.id, name.lower()))
+            await db.execute(
+                "UPDATE tags SET content = ?, updated_at = ? WHERE guild_id = ? AND name = ?",
+                (content, datetime.now(timezone.utc).isoformat(), guild.id, name.lower())
+            )
             await db.commit()
         await ctx.reply(f"Updated tag '{name}'.")
-
+    
     @tags_group.command(name="delete", description="Delete a tag.")
     @app_commands.describe(name="Tag name")
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     async def tags_delete(self, ctx: commands.Context, name: str):
+        guild = ctx.guild
+        if guild is None:
+            return await ctx.reply("This command can only be used in a server.")
         async with aiosqlite.connect(DB_PATH) as db:
-            cursor = await db.execute("DELETE FROM tags WHERE guild_id = ? AND name = ?", (ctx.guild.id, name.lower()))
+            cursor = await db.execute("DELETE FROM tags WHERE guild_id = ? AND name = ?", (guild.id, name.lower()))
             await db.commit()
             if cursor.rowcount == 0:
                 return await ctx.reply("Tag not found.")
@@ -98,7 +122,11 @@ class Tags(commands.Cog):
 
     @tags_group.command(name="list", description="List tags (optional search)")
     @app_commands.describe(search="Optional search text")
+    @commands.guild_only()
     async def tags_list(self, ctx: commands.Context, search: Optional[str] = None):
+        if ctx.guild is None:
+            return await ctx.reply("This command can only be used in a server.")
+        
         async with aiosqlite.connect(DB_PATH) as db:
             if search:
                 like = f"%{search.lower()}%"

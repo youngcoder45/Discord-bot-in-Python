@@ -60,6 +60,8 @@ class UtilityExtra(commands.Cog):
     @commands.hybrid_command(name="membercount", help="Get the member count of the current server.")
     @commands.guild_only()
     async def membercount(self, ctx: commands.Context):
+        if ctx.guild is None:
+            return await ctx.reply("This command can only be used in a server.")
         await ctx.reply(f"Member Count: {ctx.guild.member_count}")
 
     @commands.hybrid_command(name="randomcolor", help="Generate a random hex color.")
@@ -101,7 +103,8 @@ class UtilityExtra(commands.Cog):
             return
         for r in due:
             channel = self.bot.get_channel(r.channel_id)
-            if channel:
+            # Only attempt to send if the channel is a type that supports sending messages
+            if isinstance(channel, (discord.TextChannel, discord.Thread, discord.DMChannel, discord.GroupChannel)):
                 try:
                     await channel.send(f"<@{r.user_id}> Reminder: {r.message}")
                 except Exception:
@@ -125,9 +128,11 @@ class UtilityExtra(commands.Cog):
         embed = discord.Embed(title="Invite Info", color=discord.Color.blurple())
         embed.add_field(name="Code", value=invite.code, inline=True)
         if invite.guild:
-            embed.add_field(name="Server", value=invite.guild.name, inline=True)
-            if invite.guild.description:
-                embed.add_field(name="Description", value=invite.guild.description[:200], inline=False)
+            # Use getattr to avoid attribute errors when guild is a partial/Object without these attributes
+            embed.add_field(name="Server", value=getattr(invite.guild, "name", "Unknown"), inline=True)
+            description = getattr(invite.guild, "description", None)
+            if description:
+                embed.add_field(name="Description", value=description[:200], inline=False)
         if invite.approximate_member_count:
             embed.add_field(name="Members", value=str(invite.approximate_member_count), inline=True)
         if invite.expires_at:

@@ -84,7 +84,7 @@ class Roles(commands.Cog):
             return
         async with aiosqlite.connect(DB_PATH) as db:
             cursor = await db.execute("SELECT role_id FROM joinable_roles WHERE guild_id = ?", (ctx.guild.id,))
-            rows = await cursor.fetchall()
+            rows = list(await cursor.fetchall())
         if not rows:
             return await ctx.reply("No joinable ranks configured.")
         roles_display = []
@@ -100,6 +100,11 @@ class Roles(commands.Cog):
     async def rank(self, ctx: commands.Context, *, name: str):
         if not ctx.guild:
             return
+        # Ensure we're working with a Member object
+        member = ctx.guild.get_member(ctx.author.id)
+        if not member:
+            return await ctx.reply("Could not retrieve your member information.")
+            
         role = discord.utils.get(ctx.guild.roles, name=name)
         if not role:
             return await ctx.reply("Role not found.")
@@ -109,17 +114,20 @@ class Roles(commands.Cog):
             exists = await cursor.fetchone()
         if not exists:
             return await ctx.reply("That role is not a joinable rank.")
-        if role in ctx.author.roles:
-            await ctx.author.remove_roles(role, reason="Rank toggle remove")
+        if role in member.roles:
+            await member.remove_roles(role, reason="Rank toggle remove")
             await ctx.reply(f"Removed {role.mention}.")
         else:
-            await ctx.author.add_roles(role, reason="Rank toggle add")
+            await member.add_roles(role, reason="Rank toggle add")
             await ctx.reply(f"Added {role.mention}.")
 
     @commands.hybrid_command(name="roles", help="List all server roles (optional search)")
     @app_commands.describe(search="Optional search text")
     @commands.guild_only()
     async def roles(self, ctx: commands.Context, *, search: Optional[str] = None):
+        if not ctx.guild:
+            return await ctx.reply("This command can only be used in a server.")
+            
         roles = ctx.guild.roles[1:]  # exclude @everyone
         if search:
             search_lower = search.lower()
