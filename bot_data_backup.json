@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-28T09:47:14.978452+00:00",
+  "timestamp": "2025-09-28T15:47:17.112310+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -779,7 +779,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 1135729930366357536,
               "start": "2025-09-27T17:49:23.012411+00:00",
-              "end": null,
+              "end": "2025-09-28T13:21:45.449200+00:00",
               "start_note": null,
               "end_note": null
             },
@@ -788,6 +788,33 @@
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
               "start": "2025-09-28T08:09:55.306864+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 82,
+              "guild_id": 1263067254153805905,
+              "user_id": 1362780337314205856,
+              "start": "2025-09-28T11:53:13.786526+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 83,
+              "guild_id": 1263067254153805905,
+              "user_id": 1135729930366357536,
+              "start": "2025-09-28T13:21:49.518208+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 84,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
+              "start": "2025-09-28T14:32:26.109031+00:00",
               "end": null,
               "start_note": null,
               "end_note": null
@@ -961,11 +988,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 153
+              "seq": 156
             },
             {
               "name": "points_history",
-              "seq": 153
+              "seq": 156
             }
           ]
         },
@@ -1226,6 +1253,15 @@
               "total_earned": 1,
               "total_spent": 0,
               "last_updated": "2025-09-24 05:27:46"
+            },
+            {
+              "id": 154,
+              "guild_id": 1263067254153805905,
+              "user_id": 1362780337314205856,
+              "points": 3,
+              "total_earned": 3,
+              "total_spent": 0,
+              "last_updated": "2025-09-28 13:00:05"
             }
           ]
         },
@@ -2826,6 +2862,36 @@
               "reason": "Thanks from Aditya ✧ YC45",
               "action_type": "auto_add",
               "timestamp": "2025-09-27 15:09:32"
+            },
+            {
+              "id": 154,
+              "guild_id": 1263067254153805905,
+              "user_id": 1362780337314205856,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-28 11:59:34"
+            },
+            {
+              "id": 155,
+              "guild_id": 1263067254153805905,
+              "user_id": 1362780337314205856,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-28 12:09:21"
+            },
+            {
+              "id": 156,
+              "guild_id": 1263067254153805905,
+              "user_id": 1362780337314205856,
+              "moderator_id": 955695820999639120,
+              "points_change": 1,
+              "reason": "thanks for webhook poll automation",
+              "action_type": "add",
+              "timestamp": "2025-09-28 13:00:05"
             }
           ]
         },
@@ -3559,7 +3625,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-28T09:47:15.071873+00:00",
+    "last_backup": "2025-09-28T15:47:17.302086+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
