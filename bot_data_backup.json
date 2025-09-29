@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-29T15:47:27.035779+00:00",
+  "timestamp": "2025-09-29T21:47:29.095715+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -833,6 +833,15 @@
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
               "start": "2025-09-29T13:11:40.673982+00:00",
+              "end": "2025-09-29T16:15:06.129285+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 87,
+              "guild_id": 1263067254153805905,
+              "user_id": 1362780337314205856,
+              "start": "2025-09-29T19:12:25.546476+00:00",
               "end": null,
               "start_note": null,
               "end_note": null
@@ -1006,11 +1015,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 160
+              "seq": 161
             },
             {
               "name": "points_history",
-              "seq": 160
+              "seq": 161
             }
           ]
         },
@@ -1087,10 +1096,10 @@
               "id": 2,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 39,
-              "total_earned": 1039,
+              "points": 40,
+              "total_earned": 1040,
               "total_spent": 1000,
-              "last_updated": "2025-09-26 15:51:14"
+              "last_updated": "2025-09-29 16:15:56"
             },
             {
               "id": 3,
@@ -2959,6 +2968,16 @@
               "reason": "Thanks from Aditya ✧ YC45",
               "action_type": "auto_add",
               "timestamp": "2025-09-28 17:29:44"
+            },
+            {
+              "id": 161,
+              "guild_id": 1263067254153805905,
+              "user_id": 1186872689038729237,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-09-29 16:15:56"
             }
           ]
         },
@@ -3692,7 +3711,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-29T15:47:27.125381+00:00",
+    "last_backup": "2025-09-29T21:47:29.327505+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
