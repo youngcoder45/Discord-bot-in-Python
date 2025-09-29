@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-29T09:47:24.650332+00:00",
+  "timestamp": "2025-09-29T15:47:27.035779+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -818,6 +818,24 @@
               "end": "2025-09-28T18:28:46.575168+00:00",
               "start_note": null,
               "end_note": "[Force ended by Aditya ✧ YC45]"
+            },
+            {
+              "shift_id": 85,
+              "guild_id": 1263067254153805905,
+              "user_id": 1362780337314205856,
+              "start": "2025-09-29T13:11:06.857463+00:00",
+              "end": "2025-09-29T15:00:34.283168+00:00",
+              "start_note": null,
+              "end_note": null
+            },
+            {
+              "shift_id": 86,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
+              "start": "2025-09-29T13:11:40.673982+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null
             }
           ]
         },
@@ -3674,7 +3692,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-09-29T09:47:24.747593+00:00",
+    "last_backup": "2025-09-29T15:47:27.125381+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
