@@ -970,18 +970,18 @@ class StaffShifts(commands.Cog):
         stats = await self.service.get_shift_stats(ctx.guild.id, user_id, days)
         
         if user:
-                embed = discord.Embed(
-                    title=f"Shift Statistics - {user.display_name}",
-                    description=f"Statistics for the last {days} days",
-                    color=discord.Color.blue()
-                )
+            embed = discord.Embed(
+                title=f"Shift Statistics - {user.display_name}",
+                description=f"Statistics for the last {days} days",
+                color=discord.Color.blue()
+            )
             embed.set_thumbnail(url=user.display_avatar.url)
         else:
-                embed = discord.Embed(
-                    title="Server Shift Statistics",
-                    description=f"Statistics for the last {days} days",
-                    color=discord.Color.blue()
-                )
+            embed = discord.Embed(
+                title="Server Shift Statistics",
+                description=f"Statistics for the last {days} days",
+                color=discord.Color.blue()
+            )
         
         total_shifts = stats[0] if stats else 0
         completed_shifts = stats[1] if stats else 0
@@ -1087,8 +1087,8 @@ class StaffShifts(commands.Cog):
         
         if inactive_staff:
             embed.add_field(
-                name="😴 Inactive Staff",
-                value="\n".join([f"👤 {name}" for name in inactive_staff[:10]]) if inactive_staff else "None",
+                name="Inactive Staff",
+                value="\n".join(inactive_staff[:10]) if inactive_staff else "None",
                 inline=False
             )
             if len(inactive_staff) > 10:
