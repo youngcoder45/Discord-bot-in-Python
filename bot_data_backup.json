@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-01T10:36:12.534791+00:00",
+  "timestamp": "2025-10-01T16:36:17.902349+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -1060,11 +1060,11 @@
           "data": [
             {
               "name": "staff_points",
-              "seq": 167
+              "seq": 168
             },
             {
               "name": "points_history",
-              "seq": 167
+              "seq": 168
             }
           ]
         },
@@ -1343,6 +1343,15 @@
               "total_earned": 1,
               "total_spent": 0,
               "last_updated": "2025-09-28 17:28:55"
+            },
+            {
+              "id": 168,
+              "guild_id": 1263067254153805905,
+              "user_id": 1132612211014123621,
+              "points": 1,
+              "total_earned": 1,
+              "total_spent": 0,
+              "last_updated": "2025-10-01 15:32:47"
             }
           ]
         },
@@ -3083,6 +3092,16 @@
               "reason": "Thanks from Aditya ✧ YC45",
               "action_type": "auto_add",
               "timestamp": "2025-10-01 04:32:07"
+            },
+            {
+              "id": 168,
+              "guild_id": 1263067254153805905,
+              "user_id": 1132612211014123621,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-01 15:32:47"
             }
           ]
         },
@@ -3816,7 +3835,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-10-01T10:36:12.615829+00:00",
+    "last_backup": "2025-10-01T16:36:17.939966+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
