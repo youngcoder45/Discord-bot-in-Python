@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-02T09:08:45.574804+00:00",
+  "timestamp": "2025-10-02T10:47:22.855116+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -86,7 +86,20 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "shift_id": 1,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
+              "start": "2025-10-02T09:57:20.201076+00:00",
+              "end": null,
+              "start_note": null,
+              "end_note": null,
+              "paused": 0,
+              "pause_time": null,
+              "pause_intervals": "[]"
+            }
+          ]
         },
         "shift_settings": {
           "schema": [
@@ -1502,7 +1515,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-10-02T09:08:45.592736+00:00",
+    "last_backup": "2025-10-02T10:47:22.871649+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
