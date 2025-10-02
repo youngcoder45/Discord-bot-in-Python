@@ -25,8 +25,8 @@
 /ranks join     - Join a rank
 /ranks leave    - Leave a rank
 
-/role list      - List all server roles
-/role info      - View role info
+/roleinfo list  - List all server roles
+/roleinfo view  - View role info
 ```
 
 **Result:** Saved **3 slash command slots** by consolidating into command groups!
@@ -78,20 +78,20 @@ A command group for managing and using joinable ranks (self-assignable roles).
 
 ---
 
-### `/role` - Server Role Information
+### `/roleinfo` - Server Role Information
 
 A command group for viewing role information in the server.
 
-**`/role list [search]`**
+**`/roleinfo list [search]`**
 - **Description:** List all server roles
 - **Parameters:**
   - `search` - (Optional) Search filter
 - **Examples:**
-  - `/role list` - Show all roles
-  - `/role list admin` - Show roles with "admin" in name
+  - `/roleinfo list` - Show all roles
+  - `/roleinfo list admin` - Show roles with "admin" in name
 - **Note:** Replaces old `/roles` command
 
-**`/role info <role>`**
+**`/roleinfo view <role>`**
 - **Description:** View detailed information about a role
 - **Parameters:**
   - `role` - The role to inspect
@@ -100,7 +100,7 @@ A command group for viewing role information in the server.
   - Mentionable, hoisted, managed status
   - Position, creation date
   - Permission count
-- **Example:** `/role info @Developer`
+- **Example:** `/roleinfo view @Developer`
 - **Note:** Enhanced version of old `/rolemeta` command
 
 ---
@@ -130,13 +130,13 @@ A command group for viewing role information in the server.
 **Role listing changed:**
 ```
 Old: /roles
-New: /role list
+New: /roleinfo list
 ```
 
 **Role info changed:**
 ```
 Old: /rolemeta @Role
-New: /role info @Role
+New: /roleinfo view @Role
 ```
 
 ---
@@ -171,8 +171,8 @@ New: /role info @Role
 | `/ranks list` | Member | View joinable ranks | None |
 | `/ranks join` | Member | Join a rank | None |
 | `/ranks leave` | Member | Leave a rank | None |
-| `/role list` | Info | List all roles | None |
-| `/role info` | Info | View role details | None |
+| `/roleinfo list` | Info | List all roles | None |
+| `/roleinfo view` | Info | View role details | None |
 
 ---
 
@@ -204,6 +204,7 @@ New: /role info @Role
 - Database structure unchanged (backwards compatible)
 - No data migration needed
 - Existing rank data preserved
+- **Note:** Originally planned as `/role` but renamed to `/roleinfo` to avoid conflict with existing `/role` command in moderation_extended.py (used by admins to toggle roles on users)
 
 ---
 

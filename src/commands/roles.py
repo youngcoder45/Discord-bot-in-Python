@@ -157,16 +157,16 @@ class Roles(commands.Cog):
         await member.remove_roles(role, reason="Rank leave")
         await ctx.reply(f"✅ Removed {role.mention} from your roles.")
 
-    # ============== ROLE COMMAND GROUP ==============
-    @commands.hybrid_group(name="role", description="View role information")
+    # ============== ROLEINFO COMMAND GROUP ==============
+    @commands.hybrid_group(name="roleinfo", description="View role information")
     @commands.guild_only()
-    async def role_group(self, ctx: commands.Context):
+    async def roleinfo_group(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
-            await ctx.send("Use `/role list` to see all roles or `/role info @role` for details")
+            await ctx.send("Use `/roleinfo list` to see all roles or `/roleinfo view @role` for details")
 
-    @role_group.command(name="list", description="List all server roles")
+    @roleinfo_group.command(name="list", description="List all server roles")
     @app_commands.describe(search="Optional search text")
-    async def role_list(self, ctx: commands.Context, search: Optional[str] = None):
+    async def roleinfo_list(self, ctx: commands.Context, search: Optional[str] = None):
         if not ctx.guild:
             return await ctx.reply("❌ This command can only be used in a server.")
             
@@ -188,9 +188,9 @@ class Roles(commands.Cog):
             embed.set_footer(text=f"Filtered by: {search}")
         await ctx.reply(embed=embed)
 
-    @role_group.command(name="info", description="View detailed role information")
+    @roleinfo_group.command(name="view", description="View detailed role information")
     @app_commands.describe(role="Role to inspect")
-    async def role_info(self, ctx: commands.Context, role: discord.Role):
+    async def roleinfo_view(self, ctx: commands.Context, role: discord.Role):
         """Detailed role metadata."""
         embed = discord.Embed(title=f"Role: {role.name}", color=role.color or discord.Color.blue())
         embed.add_field(name="ID", value=f"`{role.id}`", inline=True)
