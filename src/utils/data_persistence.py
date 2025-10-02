@@ -167,7 +167,7 @@ class DataPersistenceManager:
     
     async def backup_database(self, db_path: str) -> Dict[str, Any]:
         """Backup a SQLite database to JSON format"""
-        db_backup = {"tables": {}}
+        db_backup: Dict[str, Any] = {"tables": {}}
         
         try:
             async with aiosqlite.connect(db_path) as db:
