@@ -54,7 +54,17 @@ class Protection(commands.Cog):
         for user_id in list(self.user_duplicates.keys()):
             for msg_content in list(self.user_duplicates[user_id].keys()):
                 # Remove duplicates older than spam window
-                if now - float(msg_content.split('_')[-1]) > SPAM_TIME_WINDOW * 2:
+                try:
+                    # Try to parse timestamp if it exists
+                    if '_' in msg_content and msg_content.split('_')[-1].replace('.', '').isdigit():
+                        timestamp = float(msg_content.split('_')[-1])
+                        if now - timestamp > SPAM_TIME_WINDOW * 2:
+                            del self.user_duplicates[user_id][msg_content]
+                    else:
+                        # If no valid timestamp, just remove old entries (fallback)
+                        del self.user_duplicates[user_id][msg_content]
+                except (ValueError, IndexError):
+                    # If parsing fails, remove the entry
                     del self.user_duplicates[user_id][msg_content]
             if not self.user_duplicates[user_id]:
                 del self.user_duplicates[user_id]
@@ -95,8 +105,8 @@ class Protection(commands.Cog):
         # Check for duplicate messages
         msg_content = message.content.lower()[:100]  # First 100 chars
         msg_key = f"{msg_content}_{now}"
-        self.user_duplicates[user_id][msg_content] += 1
-        if self.user_duplicates[user_id][msg_content] >= DUPLICATE_THRESHOLD:
+        self.user_duplicates[user_id][msg_key] += 1
+        if self.user_duplicates[user_id][msg_key] >= DUPLICATE_THRESHOLD:
             await add_points(message.author, 10, "Spam detection (duplicate messages)")
             try:
                 await message.delete()
