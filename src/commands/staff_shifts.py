@@ -25,7 +25,7 @@ SOFTWARE.
 import asyncio
 import json
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -51,14 +51,17 @@ class Shift:
     end: datetime | None = None
     start_note: str | None = None
     end_note: str | None = None
+    paused: bool = False
+    pause_time: datetime | None = None
+    pause_intervals: list[tuple[datetime, datetime]] = field(default_factory=list)
     
     @classmethod
     def new(cls, guild_id: int, user_id: int, start: datetime, start_note: str | None = None):
-        return cls(None, guild_id, user_id, start, start_note=start_note)
+        return cls(None, guild_id, user_id, start, None, start_note, None, False, None, [])
 
     @classmethod
     def from_row(cls, row):
-        shift_id, guild_id, user_id, start, end, start_note, end_note = row
+        shift_id, guild_id, user_id, start, end, start_note, end_note, paused, pause_time, pause_intervals = row
         
         # Convert string datetimes back to datetime objects if needed
         def parse_datetime(dt_value, default_time=None):
@@ -98,8 +101,21 @@ class Shift:
         
         # Parse end time (optional)
         end_dt = parse_datetime(end, None) if end else None
+        
+        # Parse pause time (optional)
+        pause_time_dt = parse_datetime(pause_time, None) if pause_time else None
+        
+        # Parse pause intervals
+        intervals = []
+        if pause_intervals:
+            try:
+                parsed_intervals = json.loads(pause_intervals)
+                for start_interval, end_interval in parsed_intervals:
+                    intervals.append((parse_datetime(start_interval), parse_datetime(end_interval)))
+            except (json.JSONDecodeError, TypeError, ValueError):
+                pass # Keep intervals empty if parsing fails
                 
-        return cls(shift_id, guild_id, user_id, start_dt, end_dt, start_note, end_note)
+        return cls(shift_id, guild_id, user_id, start_dt, end_dt, start_note, end_note, bool(paused), pause_time_dt, intervals)
 
 class EmbedProvider(ABC):
     def __init__(self, bot: commands.Bot):
@@ -233,7 +249,10 @@ class ShiftService:
                     start DATETIME NOT NULL,
                     end DATETIME DEFAULT NULL,
                     start_note TEXT DEFAULT NULL,
-                    end_note TEXT DEFAULT NULL
+                    end_note TEXT DEFAULT NULL,
+                    paused BOOLEAN DEFAULT 0,
+                    pause_time DATETIME DEFAULT NULL,
+                    pause_intervals TEXT DEFAULT '[]'
                 )
             """
             )
@@ -273,8 +292,36 @@ class ShiftService:
         """Adds a shift to the database"""
         async with aiosqlite.connect(self.database_path) as db:
             await db.execute(
-                "INSERT INTO shifts (guild_id, user_id, start, start_note) VALUES (?, ?, ?, ?)",
-                (shift.guild_id, shift.user_id, shift.start.isoformat(), shift.start_note),
+                "INSERT INTO shifts (guild_id, user_id, start, start_note, paused, pause_time, pause_intervals) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (shift.guild_id, shift.user_id, shift.start.isoformat(), shift.start_note, int(shift.paused), shift.pause_time.isoformat() if shift.pause_time else None, json.dumps(shift.pause_intervals or [])),
+            )
+            await db.commit()
+    async def pause_shift(self, shift: Shift) -> None:
+        """Pause a shift in the database"""
+        async with aiosqlite.connect(self.database_path) as db:
+            await db.execute(
+                "UPDATE shifts SET paused = 1, pause_time = ? WHERE shift_id = ?",
+                (datetime.now(timezone.utc).isoformat(), shift.shift_id),
+            )
+            await db.commit()
+
+    async def resume_shift(self, shift: Shift) -> None:
+        """Resume a paused shift, record interval"""
+        async with aiosqlite.connect(self.database_path) as db:
+            # Load previous intervals
+            cursor = await db.execute("SELECT pause_intervals, pause_time FROM shifts WHERE shift_id = ?", (shift.shift_id,))
+            row = await cursor.fetchone()
+            if not row:
+                # This case should ideally not be reached if the shift object is valid
+                # but as a safeguard, we stop here.
+                return
+            intervals = json.loads(row[0]) if row[0] else []
+            pause_start = row[1]
+            if pause_start:
+                intervals.append((pause_start, datetime.now(timezone.utc).isoformat()))
+            await db.execute(
+                "UPDATE shifts SET paused = 0, pause_time = NULL, pause_intervals = ? WHERE shift_id = ?",
+                (json.dumps(intervals), shift.shift_id),
             )
             await db.commit()
     
@@ -538,7 +585,7 @@ class StaffShifts(commands.Cog):
             return
         settings = await self.service.get_settings(ctx.guild.id)
         if not settings.staff_role_ids:
-            await ctx.send("❌ **No staff roles configured!**\n\nAn admin needs to add staff roles first using:\n`/shift settings addrole @YourModRole`")
+            await ctx.send("No staff roles are configured. An administrator must add at least one using `/shift settings addrole @Role`.")
         else:
             staff_role_mentions = []
             for role_id in settings.staff_role_ids:
@@ -547,9 +594,9 @@ class StaffShifts(commands.Cog):
                     staff_role_mentions.append(f"<@&{role_id}>")
             
             if staff_role_mentions:
-                await ctx.send(f"❌ **You are not a staff member.**\n\nYou need one of these roles to use shift commands:\n{', '.join(staff_role_mentions)}")
+                await ctx.send(f"You don't have permission to use shift commands. Required role(s): {', '.join(staff_role_mentions)}")
             else:
-                await ctx.send("❌ **No valid staff roles found.**\n\nAn admin needs to reconfigure staff roles using:\n`/shift settings addrole @YourModRole`")
+                await ctx.send("Configured staff roles are no longer valid. Please reconfigure with `/shift settings addrole @Role`.")
 
     @commands.hybrid_group(
         name="shift",
@@ -610,11 +657,59 @@ class StaffShifts(commands.Cog):
         user_id = ctx.author.id
         current_shift = await self.service.get_shift(ctx.guild.id, user_id)
         if not current_shift:
-            await ctx.send("You don't have an active shift.")
+            await ctx.send("You don't have an active shift to discard.")
             return
         await self.service.discard_shift(current_shift)
-        await ctx.send("Your shift has been discarded. You can use `shift start` to start a new one.")
+        await ctx.send("Your current shift has been discarded.")
         await self.log_invalidate(ctx, current_shift)
+
+    @shift.command(
+        name="pause",
+        usage="shift pause",
+        description="Pause your current shift.",
+    )
+    @commands.guild_only()
+    @commands.has_permissions()
+    @commands.cooldown(1, 2, commands.BucketType.member)
+    async def shift_pause(self, ctx: commands.Context):
+        assert ctx.guild is not None
+        await self.ready.wait()
+        if not (await self.is_staff(ctx)):
+            await self.send_staff_error(ctx)
+            return
+        current_shift = await self.service.get_shift(ctx.guild.id, ctx.author.id)
+        if not current_shift:
+            await ctx.send("You don't have an active shift.")
+            return
+        if current_shift.paused:
+            await ctx.send("Your shift is already paused.")
+            return
+        await self.service.pause_shift(current_shift)
+        await ctx.send(f"Your shift has been paused at <t:{self.safe_timestamp(datetime.now(timezone.utc))}:F>.")
+
+    @shift.command(
+        name="resume",
+        usage="shift resume",
+        description="Resume your paused shift.",
+    )
+    @commands.guild_only()
+    @commands.has_permissions()
+    @commands.cooldown(1, 2, commands.BucketType.member)
+    async def shift_resume(self, ctx: commands.Context):
+        assert ctx.guild is not None
+        await self.ready.wait()
+        if not (await self.is_staff(ctx)):
+            await self.send_staff_error(ctx)
+            return
+        current_shift = await self.service.get_shift(ctx.guild.id, ctx.author.id)
+        if not current_shift:
+            await ctx.send("You don't have an active shift.")
+            return
+        if not current_shift.paused:
+            await ctx.send("Your shift is not paused.")
+            return
+        await self.service.resume_shift(current_shift)
+        await ctx.send(f"Your shift has been resumed at <t:{self.safe_timestamp(datetime.now(timezone.utc))}:F>.")
 
     @shift.command(
         name="end",
@@ -639,7 +734,7 @@ class StaffShifts(commands.Cog):
         
         # Validate the shift object
         if not isinstance(current_shift, Shift):
-            await ctx.send("❌ Error: Invalid shift data. Please contact an administrator.")
+            await ctx.send("Shift data is invalid. Contact an administrator.")
             return
         
         # Ensure we have a proper datetime object for the end time
@@ -677,7 +772,7 @@ class StaffShifts(commands.Cog):
         
         if not active_shifts:
             embed = discord.Embed(
-                title="📊 Active Shifts", 
+                title="Active Shifts", 
                 description="No staff members are currently on duty.",
                 color=discord.Color.blue()
             )
@@ -685,8 +780,8 @@ class StaffShifts(commands.Cog):
             return
         
         embed = discord.Embed(
-            title="📊 Active Shifts", 
-            description=f"**{len(active_shifts)}** staff member(s) currently on duty",
+            title="Active Shifts", 
+            description=f"{len(active_shifts)} staff member(s) currently on duty",
             color=discord.Color.green()
         )
         
@@ -716,7 +811,7 @@ class StaffShifts(commands.Cog):
                     value += f"\n**Note:** {shift.start_note[:100]}{'...' if len(shift.start_note) > 100 else ''}"
                 
                 embed.add_field(
-                    name=f"👤 {user.display_name}",
+                    name=user.display_name,
                     value=value,
                     inline=True
                 )
@@ -737,7 +832,7 @@ class StaffShifts(commands.Cog):
         await self.ready.wait()
         
         if days < 1 or days > 365:
-            await ctx.send("❌ Days must be between 1 and 365.")
+            await ctx.send("Days must be between 1 and 365.")
             return
         
         user_id = user.id if user else None
@@ -746,7 +841,7 @@ class StaffShifts(commands.Cog):
         if not shifts:
             target = f" for {user.display_name}" if user else ""
             embed = discord.Embed(
-                title="📜 Shift History", 
+                title="Shift History", 
                 description=f"No shifts found{target} in the last {days} days.",
                 color=discord.Color.blue()
             )
@@ -755,8 +850,8 @@ class StaffShifts(commands.Cog):
         
         target = f" - {user.display_name}" if user else ""
         embed = discord.Embed(
-            title=f"📜 Shift History{target}", 
-            description=f"Last {len(shifts)} shifts from the past {days} days",
+            title=f"Shift History{target}", 
+            description=f"Latest {len(shifts)} shifts in the past {days} days",
             color=discord.Color.blue()
         )
         
@@ -791,14 +886,14 @@ class StaffShifts(commands.Cog):
                 minutes = remainder // 60
                 status = f"Active ({hours}h {minutes}m)"
             else:
-                status = "🔄 Ongoing"
+                status = "Ongoing"
             
             value = f"**Started:** <t:{self.safe_timestamp(shift.start)}:R>\n**Status:** {status}"
             if shift.start_note:
                 value += f"\n**Note:** {shift.start_note[:50]}{'...' if len(shift.start_note) > 50 else ''}"
             
             embed.add_field(
-                name=f"👤 {username}",
+                name=username,
                 value=value,
                 inline=True
             )
@@ -823,7 +918,7 @@ class StaffShifts(commands.Cog):
         
         current_shift = await self.service.get_shift(ctx.guild.id, user.id)
         if not current_shift:
-            await ctx.send(f"❌ {user.display_name} doesn't have an active shift.")
+            await ctx.send(f"{user.display_name} does not have an active shift.")
             return
         
         # Add admin note to end reason
@@ -840,8 +935,8 @@ class StaffShifts(commands.Cog):
             minutes = remainder // 60
             
             embed = discord.Embed(
-                title="⚠️ Shift Force Ended",
-                description=f"Successfully ended {user.mention}'s shift.",
+                title="Shift Force Ended",
+                description=f"Ended {user.mention}'s shift.",
                 color=discord.Color.orange()
             )
             embed.add_field(name="Duration", value=f"{hours}h {minutes}m", inline=True)
@@ -868,7 +963,7 @@ class StaffShifts(commands.Cog):
         await self.ready.wait()
         
         if days < 1 or days > 365:
-            await ctx.send("❌ Days must be between 1 and 365.")
+            await ctx.send("Days must be between 1 and 365.")
             return
         
         user_id = user.id if user else None
@@ -876,15 +971,15 @@ class StaffShifts(commands.Cog):
         
         if user:
             embed = discord.Embed(
-                title=f"📊 Shift Statistics - {user.display_name}",
-                description=f"Stats for the last {days} days",
+                title=f"Shift Statistics - {user.display_name}",
+                description=f"Statistics for the last {days} days",
                 color=discord.Color.blue()
             )
             embed.set_thumbnail(url=user.display_avatar.url)
         else:
             embed = discord.Embed(
-                title="📊 Server Shift Statistics",
-                description=f"Stats for the last {days} days",
+                title="Server Shift Statistics",
+                description=f"Statistics for the last {days} days",
                 color=discord.Color.blue()
             )
         
@@ -926,7 +1021,7 @@ class StaffShifts(commands.Cog):
         await self.ready.wait()
         
         if days < 1 or days > 365:
-            await ctx.send("❌ Days must be between 1 and 365.")
+            await ctx.send("Days must be between 1 and 365.")
             return
         
         # Get all shifts in the timeframe
@@ -954,8 +1049,8 @@ class StaffShifts(commands.Cog):
                 user_data[shift.user_id]['ongoing'] += 1
         
         embed = discord.Embed(
-            title=f"📈 Staff Activity Summary",
-            description=f"Activity report for the last {days} days",
+            title="Staff Activity Summary",
+            description=f"Activity for the last {days} days",
             color=discord.Color.green()
         )
         
@@ -976,10 +1071,10 @@ class StaffShifts(commands.Cog):
                 shifts = data['shifts']
                 ongoing = data['ongoing']
                 status = f" ({ongoing} ongoing)" if ongoing else ""
-                top_staff.append(f"👤 **{member.display_name}**: {hours}h, {shifts} shifts{status}")
+                top_staff.append(f"{member.display_name}: {hours}h, {shifts} shifts{status}")
             
             embed.add_field(
-                name="🏆 Most Active Staff",
+                name="Most Active Staff",
                 value="\n".join(top_staff) if top_staff else "None",
                 inline=False
             )
@@ -992,8 +1087,8 @@ class StaffShifts(commands.Cog):
         
         if inactive_staff:
             embed.add_field(
-                name="😴 Inactive Staff",
-                value="\n".join([f"👤 {name}" for name in inactive_staff[:10]]) if inactive_staff else "None",
+                name="Inactive Staff",
+                value="\n".join(inactive_staff[:10]) if inactive_staff else "None",
                 inline=False
             )
             if len(inactive_staff) > 10:
