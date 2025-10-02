@@ -25,23 +25,37 @@ intents.members = True
 intents.guilds = True
 intents.reactions = True
 
+# Essential cogs only - Moderation, Management, and Core functionality
 COGS_TO_LOAD = [
+    # Core Commands (Essential)
     'commands.core',          # Core hybrid commands (ping, info, help)
     'commands.diagnostics',   # Diagnostics (?diag, /diag)
+    
+    # Moderation & Protection (Essential)
     'commands.moderation',    # Advanced moderation with point system (purge, kick, ban, addpoints, etc.)
-    'commands.moderation_extended',  # Extended moderation (serverinfo, userinfo, lockdown, etc.)
+    'commands.moderation_extended',  # Extended moderation (serverinfo, userinfo, lockdown, role management, etc.)
+    'commands.protection',    # Protection features (anti-spam, anti-raid, anti-nuke)
+    'commands.appeals',       # Appeal system for bans and mutes
+    
+    # Staff Management (Essential)
     'commands.staff_shifts',  # Staff shift tracking and logging system
     'commands.staff_points',  # Staff aura system with leaderboard
-    'commands.data_management',  # Data backup and persistence management
-    'commands.utility',       # Embed builder commands
-    'commands.utility_extra', # Extra utility (emotes, inviteinfo, membercount, remindme, roll, etc.)
-    # 'commands.roles',         # Self-assignable ranks / role info - REMOVED: File deleted during cleanup
+    
+    # Server Utilities (Essential)
     'commands.afk',           # AFK system for away message responses
-    'commands.protection',    # Protection features (anti-spam, anti-raid, etc.)
-    'commands.appeals',       # Appeal system for bans and mutes
+    
+    # Data & Utility (Useful but not critical)
+    'commands.data_management',  # Data backup and persistence management
+    'commands.utility',       # Embed builder commands for announcements
+    
+    # Event Handlers (Essential)
     'events.member_events',   # Member join/leave event handlers
-    'events.message_handler', # Message event handler
+    'events.message_handler', # Auto-thanks system for staff aura
 ]
+
+# REMOVED COGS (Non-essential fun/utility commands):
+# - commands.utility_extra  # Fun commands: emotes, roll, remindme, randomcolor, inviteinfo
+# - commands.roles          # Self-assignable ranks (file deleted during cleanup)
 
 class CodeVerseBot(commands.Bot):
     def __init__(self):
