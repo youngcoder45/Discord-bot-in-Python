@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.production
+*.key
+*.pem
 
 # Python
 __pycache__/
@@ -25,16 +27,22 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+venv/
+env/
+ENV/
 
 # PyInstaller
 *.manifest
 *.spec
 
-# Database
-data/codeverse_bot.db
-data/codeverse_bot.db-journal
-*.db
-*.sqlite3
+# Database files (keep structure, not data)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Logs
 logs/
@@ -45,9 +53,33 @@ logs/
 .idea/
 *.swp
 *.swo
+.vs/
 
 # OS
 .DS_Store
+Thumbs.db
+
+# Testing and debug files
+test_*.py
+debug_*.py
+fix_*.py
+check_*.py
+verify_*.py
+*_test.py
+*_debug.py
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# Bot instance lock
+.bot_instance.lock
+
+# Old backups (keep backup/ directory structure)
+bot_data_backup.json
 Thumbs.db
 
 # Hosting
