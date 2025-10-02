@@ -28,22 +28,19 @@ intents.reactions = True
 COGS_TO_LOAD = [
     'commands.core',          # Core hybrid commands (ping, info, help)
     'commands.diagnostics',   # Diagnostics (?diag, /diag)
-    'commands.community',     # quote, question, meme, suggest
-    'commands.moderation',    # basic moderation commands (purge, kick, ban, etc.)
-    'commands.moderation_extended',  # advanced moderation (serverinfo, userinfo, lockdown, etc.)
+    'commands.moderation',    # Advanced moderation with point system (purge, kick, ban, addpoints, etc.)
+    'commands.moderation_extended',  # Extended moderation (serverinfo, userinfo, lockdown, etc.)
     'commands.staff_shifts',  # Staff shift tracking and logging system
     'commands.staff_points',  # Staff aura system with leaderboard
-    'commands.election',      # Staff election system
     'commands.data_management',  # Data backup and persistence management
     'commands.utility',       # Embed builder commands
-    # Newly added feature cogs (ensure these stay after core/utility for dependencies)
     'commands.utility_extra', # Extra utility (emotes, inviteinfo, membercount, remindme, roll, etc.)
-    'commands.highlights',    # Message highlight / keyword notification system
     'commands.roles',         # Self-assignable ranks / role info
-    'commands.whois_alias',   # Alias for user info (whois)
     'commands.afk',           # AFK system for away message responses
-    'events.member_events',
-    'events.message_handler', # Simplified message handler
+    'commands.protection',    # Protection features (anti-spam, anti-raid, etc.)
+    'commands.appeals',       # Appeal system for bans and mutes
+    'events.member_events',   # Member join/leave event handlers
+    'events.message_handler', # Message event handler
 ]
 
 class CodeVerseBot(commands.Bot):

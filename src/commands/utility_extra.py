@@ -119,7 +119,7 @@ class UtilityExtra(commands.Cog):
     @app_commands.describe(code="Invite code or full URL")
     async def inviteinfo(self, ctx: commands.Context, code: str):
         # Extract code if full URL
-        if "discord.gg/" in code:
+        if "discord.gg/3xKFvKhuGR" in code:
             code = code.rsplit("/", 1)[-1]
         try:
             invite = await self.bot.fetch_invite(code, with_counts=True)
