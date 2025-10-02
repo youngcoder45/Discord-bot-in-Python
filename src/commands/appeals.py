@@ -1,9 +1,15 @@
 import discord
 from discord.ext import commands
 import sqlite3
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import config
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from config import MODERATION_ROLE_ID
+
 from utils.database import DATABASE_NAME
 from utils.embeds import create_error_embed, create_success_embed, create_info_embed
-from config import MODERATION_ROLE_ID
 
 class Appeals(commands.Cog):
     """Unban appeal system"""

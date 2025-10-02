@@ -3,10 +3,15 @@ from discord.ext import commands, tasks
 from collections import defaultdict, deque
 import time
 from datetime import datetime
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import config
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from config import *
 
 from utils.database import add_points
 from utils.embeds import create_error_embed
-from config import *
 
 class Protection(commands.Cog):
     """Anti-spam, anti-raid, and anti-nuke protection systems"""

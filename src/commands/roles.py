@@ -157,16 +157,16 @@ class Roles(commands.Cog):
         await member.remove_roles(role, reason="Rank leave")
         await ctx.reply(f"✅ Removed {role.mention} from your roles.")
 
-    # ============== ROLEINFO COMMAND GROUP ==============
-    @commands.hybrid_group(name="roleinfo", description="View role information")
+    # ============== ROLELIST COMMAND GROUP ==============
+    @commands.hybrid_group(name="rolelist", description="List and search server roles")
     @commands.guild_only()
-    async def roleinfo_group(self, ctx: commands.Context):
+    async def rolelist_group(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
-            await ctx.send("Use `/roleinfo list` to see all roles or `/roleinfo view @role` for details")
+            await ctx.send("Use `/rolelist all` to see all roles or `/rolelist search <text>` to search")
 
-    @roleinfo_group.command(name="list", description="List all server roles")
+    @rolelist_group.command(name="all", description="List all server roles")
     @app_commands.describe(search="Optional search text")
-    async def roleinfo_list(self, ctx: commands.Context, search: Optional[str] = None):
+    async def rolelist_all(self, ctx: commands.Context, search: Optional[str] = None):
         if not ctx.guild:
             return await ctx.reply("❌ This command can only be used in a server.")
             
@@ -187,6 +187,13 @@ class Roles(commands.Cog):
         if search:
             embed.set_footer(text=f"Filtered by: {search}")
         await ctx.reply(embed=embed)
+
+    # ============== ROLEINFO COMMAND GROUP ==============
+    @commands.hybrid_group(name="roleinfo", description="View role information")
+    @commands.guild_only()
+    async def roleinfo_group(self, ctx: commands.Context):
+        if ctx.invoked_subcommand is None:
+            await ctx.send("Use `/roleinfo view <role>` to see role details")
 
     @roleinfo_group.command(name="view", description="View detailed role information")
     @app_commands.describe(role="Role to inspect")

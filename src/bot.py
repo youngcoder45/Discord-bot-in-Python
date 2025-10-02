@@ -35,7 +35,7 @@ COGS_TO_LOAD = [
     'commands.data_management',  # Data backup and persistence management
     'commands.utility',       # Embed builder commands
     'commands.utility_extra', # Extra utility (emotes, inviteinfo, membercount, remindme, roll, etc.)
-    'commands.roles',         # Self-assignable ranks / role info
+    # 'commands.roles',         # Self-assignable ranks / role info - REMOVED: File deleted during cleanup
     'commands.afk',           # AFK system for away message responses
     'commands.protection',    # Protection features (anti-spam, anti-raid, etc.)
     'commands.appeals',       # Appeal system for bans and mutes
