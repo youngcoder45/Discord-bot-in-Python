@@ -1584,6 +1584,9 @@ class ModerationExtended(commands.Cog):
         if count < 1 or count > 1000:
             return await ctx.send("❌ Count must be between 1 and 1000.")
         
+        if not isinstance(ctx.channel, discord.TextChannel):
+            return await ctx.send("❌ This command can only be used in text channels.")
+        
         def is_bot_message(msg):
             return msg.author.bot or msg.content.startswith(('/', '!', '?'))
         
