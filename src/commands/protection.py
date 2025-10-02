@@ -1,12 +1,17 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from collections import defaultdict, deque
 import time
 from datetime import datetime
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import config
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from config import *
 
 from utils.database import add_points
 from utils.embeds import create_error_embed
-from config import *
 
 class Protection(commands.Cog):
     """Anti-spam, anti-raid, and anti-nuke protection systems"""
@@ -18,55 +23,13 @@ class Protection(commands.Cog):
         self.user_messages = defaultdict(deque)
         self.user_duplicates = defaultdict(lambda: defaultdict(int))
         
-        # Anti-raid tracking
-        self.recent_joins = deque()
+        # Anti-raid tracking - auto-cleanup with maxlen
+        self.recent_joins = deque(maxlen=JOIN_THRESHOLD * 2)
         
-        # Anti-nuke tracking
-        self.recent_bans = deque()
-        self.recent_kicks = deque()
-        self.recent_deletes = defaultdict(deque)
-        
-        # Start cleanup task
-        self.cleanup_tracking.start()
-
-    def cog_unload(self):
-        """Stop tasks when cog is unloaded"""
-        self.cleanup_tracking.cancel()
-
-    @tasks.loop(seconds=30)
-    async def cleanup_tracking(self):
-        """Clean up old tracking data"""
-        now = time.time()
-        
-        # Clean message tracking
-        for user_id in list(self.user_messages.keys()):
-            while self.user_messages[user_id] and now - self.user_messages[user_id][0] > SPAM_TIME_WINDOW:
-                self.user_messages[user_id].popleft()
-            if not self.user_messages[user_id]:
-                del self.user_messages[user_id]
-        
-        # Clean duplicate tracking
-        for user_id in list(self.user_duplicates.keys()):
-            for msg_content in list(self.user_duplicates[user_id].keys()):
-                # Remove duplicates older than spam window
-                if now - float(msg_content.split('_')[-1]) > SPAM_TIME_WINDOW * 2:
-                    del self.user_duplicates[user_id][msg_content]
-            if not self.user_duplicates[user_id]:
-                del self.user_duplicates[user_id]
-        
-        # Clean join tracking
-        while self.recent_joins and now - self.recent_joins[0] > JOIN_TIME_WINDOW:
-            self.recent_joins.popleft()
-        
-        # Clean nuke tracking
-        while self.recent_bans and now - self.recent_bans[0] > NUKE_TIME_WINDOW:
-            self.recent_bans.popleft()
-        while self.recent_kicks and now - self.recent_kicks[0] > NUKE_TIME_WINDOW:
-            self.recent_kicks.popleft()
-
-    @cleanup_tracking.before_loop
-    async def before_cleanup(self):
-        await self.bot.wait_until_ready()
+        # Anti-nuke tracking - auto-cleanup with maxlen
+        self.recent_bans = deque(maxlen=MASS_BAN_THRESHOLD * 2)
+        self.recent_kicks = deque(maxlen=MASS_KICK_THRESHOLD * 2)
+        self.recent_deletes = defaultdict(lambda: deque(maxlen=MASS_DELETE_THRESHOLD * 2))
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -77,8 +40,12 @@ class Protection(commands.Cog):
         user_id = message.author.id
         now = time.time()
         
-        # Check for spam (rate limiting)
+        # Check for spam (rate limiting) - auto cleanup old messages
         self.user_messages[user_id].append(now)
+        # Remove old messages outside the time window
+        while self.user_messages[user_id] and now - self.user_messages[user_id][0] > SPAM_TIME_WINDOW:
+            self.user_messages[user_id].popleft()
+        
         if len(self.user_messages[user_id]) > SPAM_THRESHOLD:
             await add_points(message.author, 15, "Spam detection (rate limiting)")
             try:
@@ -87,9 +54,8 @@ class Protection(commands.Cog):
                 pass
             return
         
-        # Check for duplicate messages
+        # Check for duplicate messages (simplified - just use content as key)
         msg_content = message.content.lower()[:100]  # First 100 chars
-        msg_key = f"{msg_content}_{now}"
         self.user_duplicates[user_id][msg_content] += 1
         if self.user_duplicates[user_id][msg_content] >= DUPLICATE_THRESHOLD:
             await add_points(message.author, 10, "Spam detection (duplicate messages)")
@@ -125,6 +91,10 @@ class Protection(commands.Cog):
         now = time.time()
         self.recent_joins.append(now)
         
+        # Auto cleanup old joins outside the time window
+        while self.recent_joins and now - self.recent_joins[0] > JOIN_TIME_WINDOW:
+            self.recent_joins.popleft()
+        
         # Check for join flood
         if len(self.recent_joins) > JOIN_THRESHOLD:
             try:
@@ -146,7 +116,7 @@ class Protection(commands.Cog):
                 pass
         
         # Check for new accounts
-        account_age = (datetime.utcnow() - member.created_at).days
+        account_age = (datetime.now(member.created_at.tzinfo) - member.created_at).days
         if account_age < NEW_ACCOUNT_THRESHOLD:
             try:
                 embed = discord.Embed(
@@ -164,6 +134,10 @@ class Protection(commands.Cog):
         """Handle anti-nuke ban detection"""
         now = time.time()
         self.recent_bans.append(now)
+        
+        # Auto cleanup old bans outside the time window
+        while self.recent_bans and now - self.recent_bans[0] > NUKE_TIME_WINDOW:
+            self.recent_bans.popleft()
         
         if len(self.recent_bans) > MASS_BAN_THRESHOLD:
             try:
@@ -192,6 +166,10 @@ class Protection(commands.Cog):
         
         now = time.time()
         self.recent_kicks.append(now)
+        
+        # Auto cleanup old kicks outside the time window
+        while self.recent_kicks and now - self.recent_kicks[0] > NUKE_TIME_WINDOW:
+            self.recent_kicks.popleft()
         
         if len(self.recent_kicks) > MASS_KICK_THRESHOLD:
             try:

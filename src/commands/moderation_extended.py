@@ -1147,184 +1147,466 @@ class ModerationExtended(commands.Cog):
         except discord.Forbidden:
             await ctx.send("❌ Cannot edit that role.")
 
-    # ---- PLACEHOLDER COMMANDS (non-implemented full systems) ----
-    def _placeholder_embed(self, title: str, desc: str):
-        return discord.Embed(title=title, description=desc + "\n\n*Placeholder implementation*", color=discord.Color.dark_gold())
-
-    @commands.hybrid_command(name="addemote", help="[Placeholder] Add an emote to the server")
+    # ---- ADDITIONAL MODERATION COMMANDS ----
+    
+    @commands.hybrid_command(name="addemote", help="Add an emoji to the server")
+    @commands.has_permissions(manage_emojis=True)
+    @commands.guild_only()
     async def addemote(self, ctx: commands.Context, name: str, url: str):
-        await ctx.send(embed=self._placeholder_embed("addemote", "Image fetch & upload not yet implemented."))
+        """Add an emoji to the server from a URL"""
+        assert ctx.guild is not None
+        
+        try:
+            import aiohttp
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    if resp.status != 200:
+                        return await ctx.send("❌ Could not download image from that URL.")
+                    
+                    image_data = await resp.read()
+                    
+            emoji = await ctx.guild.create_custom_emoji(
+                name=name,
+                image=image_data,
+                reason=f"Added by {ctx.author}"
+            )
+            await ctx.send(f"✅ Added emoji {emoji}")
+            
+        except discord.HTTPException as e:
+            await ctx.send(f"❌ Failed to add emoji: {str(e)}")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
 
-    @commands.hybrid_command(name="addmod", help="[Placeholder] Register a moderator role")
+    @commands.hybrid_command(name="addmod", help="Register a moderator role")
     @commands.has_permissions(manage_guild=True)
+    @commands.guild_only()
     async def addmod(self, ctx: commands.Context, role: discord.Role):
+        """Register a role as a moderator role for tracking purposes"""
         assert ctx.guild is not None
         st = self._state(ctx.guild.id)
         st['mod_roles'].add(role.id)
-        await ctx.send(f"✅ Added {role.mention} as moderator role.")
+        
+        embed = discord.Embed(
+            title="✅ Moderator Role Added",
+            description=f"{role.mention} has been registered as a moderator role.",
+            color=discord.Color.green()
+        )
+        embed.set_footer(text=f"Added by {ctx.author}")
+        await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="delmod", help="[Placeholder] Remove a moderator role")
+    @commands.hybrid_command(name="delmod", help="Remove a moderator role")
     @commands.has_permissions(manage_guild=True)
+    @commands.guild_only()
     async def delmod(self, ctx: commands.Context, role: discord.Role):
+        """Unregister a moderator role"""
         assert ctx.guild is not None
         st = self._state(ctx.guild.id)
         if role.id in st['mod_roles']:
             st['mod_roles'].remove(role.id)
-            await ctx.send("Removed moderator role.")
+            embed = discord.Embed(
+                title="✅ Moderator Role Removed",
+                description=f"{role.mention} is no longer registered as a moderator role.",
+                color=discord.Color.orange()
+            )
+            embed.set_footer(text=f"Removed by {ctx.author}")
+            await ctx.send(embed=embed)
         else:
-            await ctx.send("Role not registered as moderator.")
+            await ctx.send(f"❌ {role.mention} is not registered as a moderator role.")
 
-    @commands.hybrid_command(name="listmods", help="[Placeholder] List moderator roles")
+    @commands.hybrid_command(name="listmods", help="List moderator roles")
+    @commands.guild_only()
     async def listmods(self, ctx: commands.Context):
+        """List all registered moderator roles"""
         assert ctx.guild is not None
         st = self._state(ctx.guild.id)
         if not st['mod_roles']:
-            await ctx.send("No moderator roles set.")
+            await ctx.send("📋 No moderator roles have been registered.")
             return
         roles = [f"<@&{rid}>" for rid in st['mod_roles']]
-        await ctx.send("Moderator roles: " + ", ".join(roles))
+        
+        embed = discord.Embed(
+            title="📋 Registered Moderator Roles",
+            description="\n".join(f"• {role}" for role in roles),
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="prefix", help="Show current prefix (static)")
     async def prefix(self, ctx: commands.Context):
         await ctx.send("Current prefix: `?` (changing not implemented).")
 
-    @commands.hybrid_command(name="module", help="[Placeholder] Toggle a module")
-    async def module(self, ctx: commands.Context, module: str):
-        await ctx.send(embed=self._placeholder_embed("module", f"Toggling '{module}' not implemented."))
-
-    @commands.hybrid_command(name="modules", help="[Placeholder] List modules")
+    @commands.hybrid_command(name="modules", help="List loaded bot modules (cogs)")
+    @commands.guild_only()
     async def modules(self, ctx: commands.Context):
-        await ctx.send(embed=self._placeholder_embed("modules", "Module listing not implemented."))
+        """List all loaded cogs/modules"""
+        cogs = list(self.bot.cogs.keys())
+        
+        embed = discord.Embed(
+            title="📦 Loaded Modules",
+            description=f"Total: **{len(cogs)}** modules loaded",
+            color=discord.Color.blue()
+        )
+        
+        # Group cogs by category
+        command_cogs = [c for c in cogs if c.startswith('Command') or 'command' in c.lower()]
+        event_cogs = [c for c in cogs if 'Event' in c or 'event' in c.lower()]
+        other_cogs = [c for c in cogs if c not in command_cogs and c not in event_cogs]
+        
+        if command_cogs:
+            embed.add_field(name="Command Modules", value="\n".join(f"• {c}" for c in command_cogs), inline=False)
+        if event_cogs:
+            embed.add_field(name="Event Modules", value="\n".join(f"• {c}" for c in event_cogs), inline=False)
+        if other_cogs:
+            embed.add_field(name="Other Modules", value="\n".join(f"• {c}" for c in other_cogs), inline=False)
+        
+        await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="command", help="[Placeholder] Toggle a command")
-    async def command_toggle(self, ctx: commands.Context, command: str):
-        await ctx.send(embed=self._placeholder_embed("command", f"Enabling/disabling '{command}' not implemented."))
-
-    @commands.hybrid_command(name="customs", help="[Placeholder] Custom commands management")
-    async def customs(self, ctx: commands.Context):
-        await ctx.send(embed=self._placeholder_embed("customs", "Custom commands system not implemented."))
-
-    @commands.hybrid_command(name="giveaway", help="[Placeholder] Giveaway management")
-    async def giveaway(self, ctx: commands.Context):
-        await ctx.send(embed=self._placeholder_embed("giveaway", "Giveaway system not implemented."))
-
-    @commands.hybrid_command(name="moderations", help="[Placeholder] Active timed moderations")
+    @commands.hybrid_command(name="moderations", help="Show recent moderation actions")
+    @app_commands.describe(user="Optional: Filter by specific user")
+    @commands.guild_only()
     async def moderations(self, ctx: commands.Context, user: discord.Member | None = None):
-        await ctx.send(embed=self._placeholder_embed("moderations", "Timed moderation tracking not implemented."))
+        """Show recent moderation actions in this server"""
+        assert ctx.guild is not None
+        st = self._state(ctx.guild.id)
+        
+        cases = st['cases']
+        if not cases:
+            return await ctx.send("📋 No moderation actions recorded yet.")
+        
+        # Filter by user if specified
+        if user:
+            cases = [c for c in cases if c['user_id'] == user.id]
+            if not cases:
+                return await ctx.send(f"📋 No moderation actions found for {user.mention}.")
+        
+        # Get last 10 cases
+        recent_cases = cases[-10:]
+        
+        embed = discord.Embed(
+            title=f"📋 Recent Moderations" + (f" for {user.display_name}" if user else ""),
+            color=discord.Color.blue()
+        )
+        
+        for case in reversed(recent_cases):
+            mod = ctx.guild.get_member(case['mod_id'])
+            mod_name = mod.display_name if mod else f"<@{case['mod_id']}>"
+            target = ctx.guild.get_member(case['user_id'])
+            target_name = target.display_name if target else f"<@{case['user_id']}>"
+            
+            embed.add_field(
+                name=f"Case #{cases.index(case) + 1} - {case['action']}",
+                value=f"**Target:** {target_name}\n**Moderator:** {mod_name}\n**Reason:** {case['reason']}",
+                inline=False
+            )
+        
+        await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="modlogs", help="[Placeholder] Moderation logs for a user")
-    async def modlogs(self, ctx: commands.Context, user: discord.Member | None = None):
-        await ctx.send(embed=self._placeholder_embed("modlogs", "Persistent logs not implemented."))
+    @commands.hybrid_command(name="modlogs", help="Show moderation history for a user")
+    @app_commands.describe(user="User to check moderation history for")
+    @commands.guild_only()
+    async def modlogs(self, ctx: commands.Context, user: discord.Member):
+        """Show all moderation actions taken against a specific user"""
+        assert ctx.guild is not None
+        st = self._state(ctx.guild.id)
+        
+        user_cases = [c for c in st['cases'] if c['user_id'] == user.id]
+        
+        if not user_cases:
+            return await ctx.send(f"📋 No moderation history found for {user.mention}.")
+        
+        embed = discord.Embed(
+            title=f"📋 Moderation History: {user.display_name}",
+            description=f"Total actions: **{len(user_cases)}**",
+            color=discord.Color.orange()
+        )
+        embed.set_thumbnail(url=user.display_avatar.url)
+        
+        # Group by action type
+        from collections import Counter
+        action_counts = Counter(c['action'] for c in user_cases)
+        
+        embed.add_field(
+            name="Action Summary",
+            value="\n".join(f"• {action}: {count}" for action, count in action_counts.items()),
+            inline=False
+        )
+        
+        # Show last 5 actions
+        recent = user_cases[-5:]
+        if recent:
+            embed.add_field(
+                name="Recent Actions",
+                value="\n".join(
+                    f"**{c['action']}** - {c['reason'][:50]}" 
+                    for c in reversed(recent)
+                ),
+                inline=False
+            )
+        
+        await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="modstats", help="[Placeholder] Moderator statistics")
-    async def modstats(self, ctx: commands.Context, user: discord.Member | None = None):
-        await ctx.send(embed=self._placeholder_embed("modstats", "Statistics aggregation not implemented."))
+    @commands.hybrid_command(name="modstats", help="Show moderator statistics")
+    @app_commands.describe(moderator="Optional: Specific moderator to check")
+    @commands.guild_only()
+    async def modstats(self, ctx: commands.Context, moderator: discord.Member | None = None):
+        """Show statistics about moderation actions"""
+        assert ctx.guild is not None
+        st = self._state(ctx.guild.id)
+        
+        cases = st['cases']
+        if not cases:
+            return await ctx.send("📊 No moderation actions recorded yet.")
+        
+        # Filter by moderator if specified
+        if moderator:
+            mod_cases = [c for c in cases if c['mod_id'] == moderator.id]
+            if not mod_cases:
+                return await ctx.send(f"📊 {moderator.mention} hasn't performed any moderation actions.")
+            
+            from collections import Counter
+            action_counts = Counter(c['action'] for c in mod_cases)
+            
+            embed = discord.Embed(
+                title=f"📊 Moderator Stats: {moderator.display_name}",
+                description=f"Total actions: **{len(mod_cases)}**",
+                color=discord.Color.green()
+            )
+            embed.set_thumbnail(url=moderator.display_avatar.url)
+            
+            for action, count in action_counts.most_common():
+                embed.add_field(name=action, value=str(count), inline=True)
+        else:
+            # Server-wide stats
+            from collections import Counter
+            mod_counts = Counter(c['mod_id'] for c in cases)
+            action_counts = Counter(c['action'] for c in cases)
+            
+            embed = discord.Embed(
+                title="📊 Server Moderation Statistics",
+                description=f"Total actions: **{len(cases)}**",
+                color=discord.Color.gold()
+            )
+            
+            # Top moderators
+            top_mods = []
+            for mod_id, count in mod_counts.most_common(5):
+                mod = ctx.guild.get_member(mod_id)
+                name = mod.display_name if mod else f"<@{mod_id}>"
+                top_mods.append(f"• {name}: {count}")
+            
+            if top_mods:
+                embed.add_field(name="Top Moderators", value="\n".join(top_mods), inline=False)
+            
+            # Action breakdown
+            action_list = [f"• {action}: {count}" for action, count in action_counts.most_common()]
+            if action_list:
+                embed.add_field(name="Action Breakdown", value="\n".join(action_list), inline=False)
+        
+        await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="mute", help="[Placeholder] Voice mute a member")
+    @commands.hybrid_command(name="vcmute", help="Voice mute a member in voice channels")
+    @app_commands.describe(user="Member to voice mute", reason="Reason for voice muting")
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def mute(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
+    async def vcmute(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
+        """Mute a member in voice channels"""
         assert ctx.guild is not None
+        
+        if not user.voice:
+            return await ctx.send("❌ User is not in a voice channel.")
+        
         try:
             await user.edit(mute=True, reason=reason)
-            self._add_case(ctx.guild.id, user.id, ctx.author.id, 'MUTE', reason)
-            await ctx.send(f"🔇 Voice-muted {user.mention}.")
-        except Exception:
-            await ctx.send("Failed to mute (voice placeholder).")
+            self._add_case(ctx.guild.id, user.id, ctx.author.id, 'VCMUTE', reason)
+            
+            embed = discord.Embed(
+                title="🔇 Voice Muted",
+                description=f"{user.mention} has been voice muted.",
+                color=discord.Color.orange()
+            )
+            embed.add_field(name="Reason", value=reason, inline=False)
+            embed.set_footer(text=f"Muted by {ctx.author}")
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to voice mute that user.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to voice mute: {str(e)}")
 
-    @commands.hybrid_command(name="unmute", help="[Placeholder] Voice unmute a member")
+    @commands.hybrid_command(name="vcunmute", help="Voice unmute a member in voice channels")
+    @app_commands.describe(user="Member to voice unmute", reason="Reason for voice unmuting")
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def unmute(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
+    async def vcunmute(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
+        """Unmute a member in voice channels"""
         assert ctx.guild is not None
+        
         try:
             await user.edit(mute=False, reason=reason)
-            self._add_case(ctx.guild.id, user.id, ctx.author.id, 'UNMUTE', reason)
-            await ctx.send(f"🔊 Unmuted {user.mention}.")
-        except Exception:
-            await ctx.send("Failed to unmute (voice placeholder).")
+            self._add_case(ctx.guild.id, user.id, ctx.author.id, 'VCUNMUTE', reason)
+            
+            embed = discord.Embed(
+                title="🔊 Voice Unmuted",
+                description=f"{user.mention} has been voice unmuted.",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="Reason", value=reason, inline=False)
+            embed.set_footer(text=f"Unmuted by {ctx.author}")
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to voice unmute that user.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to voice unmute: {str(e)}")
 
-    @commands.hybrid_command(name="deafen", help="[Placeholder] Voice deafen a member")
+    @commands.hybrid_command(name="deafen", help="Server deafen a member in voice channels")
+    @app_commands.describe(user="Member to deafen", reason="Reason for deafening")
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
     async def deafen(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
+        """Server deafen a member in voice channels"""
         assert ctx.guild is not None
+        
+        if not user.voice:
+            return await ctx.send("❌ User is not in a voice channel.")
+        
         try:
             await user.edit(deafen=True, reason=reason)
             self._add_case(ctx.guild.id, user.id, ctx.author.id, 'DEAFEN', reason)
-            await ctx.send(f"🔇 Deafened {user.mention}.")
-        except Exception:
-            await ctx.send("Failed to deafen (voice placeholder).")
+            
+            embed = discord.Embed(
+                title="🔇 Deafened",
+                description=f"{user.mention} has been server deafened.",
+                color=discord.Color.orange()
+            )
+            embed.add_field(name="Reason", value=reason, inline=False)
+            embed.set_footer(text=f"Deafened by {ctx.author}")
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to deafen that user.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to deafen: {str(e)}")
 
-    @commands.hybrid_command(name="undeafen", help="[Placeholder] Voice undeafen a member")
+    @commands.hybrid_command(name="undeafen", help="Server undeafen a member in voice channels")
+    @app_commands.describe(user="Member to undeafen", reason="Reason for undeafening")
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
     async def undeafen(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
+        """Server undeafen a member in voice channels"""
         assert ctx.guild is not None
+        
         try:
             await user.edit(deafen=False, reason=reason)
             self._add_case(ctx.guild.id, user.id, ctx.author.id, 'UNDEAFEN', reason)
-            await ctx.send(f"🔊 Undeafened {user.mention}.")
-        except Exception:
-            await ctx.send("Failed to undeafen (voice placeholder).")
+            
+            embed = discord.Embed(
+                title="🔊 Undeafened",
+                description=f"{user.mention} has been server undeafened.",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="Reason", value=reason, inline=False)
+            embed.set_footer(text=f"Undeafened by {ctx.author}")
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to undeafen that user.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to undeafen: {str(e)}")
 
-    @commands.hybrid_command(name="softban", help="[Placeholder] Softban (ban+unban to prune messages)")
+    @commands.hybrid_command(name="softban", help="Softban (ban then immediately unban to delete messages)")
+    @app_commands.describe(user="Member to softban", reason="Reason for softban")
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     async def softban(self, ctx: commands.Context, user: discord.Member, *, reason: str = "No reason provided"):
+        """Ban then immediately unban to delete user's messages"""
         assert ctx.guild is not None
+        
         try:
             await ctx.guild.ban(user, reason=f"Softban: {reason}", delete_message_days=1)
-            await ctx.guild.unban(user, reason="Softban unban")
+            await ctx.guild.unban(user, reason="Softban automatic unban")
             self._add_case(ctx.guild.id, user.id, ctx.author.id, 'SOFTBAN', reason)
-            await ctx.send(f"🪓 Softbanned {user.mention}.")
-        except Exception:
-            await ctx.send("Failed to softban user.")
+            
+            embed = discord.Embed(
+                title="🪓 Softbanned",
+                description=f"{user.mention} has been softbanned (messages deleted, user can rejoin).",
+                color=discord.Color.orange()
+            )
+            embed.add_field(name="Reason", value=reason, inline=False)
+            embed.set_footer(text=f"Softbanned by {ctx.author}")
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to softban that user.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to softban: {str(e)}")
 
-    @commands.hybrid_command(name="role", help="[Placeholder] Toggle a role for a user")
+    @commands.hybrid_command(name="role", help="Toggle a role for a user")
+    @app_commands.describe(user="Member to toggle role for", role_name="Name of the role to toggle")
     @commands.has_permissions(manage_roles=True)
     @commands.guild_only()
     async def role(self, ctx: commands.Context, user: discord.Member, *, role_name: str):
+        """Add or remove a role from a user"""
         assert ctx.guild is not None
         role = discord.utils.find(lambda r: r.name.lower() == role_name.lower(), ctx.guild.roles)
+        
         if not role:
-            await ctx.send("Role not found.")
-            return
+            return await ctx.send(f"❌ Role '{role_name}' not found.")
+        
         try:
             if role in user.roles:
                 await user.remove_roles(role, reason=f"Role toggle by {ctx.author}")
                 self._add_case(ctx.guild.id, user.id, ctx.author.id, 'REMROLE', role.name)
-                await ctx.send(f"➖ Removed {role.mention} from {user.mention}.")
+                
+                embed = discord.Embed(
+                    title="➖ Role Removed",
+                    description=f"Removed {role.mention} from {user.mention}.",
+                    color=discord.Color.orange()
+                )
             else:
                 await user.add_roles(role, reason=f"Role toggle by {ctx.author}")
                 self._add_case(ctx.guild.id, user.id, ctx.author.id, 'ADDROLE', role.name)
-                await ctx.send(f"➕ Added {role.mention} to {user.mention}.")
+                
+                embed = discord.Embed(
+                    title="➕ Role Added",
+                    description=f"Added {role.mention} to {user.mention}.",
+                    color=discord.Color.green()
+                )
+            
+            embed.set_footer(text=f"Action by {ctx.author}")
+            await ctx.send(embed=embed)
         except discord.Forbidden:
-            await ctx.send("Cannot modify that role.")
+            await ctx.send("❌ I don't have permission to modify that role.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to toggle role: {str(e)}")
 
-    @commands.hybrid_command(name="duration", help="[Placeholder] Modify punishment duration")
-    async def duration(self, ctx: commands.Context, case_number: int, *, new_limit: str):
-        await ctx.send(embed=self._placeholder_embed("duration", "Timed moderation editing not implemented."))
-
-    @commands.hybrid_command(name="temprole", help="[Placeholder] Temporary role assignment")
-    async def temprole(self, ctx: commands.Context, user: discord.Member, time: str, *, role: discord.Role):
-        await ctx.send(embed=self._placeholder_embed("temprole", "Timed roles not implemented."))
-
-    @commands.hybrid_command(name="rolepersist", help="[Placeholder] Persistent role toggle")
-    async def rolepersist(self, ctx: commands.Context, user: discord.Member, *, role: discord.Role):
-        await ctx.send(embed=self._placeholder_embed("rolepersist", "Persistent roles not implemented."))
-
-    @commands.hybrid_command(name="clean", help="[Placeholder] Clean bot responses")
-    async def clean(self, ctx: commands.Context, count: int = 15):
-        await ctx.send(embed=self._placeholder_embed("clean", "Message cleanup not implemented (use purge)."))
-
-    @commands.hybrid_command(name="diagnose", help="[Placeholder] Diagnose a command/module")
-    async def diagnose(self, ctx: commands.Context, target: str):
-        await ctx.send(embed=self._placeholder_embed("diagnose", f"Diagnostics for '{target}' not implemented."))
-
-    @commands.hybrid_command(name="star", help="[Placeholder] Starboard message stats")
-    async def star(self, ctx: commands.Context, message_id: int):
-        await ctx.send(embed=self._placeholder_embed("star", "Integration with starboard not implemented."))
+    @commands.hybrid_command(name="clean", help="Delete bot messages and command invocations")
+    @app_commands.describe(count="Number of messages to check (default 100)")
+    @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
+    async def clean(self, ctx: commands.Context, count: int = 100):
+        """Delete bot messages and command invocations from the channel"""
+        if count < 1 or count > 1000:
+            return await ctx.send("❌ Count must be between 1 and 1000.")
+        
+        if not isinstance(ctx.channel, discord.TextChannel):
+            return await ctx.send("❌ This command can only be used in text channels.")
+        
+        def is_bot_message(msg):
+            return msg.author.bot or msg.content.startswith(('/', '!', '?'))
+        
+        try:
+            deleted = await ctx.channel.purge(limit=count, check=is_bot_message)
+            
+            embed = discord.Embed(
+                title="🧹 Cleaned Messages",
+                description=f"Deleted {len(deleted)} bot/command messages from the last {count} messages.",
+                color=discord.Color.green()
+            )
+            embed.set_footer(text=f"Cleaned by {ctx.author}")
+            
+            # Send confirmation and delete it after 5 seconds
+            msg = await ctx.send(embed=embed)
+            await msg.delete(delay=5)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to delete messages.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to clean messages: {str(e)}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ModerationExtended(bot))

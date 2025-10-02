@@ -167,12 +167,12 @@ class DataPersistenceManager:
     
     async def backup_database(self, db_path: str) -> Dict[str, Any]:
         """Backup a SQLite database to JSON format"""
-        db_backup = {"tables": {}}
+        db_backup: Dict[str, Any] = {"tables": {}}
         
         try:
             async with aiosqlite.connect(db_path) as db:
-                # Get all table names
-                async with db.execute("SELECT name FROM sqlite_master WHERE type='table'") as cursor:
+                # Get all table names (excluding internal SQLite tables)
+                async with db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'") as cursor:
                     tables = await cursor.fetchall()
                 
                 for (table_name,) in tables:
@@ -215,6 +215,10 @@ class DataPersistenceManager:
             async with aiosqlite.connect(db_path) as db:
                 for table_name, table_info in backup_data.get("tables", {}).items():
                     if "error" in backup_data:
+                        continue
+                    
+                    # Skip internal SQLite tables
+                    if table_name in ['sqlite_sequence', 'sqlite_stat1', 'sqlite_stat2', 'sqlite_stat3', 'sqlite_stat4']:
                         continue
                         
                     schema = table_info.get("schema", [])
