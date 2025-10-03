@@ -16,13 +16,16 @@ class AdvancedModeration(commands.Cog):
         self.bot = bot
         # Rate limiting for safety
         self.command_cooldowns = defaultdict(list)
+        # Automod disabled by user request
         self.automod_settings = {
-            'invite_links': True,
-            'excessive_caps': True,
-            'excessive_mentions': True,
+            'invite_links': False,
+            'excessive_caps': False,
+            'excessive_mentions': False,
             'banned_words': [],
-            'auto_dehoist': True
+            'auto_dehoist': False
         }
+        # Logging channel ID
+        self.log_channel_id = 1399746928585085068
         
     def _check_rate_limit(self, user_id: int, command: str, max_uses: int = 5, window: int = 60) -> bool:
         """Check if user is rate limited for a command (safety mechanism)"""
@@ -37,6 +40,15 @@ class AdvancedModeration(commands.Cog):
         
         user_commands.append(now)
         return True
+
+    async def _log_action(self, guild: discord.Guild, embed: discord.Embed):
+        """Log moderation action to designated channel"""
+        try:
+            log_channel = self.bot.get_channel(self.log_channel_id)
+            if log_channel:
+                await log_channel.send(embed=embed)
+        except Exception:
+            pass  # Silently fail if logging fails
 
     @commands.hybrid_command(name="automod")
     @commands.has_permissions(administrator=True)
@@ -140,6 +152,20 @@ class AdvancedModeration(commands.Cog):
             
             await ctx.send(embed=embed)
             
+            # Log to designated channel
+            log_embed = discord.Embed(
+                title="🔨 Temporary Ban Issued",
+                description=f"**{member}** was temporarily banned",
+                color=0xe74c3c
+            )
+            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
+            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
+            log_embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
+            log_embed.add_field(name="Reason", value=reason, inline=False)
+            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
+            log_embed.timestamp = datetime.now()
+            await self._log_action(ctx.guild, log_embed)
+            
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to ban this member", ephemeral=True)
         except Exception as e:
@@ -191,6 +217,20 @@ class AdvancedModeration(commands.Cog):
             
             await ctx.send(embed=embed)
             
+            # Log to designated channel
+            log_embed = discord.Embed(
+                title="🔇 Member Muted",
+                description=f"**{member}** was muted",
+                color=0xf39c12
+            )
+            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
+            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
+            log_embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
+            log_embed.add_field(name="Reason", value=reason, inline=False)
+            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
+            log_embed.timestamp = datetime.now()
+            await self._log_action(ctx.guild, log_embed)
+            
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to timeout this member", ephemeral=True)
         except Exception as e:
@@ -212,6 +252,18 @@ class AdvancedModeration(commands.Cog):
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
             
             await ctx.send(embed=embed)
+            
+            # Log to designated channel
+            log_embed = discord.Embed(
+                title="🔊 Member Unmuted",
+                description=f"**{member}** was unmuted",
+                color=0x2ecc71
+            )
+            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
+            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
+            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
+            log_embed.timestamp = datetime.now()
+            await self._log_action(ctx.guild, log_embed)
             
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to remove timeout from this member", ephemeral=True)
@@ -293,86 +345,15 @@ class AdvancedModeration(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        """Advanced automod message scanning"""
-        if message.author.bot or not message.guild:
-            return
-            
-        # Skip if user has manage messages permission
-        if isinstance(message.author, discord.Member) and message.author.guild_permissions.manage_messages:
-            return
-        
-        actions_taken = []
-        
-        # Check for invite links
-        if self.automod_settings['invite_links']:
-            invite_pattern = r'discord\.gg/[a-zA-Z0-9]+|discordapp\.com/invite/[a-zA-Z0-9]+'
-            if re.search(invite_pattern, message.content, re.IGNORECASE):
-                actions_taken.append("Deleted message with invite link")
-                try:
-                    await message.delete()
-                    await message.channel.send(f"{message.author.mention}, posting invite links is not allowed.", delete_after=5)
-                except:
-                    pass
-        
-        # Check for excessive caps (>70% caps in messages >10 chars)
-        if self.automod_settings['excessive_caps'] and len(message.content) > 10:
-            caps_ratio = sum(1 for c in message.content if c.isupper()) / len(message.content)
-            if caps_ratio > 0.7:
-                actions_taken.append("Deleted message with excessive caps")
-                try:
-                    await message.delete()
-                    await message.channel.send(f"{message.author.mention}, please don't use excessive caps.", delete_after=5)
-                except:
-                    pass
-        
-        # Check for excessive mentions (>5 mentions)
-        if self.automod_settings['excessive_mentions']:
-            total_mentions = len(message.mentions) + len(message.role_mentions)
-            if total_mentions > 5:
-                actions_taken.append("Deleted message with excessive mentions")
-                try:
-                    await message.delete()
-                    await message.channel.send(f"{message.author.mention}, please don't mention too many users/roles.", delete_after=5)
-                except:
-                    pass
-        
-        # Log actions if any were taken
-        if actions_taken:
-            try:
-                log_channel = discord.utils.get(message.guild.text_channels, name="automod-logs")
-                if log_channel:
-                    embed = discord.Embed(
-                        title="🤖 Automod Action",
-                        description=f"Actions taken in {message.channel.mention}",
-                        color=0xf39c12
-                    )
-                    embed.add_field(name="User", value=f"{message.author} ({message.author.id})", inline=True)
-                    embed.add_field(name="Actions", value="\n".join(actions_taken), inline=False)
-                    embed.set_footer(text=f"Message ID: {message.id}")
-                    await log_channel.send(embed=embed)
-            except:
-                pass
+        """Advanced automod message scanning - DISABLED BY USER REQUEST"""
+        # All automod features disabled per user request
+        pass
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        """Auto-dehoist (remove special characters from start of nickname)"""
-        if not self.automod_settings['auto_dehoist']:
-            return
-            
-        if before.display_name == after.display_name:
-            return
-            
-        # Check if nickname starts with special characters
-        if after.display_name and ord(after.display_name[0]) < 48:  # ASCII before '0'
-            try:
-                # Remove leading special characters
-                clean_name = after.display_name.lstrip('!@#$%^&*()_+-=[]{}|;:,.<>?')
-                if not clean_name:
-                    clean_name = f"Moderated Nickname {after.id % 1000}"
-                
-                await after.edit(nick=clean_name, reason="Auto-dehoist: Removed special characters")
-            except:
-                pass
+        """Auto-dehoist - DISABLED BY USER REQUEST"""
+        # Auto-dehoist disabled per user request
+        pass
 
 async def setup(bot):
     await bot.add_cog(AdvancedModeration(bot))
