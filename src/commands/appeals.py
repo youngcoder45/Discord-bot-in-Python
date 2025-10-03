@@ -12,10 +12,100 @@ from utils.database import DATABASE_NAME
 from utils.embeds import create_error_embed, create_success_embed, create_info_embed
 
 class Appeals(commands.Cog):
-    """Unban appeal system"""
+    """Unban appeal system with auto-DM for moderation actions"""
     
     def __init__(self, bot):
         self.bot = bot
+    
+    async def _send_appeal_form(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str | None = None):
+        """Send modern appeal form DM to user"""
+        try:
+            embed = discord.Embed(
+                title="Moderation Action Appeal",
+                description=f"You have been {action_type} from **{guild.name}**. If you believe this action was taken in error or would like to appeal, please read the information below.",
+                color=0x5865F2  # Discord Blurple
+            )
+            
+            if reason and reason != "No reason provided":
+                embed.add_field(
+                    name="Reason",
+                    value=reason,
+                    inline=False
+                )
+            
+            embed.add_field(
+                name="Appeal Process",
+                value="To submit an appeal, simply reply to this message with:\n"
+                      "• A detailed explanation of what happened\n"
+                      "• Why you believe the action was incorrect\n"
+                      "• What you will do differently in the future",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="Guidelines",
+                value="• Be respectful and honest in your appeal\n"
+                      "• Provide specific details about the situation\n"
+                      "• Appeals are reviewed within 24-48 hours\n"
+                      "• Only one appeal per action is allowed",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="Alternative Contact",
+                value=f"If you're unable to use this system, you can contact server moderators through other means if available.",
+                inline=False
+            )
+            
+            embed.set_footer(text=f"Server: {guild.name} | Appeal System")
+            
+            await user.send(embed=embed)
+            
+        except discord.Forbidden:
+            # User has DMs disabled, silently fail
+            pass
+        except Exception:
+            # Any other error, silently fail
+            pass
+
+    @commands.Cog.listener()
+    async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
+        """Auto-send appeal forms for kick and ban actions"""
+        if not entry.target or not isinstance(entry.target, (discord.User, discord.Member)):
+            return
+        
+        # Check for kick or ban actions (timeout detection is complex, so we'll skip it for now)
+        action_type = None
+        if entry.action == discord.AuditLogAction.kick:
+            action_type = "kicked"
+        elif entry.action == discord.AuditLogAction.ban:
+            action_type = "banned"
+        
+        if action_type:
+            # Send appeal form
+            await self._send_appeal_form(
+                user=entry.target,
+                guild=entry.guild,
+                action_type=action_type,
+                reason=entry.reason
+            )
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        """Handle timeout detection via member update"""
+        # Check if member was timed out (timed_out_until was added)
+        # In some discord.py versions it might be 'timed_out_until' or 'timeout'
+        before_timeout = getattr(before, 'timed_out_until', None) or getattr(before, 'timeout', None)
+        after_timeout = getattr(after, 'timed_out_until', None) or getattr(after, 'timeout', None)
+        
+        if before_timeout is None and after_timeout is not None:
+            # Member was just timed out
+            await self._send_appeal_form(
+                user=after,
+                guild=after.guild,
+                action_type="timed out",
+                reason="Timeout applied"
+            )
 
     @commands.Cog.listener()
     async def on_message(self, message):
