@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-03T07:39:26.135977+00:00",
+  "timestamp": "2025-10-03T08:14:58.415721+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -1029,6 +1029,366 @@
             ]
           ],
           "data": []
+        },
+        "mod_points": {
+          "schema": [
+            [
+              0,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              1
+            ],
+            [
+              1,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              2
+            ],
+            [
+              2,
+              "points",
+              "INTEGER",
+              1,
+              "0",
+              0
+            ],
+            [
+              3,
+              "period",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "last_updated",
+              "TIMESTAMP",
+              1,
+              null,
+              0
+            ]
+          ],
+          "data": [
+            {
+              "guild_id": 1263067254153805905,
+              "user_id": 1062747923294716006,
+              "points": 0,
+              "period": "2025-10",
+              "last_updated": "2025-10-03 07:40:11.400903+00:00"
+            },
+            {
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "points": 65,
+              "period": "2025-10",
+              "last_updated": "2025-10-03 07:53:54.618095+00:00"
+            },
+            {
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "points": 40,
+              "period": "2025-10",
+              "last_updated": "2025-10-03 07:53:16.213672+00:00"
+            }
+          ]
+        },
+        "mod_point_bans": {
+          "schema": [
+            [
+              0,
+              "id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "created_at",
+              "TIMESTAMP",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "reason",
+              "TEXT",
+              0,
+              null,
+              0
+            ],
+            [
+              5,
+              "points_at_creation",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              6,
+              "status",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              7,
+              "approver_one",
+              "INTEGER",
+              0,
+              null,
+              0
+            ],
+            [
+              8,
+              "approver_two",
+              "INTEGER",
+              0,
+              null,
+              0
+            ],
+            [
+              9,
+              "finalized_at",
+              "TIMESTAMP",
+              0,
+              null,
+              0
+            ]
+          ],
+          "data": []
+        },
+        "sqlite_sequence": {
+          "schema": [
+            [
+              0,
+              "name",
+              "",
+              0,
+              null,
+              0
+            ],
+            [
+              1,
+              "seq",
+              "",
+              0,
+              null,
+              0
+            ]
+          ],
+          "data": [
+            {
+              "name": "mod_cases",
+              "seq": 11
+            }
+          ]
+        },
+        "mod_point_config": {
+          "schema": [
+            [
+              0,
+              "guild_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "fallback_points",
+              "INTEGER",
+              1,
+              "80",
+              0
+            ]
+          ],
+          "data": []
+        },
+        "mod_cases": {
+          "schema": [
+            [
+              0,
+              "id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "moderator_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "action",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              5,
+              "reason",
+              "TEXT",
+              0,
+              null,
+              0
+            ],
+            [
+              6,
+              "created_at",
+              "TIMESTAMP",
+              1,
+              null,
+              0
+            ]
+          ],
+          "data": [
+            {
+              "id": 1,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 10 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:46:22.046280+00:00"
+            },
+            {
+              "id": 2,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 20 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:46:40.055807+00:00"
+            },
+            {
+              "id": 3,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 30 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:47:27.887556+00:00"
+            },
+            {
+              "id": 4,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 40 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:47:36.827933+00:00"
+            },
+            {
+              "id": 5,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 10 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:52:02.167977+00:00"
+            },
+            {
+              "id": 6,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 20 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:52:29.492611+00:00"
+            },
+            {
+              "id": 7,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 30 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:52:39.556707+00:00"
+            },
+            {
+              "id": 8,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 50 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:53:09.513394+00:00"
+            },
+            {
+              "id": 9,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 40 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:53:16.239763+00:00"
+            },
+            {
+              "id": 10,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+10 -> 60 | Spam detection (duplicate messages)",
+              "created_at": "2025-10-03 07:53:22.711191+00:00"
+            },
+            {
+              "id": 11,
+              "guild_id": 1263067254153805905,
+              "user_id": 955695820999639120,
+              "moderator_id": 1399720532513132556,
+              "action": "POINTS",
+              "reason": "+5 -> 65 | Excessive caps",
+              "created_at": "2025-10-03 07:53:54.647013+00:00"
+            }
+          ]
         }
       }
     }
@@ -1620,7 +1980,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-10-03T07:39:26.143841+00:00",
+    "last_backup": "2025-10-03T08:14:58.501660+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
