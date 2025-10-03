@@ -20,6 +20,9 @@ class PointApprovalView(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         # Only allow users with ban_members to interact
+        if not isinstance(interaction.user, discord.Member):
+            await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
+            return False
         if not interaction.user.guild_permissions.ban_members:
             await interaction.response.send_message("❌ You don't have permission to approve this.", ephemeral=True)
             return False
@@ -91,6 +94,8 @@ class PointModeration(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self._ensure_schema()
+        # Expose for external modules needing point additions
+        setattr(bot, 'point_system', self)
 
     # ---------- Database Schema ----------
     def _connect(self):
