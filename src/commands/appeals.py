@@ -146,6 +146,21 @@ class Appeals(commands.Cog):
                 action_type="timed out",
                 reason=reason
             )
+            
+            # Also notify in moderation log channel that appeal DM was sent
+            log_channel = self.bot.get_channel(1399746928585085068)
+            if log_channel:
+                embed = discord.Embed(
+                    title="📨 Appeal DM Sent",
+                    description=f"Auto-sent appeal form to {after.mention} for timeout",
+                    color=0x3498db
+                )
+                embed.add_field(name="User", value=f"{after} ({after.id})", inline=True)
+                embed.add_field(name="Timeout Until", value=f"<t:{int(after_timeout.timestamp())}:F>", inline=True)
+                embed.add_field(name="Reason", value=reason, inline=False)
+                embed.add_field(name="Next Steps", value="User can reply to the DM to submit an appeal", inline=False)
+                embed.timestamp = discord.utils.utcnow()
+                await log_channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -199,18 +214,19 @@ class Appeals(commands.Cog):
             embed.set_footer(text="Professional Moderation System")
             await message.author.send(embed=embed)
             
-            # Notify staff in appeals channel
-            appeals_channel_id = 1396353386429026304
+            # Notify staff in appeals channel (using moderation log channel)
+            appeals_channel_id = 1399746928585085068  # Moderation log channel
             appeals_channel = self.bot.get_channel(appeals_channel_id)
             if appeals_channel:
                 embed_staff = discord.Embed(
-                    title="New Appeal Submitted",
+                    title="📨 New Appeal Submitted",
                     description=f"Appeal #{appeal_id} from {message.author}",
                     color=0x3498db
                 )
                 embed_staff.add_field(name="User", value=f"{message.author} ({message.author.id})", inline=True)
                 embed_staff.add_field(name="Appeal Content", value=message.content[:500] + "..." if len(message.content) > 500 else message.content, inline=False)
-                embed_staff.add_field(name="Review Commands", value="`?appeals` to view all\n`?approve <id>` to approve\n`?deny <id> <reason>` to deny", inline=False)
+                embed_staff.add_field(name="Review Commands", value="`/appeals` to view all\n`/approve <id>` to approve\n`/deny <id> <reason>` to deny", inline=False)
+                embed_staff.timestamp = discord.utils.utcnow()
                 await appeals_channel.send(embed=embed_staff)
 
     @commands.hybrid_command(name="appeals")
@@ -258,7 +274,7 @@ class Appeals(commands.Cog):
                 inline=False
             )
         
-        embed.set_footer(text=f"Use ?approve <id> or ?deny <id> <reason> to process appeals")
+        embed.set_footer(text=f"Use /approve <id> or /deny <id> <reason> to process appeals")
         await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="approve")
