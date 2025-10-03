@@ -321,8 +321,8 @@ class HelpView(discord.ui.View):
             name="📊 Quick Stats",
             value=(
                 f"**Total Commands:** {total_commands}\n"
-                f"**Categories:** 10+\n"
-                f"**Server Exclusive:** Professional features\n"
+                f"**Categories:** 7\n"
+                f"**Server Exclusive:** Professional moderation\n"
                 f"**Uptime:** {self.get_uptime()}"
             ),
             inline=True
@@ -335,8 +335,8 @@ class HelpView(discord.ui.View):
                 "• `/help` - This help menu\n"
                 "• `/ping` - Check bot status\n"
                 "• `/afk` - Set away message\n"
-                "• `/quote` - Programming quotes\n"
-                "• `/joke` - Programming humor"
+                "• `/tempban` - Temporary bans\n"
+                "• `/points` - Check mod points"
             ),
             inline=True
         )
@@ -388,38 +388,20 @@ class HelpDropdown(discord.ui.Select):
                 emoji="😴"
             ),
             discord.SelectOption(
-                label="🎪 Community & Learning", 
-                description="Quotes, questions, memes, and suggestions",
-                value="community",
-                emoji="🎪"
-            ),
-            discord.SelectOption(
-                label="🎮 Fun & Games",
-                description="Entertainment commands and mini-games",
-                value="fun",
-                emoji="🎮"
-            ),
-            discord.SelectOption(
-                label="💻 Programming Utilities",
-                description="Code snippets, regex, encoding, and more",
-                value="programming",
-                emoji="💻"
-            ),
-            discord.SelectOption(
                 label="🛡️ Moderation",
-                description="Basic and advanced moderation tools",
+                description="Complete moderation and safety tools",
                 value="moderation",
                 emoji="🛡️"
             ),
             discord.SelectOption(
                 label="⭐ Staff Systems",
-                description="Points, shifts, elections, and management",
+                description="Points, shifts, and staff management",
                 value="staff",
                 emoji="⭐"
             ),
             discord.SelectOption(
                 label="🎨 Embed Tools",
-                description="Create and edit beautiful embeds",
+                description="Create and edit server announcements",
                 value="embeds",
                 emoji="🎨"
             ),
@@ -455,9 +437,6 @@ class HelpDropdown(discord.ui.Select):
         embeds = {
             "core": self.get_core_embed(),
             "afk": self.get_afk_embed(),
-            "community": self.get_community_embed(),
-            "fun": self.get_fun_embed(),
-            "programming": self.get_programming_embed(),
             "moderation": self.get_moderation_embed(),
             "staff": self.get_staff_embed(),
             "embeds": self.get_embeds_embed(),
@@ -527,79 +506,6 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.set_footer(text="AFK status persists across bot restarts")
-        return embed
-    
-    def get_community_embed(self):
-        """Community commands embed"""
-        embed = discord.Embed(
-            title="🎪 Community & Learning",
-            description="Educational content and community interaction",
-            color=0x9B59B6
-        )
-        
-        commands = [
-            ("**`/quote`**", "Get inspirational programming quotes and wisdom"),
-            ("**`/question`**", "Random programming questions for learning and practice"),
-            ("**`/meme`**", "Programming memes and humor for the community"),
-            ("**`/suggest <text>`**", "Submit suggestions to bot developers (ephemeral)")
-        ]
-        
-        for cmd, desc in commands:
-            embed.add_field(name=cmd, value=desc, inline=False)
-            
-        embed.set_footer(text="Content refreshes from curated databases")
-        return embed
-    
-    def get_fun_embed(self):
-        """Fun commands embed"""
-        embed = discord.Embed(
-            title="🎮 Fun & Games",
-            description="Entertainment and interactive mini-games",
-            color=0xE91E63
-        )
-        
-        commands = [
-            ("**`/flip`**", "Flip a virtual coin (heads or tails)"),
-            ("**`/roll [sides]`**", "Roll dice with specified sides (default: 6)"),
-            ("**`/8ball <question>`**", "Ask the magic 8-ball a question"),
-            ("**`/choose <choices>`**", "Randomly choose from comma-separated options"),
-            ("**`/compliment [@user]`**", "Send a random compliment to someone"),
-            ("**`/joke`**", "Get programming jokes and humor"),
-            ("**`/dadjoke`**", "Classic dad jokes for the community"),
-            ("**`/fortune`**", "Programming fortune cookies")
-        ]
-        
-        for cmd, desc in commands:
-            embed.add_field(name=cmd, value=desc, inline=False)
-            
-        embed.set_footer(text="All games are family-friendly and professional")
-        return embed
-    
-    def get_programming_embed(self):
-        """Programming utilities embed"""
-        embed = discord.Embed(
-            title="💻 Programming Utilities",
-            description="Developer tools and programming helpers",
-            color=0x3498DB
-        )
-        
-        commands = [
-            ("**`/snippet <lang> <algo>`**", "Code snippets (Python, JS, Java, C++)"),
-            ("**`/encode <format> <text>`**", "Encode text (base64, url, hex, binary)"),
-            ("**`/decode <format> <text>`**", "Decode text (base64, url, hex)"),
-            ("**`/hash <algo> <text>`**", "Generate hashes (md5, sha1, sha256, sha512)"),
-            ("**`/json <text>`**", "Format and validate JSON"),
-            ("**`/regex [pattern]`**", "Common regex patterns (email, phone, etc.)"),
-            ("**`/color <value>`**", "Convert color formats (hex, rgb, names)"),
-            ("**`/uuid [version]`**", "Generate UUIDs (v1, v4)"),
-            ("**`/http [code]`**", "HTTP status code lookup"),
-            ("**`/git [command]`**", "Git command reference")
-        ]
-        
-        for cmd, desc in commands:
-            embed.add_field(name=cmd, value=desc, inline=False)
-            
-        embed.set_footer(text="Perfect for coding assistance and learning")
         return embed
     
     def get_moderation_embed(self):
@@ -710,16 +616,6 @@ class HelpDropdown(discord.ui.Select):
             inline=False
         )
         
-        embed.add_field(
-            name="🗳️ Elections",
-            value=(
-                "**`/election create <title> <candidates> [duration]`** - Create election *(Mod)*\n"
-                "**`/election results`** - View current results\n"
-                "**`/election end`** - Force end election *(Mod)*"
-            ),
-            inline=False
-        )
-        
         embed.set_footer(text="Staff systems include automatic recognition and logging")
         return embed
     
@@ -727,16 +623,14 @@ class HelpDropdown(discord.ui.Select):
         """Embed tools embed"""
         embed = discord.Embed(
             title="🎨 Embed Creation Tools",
-            description="Professional embed creation and editing tools",
+            description="Professional embed creation for server announcements",
             color=0x17A2B8
         )
         
         commands = [
             ("**`/embed`**", "Interactive embed creator with popup form"),
             ("**`/editembed <message_id>`**", "Edit existing embeds made by the bot"),
-            ("**`/embedquick <title> <description> [color]`**", "Quick embed creation"),
-            ("**`/embedrules <rules> [title]`**", "Pre-formatted rules embed"),
-            ("**`/embedhelp`**", "Detailed help for embed creation")
+            ("**`/embedquick <title> <description> [color]`**", "Quick embed creation")
         ]
         
         for cmd, desc in commands:
@@ -747,14 +641,14 @@ class HelpDropdown(discord.ui.Select):
             value=(
                 "• Interactive popup forms\n"
                 "• Color customization\n"
-                "• Image and thumbnail support\n"
-                "• Footer and timestamp options\n"
-                "• Professional formatting"
+                "• Professional formatting\n"
+                "• Server announcements\n"
+                "• Staff communication"
             ),
             inline=False
         )
         
-        embed.set_footer(text="Create beautiful, professional embeds with ease")
+        embed.set_footer(text="Create professional embeds for server announcements")
         return embed
     
     def get_data_embed(self):
