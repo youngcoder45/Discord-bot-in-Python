@@ -98,13 +98,19 @@ class Appeals(commands.Cog):
             return
         if getattr(entry.target, 'bot', False):
             return
+        
+        # Filter out appeal-related audit entries (approval/denial actions)
+        if entry.reason and any(keyword in entry.reason.lower() for keyword in ['appeal', 'approved', 'unbanned', 'untimeout', 'denied']):
+            print(f"[Appeals] Skipped audit log entry with appeal-related reason: {entry.reason}")
+            return
+        
         action_type = None
         if entry.action == discord.AuditLogAction.kick:
             action_type = "kicked"
         elif entry.action == discord.AuditLogAction.ban:
             action_type = "banned"
         elif entry.action == discord.AuditLogAction.member_update:
-            # timeout detection
+            # timeout detection via audit log (backup to on_member_update)
             try:
                 changes = entry.changes
                 if hasattr(changes, 'timed_out_until') or 'timed_out_until' in str(changes):
