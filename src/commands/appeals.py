@@ -142,7 +142,7 @@ class Appeals(commands.Cog):
             print(f"[Appeals] Timeout APPLIED to {after}: before={before_timeout}, after={after_timeout}, reason={reason}")
             await self._send_appeal_form(after, after.guild, "timed out", reason)
             # Log channel notification
-            for cid in (1423635286520500406, 1399746928585085068):
+            for cid in (1423642446616592385, 1399746928585085068):
                 ch = self.bot.get_channel(cid)
                 if ch:
                     embed = discord.Embed(
@@ -249,11 +249,11 @@ class Appeals(commands.Cog):
             pass
         # Staff channel notify
         staff_channel = None
-        for cid in (1423635286520500406, 1399746928585085068):
+        for cid in (1423642446616592385, 1399746928585085068):
             ch = self.bot.get_channel(cid)
             if ch:
                 staff_channel = ch
-                if cid != 1423635286520500406:
+                if cid != 1423642446616592385:
                     print(f"[Appeals] Using fallback staff channel {cid}")
                 break
         if not staff_channel:
