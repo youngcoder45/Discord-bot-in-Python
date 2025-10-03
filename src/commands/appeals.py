@@ -160,21 +160,18 @@ class Appeals(commands.Cog):
             await message.author.send(embed=embed)
             
             # Notify staff in appeals channel
-            for guild in self.bot.guilds:
-                staff_role = guild.get_role(MODERATION_ROLE_ID)
-                if staff_role:
-                    for channel in guild.text_channels:
-                        if 'appeal' in channel.name.lower() or 'staff' in channel.name.lower():
-                            embed_staff = discord.Embed(
-                                title="New Appeal Submitted",
-                                description=f"Appeal #{appeal_id} from {message.author}",
-                                color=0x3498db
-                            )
-                            embed_staff.add_field(name="User", value=f"{message.author} ({message.author.id})", inline=True)
-                            embed_staff.add_field(name="Appeal Content", value=message.content[:500] + "..." if len(message.content) > 500 else message.content, inline=False)
-                            embed_staff.add_field(name="Review Commands", value="`!appeals` to view all\n`!approve <id>` to approve\n`!deny <id> <reason>` to deny", inline=False)
-                            await channel.send(embed=embed_staff)
-                            break
+            appeals_channel_id = 1396353386429026304
+            appeals_channel = self.bot.get_channel(appeals_channel_id)
+            if appeals_channel:
+                embed_staff = discord.Embed(
+                    title="New Appeal Submitted",
+                    description=f"Appeal #{appeal_id} from {message.author}",
+                    color=0x3498db
+                )
+                embed_staff.add_field(name="User", value=f"{message.author} ({message.author.id})", inline=True)
+                embed_staff.add_field(name="Appeal Content", value=message.content[:500] + "..." if len(message.content) > 500 else message.content, inline=False)
+                embed_staff.add_field(name="Review Commands", value="`?appeals` to view all\n`?approve <id>` to approve\n`?deny <id> <reason>` to deny", inline=False)
+                await appeals_channel.send(embed=embed_staff)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -220,7 +217,7 @@ class Appeals(commands.Cog):
                 inline=False
             )
         
-        embed.set_footer(text=f"Use !approve <id> or !deny <id> <reason> to process appeals")
+        embed.set_footer(text=f"Use ?approve <id> or ?deny <id> <reason> to process appeals")
         await ctx.send(embed=embed)
 
     @commands.command()
