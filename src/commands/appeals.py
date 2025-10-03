@@ -41,19 +41,49 @@ class Appeals(commands.Cog):
                 for uid, _ in oldest:
                     del self._timeout_dedupe_cache[uid]
             
+            # Modern, professional appeal form
             embed = discord.Embed(
-                title="Moderation Action Appeal",
-                description=f"You have been {action_type} from **{guild.name}**.",
+                title="⚖️ Moderation Appeal System",
+                description=f"## You have been **{action_type}** from {guild.name}\n\nWe understand mistakes happen. You have the right to appeal this decision.",
                 color=0x5865F2
             )
+            
             if reason and reason != "No reason provided":
-                embed.add_field(name="Reason", value=reason, inline=False)
+                embed.add_field(
+                    name="📋 Reason for Action",
+                    value=f"```{reason}```",
+                    inline=False
+                )
+            
             embed.add_field(
-                name="How to Appeal",
-                value="Reply to this DM with your explanation (what happened, why it shouldn't have happened, what you'll do differently).",
+                name="📝 How to Submit Your Appeal",
+                value=(
+                    "**Simply reply to this DM** with your appeal. Include:\n"
+                    "• What happened from your perspective\n"
+                    "• Why you believe this action was unwarranted\n"
+                    "• What you'll do differently moving forward"
+                ),
                 inline=False
             )
-            embed.set_footer(text=f"Server: {guild.name} | Appeal System")
+            
+            embed.add_field(
+                name="⏱️ Processing Time",
+                value="Staff typically review appeals within 24-48 hours.",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="✅ Next Steps",
+                value="Your appeal will be forwarded to our moderation team.",
+                inline=True
+            )
+            
+            embed.set_footer(
+                text=f"{guild.name} • Professional Moderation System",
+                icon_url=guild.icon.url if guild.icon else None
+            )
+            embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
+            
             await user.send(embed=embed)
             print(f"[Appeals] Sent appeal form to {user} for {action_type}")
         except discord.Forbidden:
@@ -88,6 +118,7 @@ class Appeals(commands.Cog):
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         if after.bot:
             return
+        # Only send appeal form when timeout is APPLIED (not removed)
         if before.timed_out_until is None and after.timed_out_until is not None:
             reason = "Timeout applied"
             try:
@@ -304,12 +335,24 @@ class Appeals(commands.Cog):
             # DM user if possible
             if user:
                 try:
-                    dm = discord.Embed(title="Appeal Approved", color=0x2ecc71)
-                    dm.add_field(name="Appeal ID", value=f"#{appeal_id}", inline=True)
-                    dm.add_field(name="Result", value=action_taken or 'Processed', inline=True)
-                    dm.add_field(name="Reason", value=reason, inline=False)
-                    dm.add_field(name="Note", value="Please continue following the rules.", inline=False)
-                    dm.set_footer(text="Professional Moderation System")
+                    dm = discord.Embed(
+                        title="✅ Appeal Approved",
+                        description=f"## Your appeal has been reviewed and **approved**\n\nWelcome back to **{ctx.guild.name}**! We're glad to have you return.",
+                        color=0x2ecc71
+                    )
+                    dm.add_field(name="📋 Appeal ID", value=f"`#{appeal_id}`", inline=True)
+                    dm.add_field(name="⚡ Result", value=f"**{action_taken or 'Processed'}**", inline=True)
+                    dm.add_field(name="💬 Staff Response", value=f"```{reason}```", inline=False)
+                    dm.add_field(
+                        name="📖 Moving Forward",
+                        value="Please review our community guidelines and ensure compliance with all server rules. We appreciate your cooperation.",
+                        inline=False
+                    )
+                    dm.set_footer(
+                        text=f"{ctx.guild.name} • Professional Moderation Team",
+                        icon_url=ctx.guild.icon.url if ctx.guild.icon else None
+                    )
+                    dm.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
                     await user.send(embed=dm)
                 except Exception:
                     pass
@@ -349,15 +392,23 @@ class Appeals(commands.Cog):
         try:
             user = await self.bot.fetch_user(user_id)
             embed_dm = discord.Embed(
-                title="Appeal Denied",
-                description=f"Your appeal has been denied for **{ctx.guild.name}**.",
+                title="❌ Appeal Denied",
+                description=f"## Your appeal has been reviewed\n\nAfter careful consideration, your appeal for **{ctx.guild.name}** has been denied.",
                 color=0xe74c3c
             )
-            embed_dm.add_field(name="Appeal ID", value=f"#{appeal_id}", inline=True)
-            embed_dm.add_field(name="Denied By", value=str(ctx.author), inline=True)
-            embed_dm.add_field(name="Reason", value=reason, inline=False)
-            embed_dm.add_field(name="Future Appeals", value="You may submit another appeal after reflecting on the reason for denial.", inline=False)
-            embed_dm.set_footer(text="Professional Moderation System")
+            embed_dm.add_field(name="📋 Appeal ID", value=f"`#{appeal_id}`", inline=True)
+            embed_dm.add_field(name="👤 Reviewed By", value=str(ctx.author), inline=True)
+            embed_dm.add_field(name="💬 Staff Response", value=f"```{reason}```", inline=False)
+            embed_dm.add_field(
+                name="🔄 Future Appeals",
+                value="You may submit another appeal after taking time to reflect on the feedback provided. Please ensure any future appeals demonstrate understanding of our guidelines.",
+                inline=False
+            )
+            embed_dm.set_footer(
+                text=f"{ctx.guild.name} • Professional Moderation Team",
+                icon_url=ctx.guild.icon.url if ctx.guild.icon else None
+            )
+            embed_dm.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
             await user.send(embed=embed_dm)
         except:
             pass
