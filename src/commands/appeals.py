@@ -73,16 +73,26 @@ class Appeals(commands.Cog):
 
     @commands.Cog.listener()
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
-        """Auto-send appeal forms for kick and ban actions"""
+        """Auto-send appeal forms for kick, ban, and timeout actions"""
         if not entry.target or not isinstance(entry.target, (discord.User, discord.Member)):
             return
         
-        # Check for kick or ban actions (timeout detection is complex, so we'll skip it for now)
+        # Check for kick, ban, or timeout actions
         action_type = None
         if entry.action == discord.AuditLogAction.kick:
             action_type = "kicked"
         elif entry.action == discord.AuditLogAction.ban:
             action_type = "banned"
+        elif entry.action == discord.AuditLogAction.member_update:
+            # Check if this is a timeout action
+            if hasattr(entry, 'changes'):
+                try:
+                    # Discord.py 2.0+ audit log changes structure
+                    changes_dict = entry.changes
+                    if hasattr(changes_dict, 'timed_out_until') or 'timed_out_until' in str(changes_dict):
+                        action_type = "timed out"
+                except Exception as e:
+                    print(f"Error checking audit log changes: {e}")
         
         if action_type:
             # Send appeal form
@@ -96,18 +106,29 @@ class Appeals(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         """Handle timeout detection via member update"""
-        # Check if member was timed out (timed_out_until was added)
-        # In some discord.py versions it might be 'timed_out_until' or 'timeout'
-        before_timeout = getattr(before, 'timed_out_until', None) or getattr(before, 'timeout', None)
-        after_timeout = getattr(after, 'timed_out_until', None) or getattr(after, 'timeout', None)
+        # Check if member was timed out (using the correct attribute for discord.py 2.0+)
+        before_timeout = before.timed_out_until
+        after_timeout = after.timed_out_until
         
         if before_timeout is None and after_timeout is not None:
             # Member was just timed out
+            print(f"🚨 Timeout detected for {after.display_name} until {after_timeout}")
+            
+            # Get timeout reason from audit log
+            reason = "Timeout applied"
+            try:
+                async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=5):
+                    if entry.target and entry.target.id == after.id:
+                        reason = entry.reason or "Timeout applied"
+                        break
+            except Exception as e:
+                print(f"Could not fetch audit log for timeout: {e}")
+            
             await self._send_appeal_form(
                 user=after,
                 guild=after.guild,
                 action_type="timed out",
-                reason="Timeout applied"
+                reason=reason
             )
 
     @commands.Cog.listener()
@@ -374,6 +395,44 @@ class Appeals(commands.Cog):
         embed.add_field(name="Appeal Content", value=reason[:1000] + "..." if len(reason) > 1000 else reason, inline=False)
         
         await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="test_appeal")
+    @commands.has_permissions(administrator=True)
+    @app_commands.describe(user="User to send a test appeal DM to", action="Type of moderation action (timeout, kick, ban)")
+    async def test_appeal(self, ctx, user: discord.Member, action: str = "timeout"):
+        """Test the appeal DM system by manually sending an appeal form"""
+        valid_actions = ["timeout", "kick", "ban", "timed out", "kicked", "banned"]
+        
+        if action not in valid_actions:
+            embed = create_error_embed("Invalid Action", f"Valid actions: {', '.join(valid_actions)}")
+            await ctx.send(embed=embed)
+            return
+        
+        # Normalize action names
+        action_map = {
+            "timeout": "timed out",
+            "kick": "kicked", 
+            "ban": "banned"
+        }
+        action_type = action_map.get(action, action)
+        
+        try:
+            await self._send_appeal_form(
+                user=user,
+                guild=ctx.guild,
+                action_type=action_type,
+                reason=f"Test {action_type} action from {ctx.author.mention}"
+            )
+            
+            embed = create_success_embed(
+                "Test Appeal Sent",
+                f"Successfully sent test appeal DM to {user.mention} for '{action_type}' action."
+            )
+            await ctx.send(embed=embed)
+            
+        except Exception as e:
+            embed = create_error_embed("Failed to Send Appeal", f"Error: {str(e)}")
+            await ctx.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Appeals(bot))
