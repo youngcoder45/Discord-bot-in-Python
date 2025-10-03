@@ -663,6 +663,19 @@ class HelpDropdown(discord.ui.Select):
             inline=False
         )
         
+        embed.add_field(
+            name="🚀 Advanced Moderation", 
+            value=(
+                "**`/tempban <@user> <minutes> [reason]`** - Temporary ban (max 7 days) *(Ban Members)*\n"
+                "**`/mute <@user> <minutes> [reason]`** - Mute user with timeout *(Moderate Members)*\n"
+                "**`/unmute <@user>`** - Remove timeout *(Moderate Members)*\n"
+                "**`/slowmode <seconds> [#channel]`** - Set slowmode (max 6h) *(Manage Channels)*\n"
+                "**`/automod <feature> <on/off>`** - Configure automod *(Admin)*\n"
+                "**`/modstats [@user]`** - View moderation statistics"
+            ),
+            inline=False
+        )
+        
         embed.set_footer(text="All moderation actions are logged automatically")
         return embed
     
