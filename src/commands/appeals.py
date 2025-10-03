@@ -146,13 +146,59 @@ class Appeals(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        """Phase 1: Accept any first DM as appeal, ignore duplicates."""
+        """Phase 1: Accept any first DM as appeal, ignore duplicates. Verify user is still punished."""
         if not isinstance(message.channel, discord.DMChannel) or message.author.bot:
             return
         content = message.content.strip()
         if not content:
             print(f"[Appeals] Empty DM ignored from {message.author.id}")
             return
+        
+        # Check if user is actually banned or timed out in ANY mutual guild
+        is_punished = False
+        punishment_type = "unknown"
+        guild_name = "the server"
+        
+        for guild in self.bot.guilds:
+            # Check if banned
+            try:
+                await guild.fetch_ban(discord.Object(id=message.author.id))
+                is_punished = True
+                punishment_type = "banned"
+                guild_name = guild.name
+                break
+            except discord.NotFound:
+                pass
+            except Exception:
+                pass
+            
+            # Check if timed out (must be a member)
+            member = guild.get_member(message.author.id)
+            if member and getattr(member, 'timed_out_until', None):
+                is_punished = True
+                punishment_type = "timed out"
+                guild_name = guild.name
+                break
+        
+        # If not punished, reject appeal
+        if not is_punished:
+            try:
+                embed = discord.Embed(
+                    title="❌ No Active Punishment",
+                    description="You don't currently have any active punishments (ban or timeout) in our servers.",
+                    color=0xe74c3c
+                )
+                embed.add_field(
+                    name="ℹ️ Note",
+                    value="Appeals can only be submitted if you have an active punishment. If your punishment was already lifted, no appeal is needed.",
+                    inline=False
+                )
+                await message.author.send(embed=embed)
+            except Exception:
+                pass
+            print(f"[Appeals] DM rejected from {message.author.id} - no active punishment found")
+            return
+        
         conn = sqlite3.connect(DATABASE_NAME)
         cur = conn.cursor()
         cur.execute('SELECT id FROM unban_requests WHERE user_id = ? AND status = "pending"', (message.author.id,))
@@ -172,7 +218,7 @@ class Appeals(commands.Cog):
         conn.commit()
         appeal_id = cur.lastrowid
         conn.close()
-        print(f"[Appeals] New appeal #{appeal_id} stored from {message.author.id}")
+        print(f"[Appeals] New appeal #{appeal_id} stored from {message.author.id} - {punishment_type} in {guild_name}")
         # User confirmation
         try:
             user_embed = discord.Embed(title="Appeal Received", description="Staff will review your appeal.", color=0x3498db)
@@ -196,6 +242,7 @@ class Appeals(commands.Cog):
         staff_embed = discord.Embed(title="📨 New Appeal Submitted", description=f"Appeal #{appeal_id} from {message.author}", color=0x3498db)
         trimmed = content[:500] + ("..." if len(content) > 500 else "")
         staff_embed.add_field(name="User", value=f"{message.author} ({message.author.id})", inline=True)
+        staff_embed.add_field(name="Punishment", value=f"{punishment_type.title()} in {guild_name}", inline=True)
         staff_embed.add_field(name="Content", value=trimmed, inline=False)
         staff_embed.add_field(name="Review", value="/appeals • /approve <id> • /deny <id> <reason>", inline=False)
         try:
