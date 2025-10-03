@@ -180,7 +180,7 @@ class Appeals(commands.Cog):
                 guild_name = guild.name
                 break
         
-        # If not punished, reject appeal
+        # If not punished, auto-close any approved appeals and reject new appeal
         if not is_punished:
             try:
                 embed = discord.Embed(
@@ -201,18 +201,34 @@ class Appeals(commands.Cog):
         
         conn = sqlite3.connect(DATABASE_NAME)
         cur = conn.cursor()
-        cur.execute('SELECT id FROM unban_requests WHERE user_id = ? AND status = "pending"', (message.author.id,))
+        
+        # Check for ANY existing appeal (pending OR approved) - prevents spam and re-appeals after approval
+        cur.execute('SELECT id, status FROM unban_requests WHERE user_id = ? AND status IN ("pending", "approved")', (message.author.id,))
         existing = cur.fetchone()
         if existing:
-            appeal_id = existing[0]
+            appeal_id, appeal_status = existing
             conn.close()
             try:
-                embed = discord.Embed(title="Appeal Already Submitted", description="You already have a pending appeal.", color=0xf39c12)
-                embed.add_field(name="Appeal ID", value=f"#{appeal_id}")
+                if appeal_status == "approved":
+                    embed = discord.Embed(
+                        title="✅ Appeal Already Approved",
+                        description="Your appeal has already been **approved** by our moderation team. You cannot submit additional appeals.",
+                        color=0x2ecc71
+                    )
+                    embed.add_field(name="📋 Appeal ID", value=f"`#{appeal_id}`", inline=True)
+                    embed.add_field(name="ℹ️ Note", value="If you were unbanned/untimeouted, you're all set! No further action needed.", inline=False)
+                else:  # pending
+                    embed = discord.Embed(
+                        title="⏳ Appeal Already Submitted",
+                        description="You already have a **pending** appeal. Please wait for staff review.",
+                        color=0xf39c12
+                    )
+                    embed.add_field(name="📋 Appeal ID", value=f"`#{appeal_id}`", inline=True)
+                    embed.add_field(name="ℹ️ Note", value="Any additional messages sent here will **NOT** be added to your appeal. Staff will review your original submission.", inline=False)
                 await message.author.send(embed=embed)
             except Exception:
                 pass
-            print(f"[Appeals] Duplicate DM ignored for appeal #{appeal_id}")
+            print(f"[Appeals] DM blocked for user {message.author.id} - existing {appeal_status} appeal #{appeal_id}")
             return
         cur.execute('INSERT INTO unban_requests (user_id, reason) VALUES (?, ?)', (message.author.id, content))
         conn.commit()
