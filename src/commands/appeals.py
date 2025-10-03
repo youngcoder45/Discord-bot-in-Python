@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from config import MODERATION_ROLE_ID
 
-from utils.database import DATABASE_NAME
+from utils.database import DATABASE_NAME, init_db
 from utils.embeds import create_error_embed, create_success_embed, create_info_embed
 
 class Appeals(commands.Cog):
@@ -17,6 +17,8 @@ class Appeals(commands.Cog):
     
     def __init__(self, bot):
         self.bot = bot
+        # Ensure database tables exist
+        init_db()
     
     async def _send_appeal_form(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str | None = None):
         """Send modern appeal form DM to user"""
