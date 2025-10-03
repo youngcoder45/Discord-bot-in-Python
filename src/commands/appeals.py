@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import sqlite3
 import sys
 from pathlib import Path
@@ -173,8 +174,9 @@ class Appeals(commands.Cog):
                 embed_staff.add_field(name="Review Commands", value="`?appeals` to view all\n`?approve <id>` to approve\n`?deny <id> <reason>` to deny", inline=False)
                 await appeals_channel.send(embed=embed_staff)
 
-    @commands.command()
+    @commands.hybrid_command(name="appeals")
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(status="Filter appeals by status: pending, approved, denied, or all")
     async def appeals(self, ctx, status: str = "pending"):
         """View appeal requests"""
         valid_statuses = ["pending", "approved", "denied", "all"]
@@ -220,8 +222,12 @@ class Appeals(commands.Cog):
         embed.set_footer(text=f"Use ?approve <id> or ?deny <id> <reason> to process appeals")
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.hybrid_command(name="approve")
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(
+        appeal_id="The ID of the appeal to approve",
+        reason="Reason for approving the appeal"
+    )
     async def approve(self, ctx, appeal_id: int, *, reason: str = "Appeal approved"):
         """Approve an unban appeal"""
         conn = sqlite3.connect(DATABASE_NAME)
@@ -282,8 +288,12 @@ class Appeals(commands.Cog):
             embed = create_error_embed("Error", f"Error processing appeal: {str(e)}")
             await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.hybrid_command(name="deny")
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(
+        appeal_id="The ID of the appeal to deny",
+        reason="Reason for denying the appeal"
+    )
     async def deny(self, ctx, appeal_id: int, *, reason: str = "Appeal denied"):
         """Deny an unban appeal"""
         conn = sqlite3.connect(DATABASE_NAME)
@@ -326,8 +336,9 @@ class Appeals(commands.Cog):
         except:
             pass
 
-    @commands.command()
+    @commands.hybrid_command(name="appealinfo")
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(appeal_id="The ID of the appeal to get information about")
     async def appealinfo(self, ctx, appeal_id: int):
         """Get detailed information about an appeal"""
         conn = sqlite3.connect(DATABASE_NAME)

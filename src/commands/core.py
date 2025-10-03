@@ -638,6 +638,31 @@ class HelpDropdown(discord.ui.Select):
             inline=False
         )
         
+        embed.add_field(
+            name="📋 Appeal System",
+            value=(
+                "**`/appeals [status]`** - View appeal requests *(Admin)*\n"
+                "**`/approve <id> [reason]`** - Approve unban appeal *(Admin)*\n"
+                "**`/deny <id> <reason>`** - Deny unban appeal *(Admin)*\n"
+                "**`/appealinfo <id>`** - Get detailed appeal info *(Admin)*\n"
+                "**Auto-DM:** Appeals sent automatically on kick/ban/timeout"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="⚖️ Point Moderation",
+            value=(
+                "**`/addpoints <@user> <amount> [reason]`** - Add moderation points *(Ban Members)*\n"
+                "**`/points [@user]`** - Check moderation points\n"
+                "**`/pendingbans`** - View pending point bans *(Ban Members)*\n"
+                "**`/approveban <@user>`** - Approve point ban *(Ban Members)*\n"
+                "**`/declineban <@user>`** - Decline point ban *(Ban Members)*\n"
+                "**100 points = Auto-ban** with 2-moderator approval"
+            ),
+            inline=False
+        )
+        
         embed.set_footer(text="All moderation actions are logged automatically")
         return embed
     

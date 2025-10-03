@@ -52,6 +52,31 @@
 | `?addrole <@user> <role> [reason]` / `/addrole <@user> <role> [reason]` | Add role to user | Manage Roles |
 | `?removerole <@user> <role> [reason]` / `/removerole <@user> <role> [reason]` | Remove role from user | Manage Roles |
 
+### Point-Based Moderation System
+**Advanced escalation-based moderation** with monthly resets and approval workflow
+- **`?addpoints <@user> <amount> [reason]`** / **`/addpoints <@user> <amount> [reason]`** - Add moderation points (Ban Members)
+- **`?points [@user]`** / **`/points [@user]`** - Check moderation points for any user
+- **`?pendingbans`** / **`/pendingbans`** - View users with pending point-based bans (Ban Members)
+- **`?approveban <@user>`** / **`/approveban <@user>`** - Approve point-based ban (Ban Members)
+- **`?declineban <@user>`** / **`/declineban <@user>`** - Decline point-based ban (Ban Members)
+- **100-point monthly cap** - Automatic ban request at 100 points
+- **Two-moderator approval** - Requires 2 staff approvals for execution
+- **Monthly reset system** - Points reset on the 1st of each month
+- **Audit logging** - All point actions logged for transparency
+- **Interactive approval** - Discord UI buttons for ban approvals
+
+### Appeal System
+**Professional unban appeal workflow** with auto-DM and staff management
+- **`?appeals [status]`** / **`/appeals [status]`** - View appeal requests by status (Admin)
+- **`?approve <appeal_id> [reason]`** / **`/approve <appeal_id> [reason]`** - Approve unban appeal (Admin)
+- **`?deny <appeal_id> <reason>`** / **`/deny <appeal_id> <reason>`** - Deny unban appeal (Admin)
+- **`?appealinfo <appeal_id>`** / **`/appealinfo <appeal_id>`** - Get detailed appeal information (Admin)
+- **Auto-DM system** - Appeals automatically sent when users are kicked/banned/timed out
+- **Professional embeds** - Clean, modern design without emojis
+- **Staff notifications** - Automatic notifications in designated appeals channel
+- **User guidance** - Clear instructions for appeal process and requirements
+- **Status tracking** - Pending, approved, denied status with timestamps
+
 ### Staff Aura System (Points & Recognition)
 **Comprehensive staff recognition and promotion system** with leaderboards and statistics
 - **`?aura check [@user]`** / **`/aura check [@user]`** - Check aura balance
