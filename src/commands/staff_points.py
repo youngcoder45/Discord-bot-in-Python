@@ -86,7 +86,7 @@ class StaffPoints(commands.Cog):
         if ctx.invoked_subcommand is None:
             # Show user's own aura
             if not ctx.guild or not isinstance(ctx.author, discord.Member):
-                await ctx.send("❌ This command can only be used by server members!", ephemeral=True)
+                await ctx.send(" This command can only be used by server members!", ephemeral=True)
                 return
             await self.show_user_points(ctx, ctx.author)
 
@@ -102,18 +102,18 @@ class StaffPoints(commands.Cog):
         """Add aura to a staff member"""
         guild, author = self.check_guild_context(ctx)
         if amount <= 0 or amount > 1000:
-            await ctx.reply("❌ Points amount must be between 1 and 1000!", ephemeral=True)
+            await ctx.reply(" Points amount must be between 1 and 1000!", ephemeral=True)
             return
             
         # Check if target is staff
         if not await self.is_staff_member(member):
-            await ctx.reply("❌ You can only give points to staff members!", ephemeral=True)
+            await ctx.reply(" You can only give points to staff members!", ephemeral=True)
             return
 
         await self.modify_points(guild.id, member.id, amount, author.id, reason, "add")
         
         embed = create_success_embed(
-            "Points Added! ⭐",
+            "Points Added! ",
             f"**{member.display_name}** received **{amount}** points!\n\n**Reason:** {reason}"
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -140,23 +140,23 @@ class StaffPoints(commands.Cog):
         """Remove points from a staff member"""
         guild, author = self.check_guild_context(ctx)
         if amount <= 0 or amount > 1000:
-            await ctx.reply("❌ Points amount must be between 1 and 1000!", ephemeral=True)
+            await ctx.reply(" Points amount must be between 1 and 1000!", ephemeral=True)
             return
             
         # Check if target is staff
         if not await self.is_staff_member(member):
-            await ctx.reply("❌ You can only remove points from staff members!", ephemeral=True)
+            await ctx.reply(" You can only remove points from staff members!", ephemeral=True)
             return
         
         current_points = await self.get_user_points(guild.id, member.id)
         if amount > current_points:
-            await ctx.reply(f"❌ {member.display_name} only has {current_points} points available!", ephemeral=True)
+            await ctx.reply(f" {member.display_name} only has {current_points} points available!", ephemeral=True)
             return
         
         await self.modify_points(guild.id, member.id, -amount, author.id, reason, "remove")
         
         embed = create_warning_embed(
-            "Points Removed ⚠️",
+            "Points Removed ",
             f"**{member.display_name}** lost **{amount}** points.\n\n**Reason:** {reason}"
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -184,12 +184,12 @@ class StaffPoints(commands.Cog):
         guild, author = self.check_guild_context(ctx)
         
         if amount < 0 or amount > 10000:
-            await ctx.reply("❌ Points amount must be between 0 and 10000!", ephemeral=True)
+            await ctx.reply(" Points amount must be between 0 and 10000!", ephemeral=True)
             return
             
         # Check if target is staff
         if not await self.is_staff_member(member):
-            await ctx.reply("❌ You can only set points for staff members!", ephemeral=True)
+            await ctx.reply(" You can only set points for staff members!", ephemeral=True)
             return
         
         current_points = await self.get_user_points(guild.id, member.id)
@@ -198,7 +198,7 @@ class StaffPoints(commands.Cog):
         await self.set_user_points(guild.id, member.id, amount, author.id, reason)
         
         embed = discord.Embed(
-            title="Points Set 🎯",
+            title="Points Set ",
             description=f"**{member.display_name}**'s points have been set to **{amount}**.\n\n**Reason:** {reason}",
             color=0x3498DB
         )
@@ -250,11 +250,11 @@ class StaffPoints(commands.Cog):
                 history_rows = list(await cursor.fetchall())
         
         if not history_rows:
-            await ctx.reply(f"❌ No points history found for {member.display_name}.", ephemeral=True)
+            await ctx.reply(f" No points history found for {member.display_name}.", ephemeral=True)
             return
         
         embed = discord.Embed(
-            title=f"📊 Points History - {member.display_name}",
+            title=f" Points History - {member.display_name}",
             color=0x3498DB
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -275,7 +275,7 @@ class StaffPoints(commands.Cog):
                 time_str = "Unknown time"
             
             sign = "+" if points_change > 0 else ""
-            emoji = "⭐" if points_change > 0 else "⚠️" if action_type == "remove" else "🎯"
+            emoji = "" if points_change > 0 else "" if action_type == "remove" else ""
             
             history_text += f"{emoji} **{sign}{points_change}** points - {reason}\n"
             history_text += f"   *by {mod_name} • {time_str}*\n\n"
@@ -295,15 +295,16 @@ class StaffPoints(commands.Cog):
             
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute("""
-                SELECT user_id, points, total_earned, last_updated
+                SELECT user_id, MAX(points) as points, MAX(total_earned) as total_earned, MAX(last_updated) as last_updated
                 FROM staff_points 
                 WHERE guild_id = ? AND points > 0
+                GROUP BY user_id
                 ORDER BY points DESC, total_earned DESC
             """, (ctx.guild.id,)) as cursor:
                 leaderboard_rows = list(await cursor.fetchall())
         
         if not leaderboard_rows:
-            await ctx.reply("❌ No staff members with points found!", ephemeral=True)
+            await ctx.reply(" No staff members with points found!", ephemeral=True)
             return
         
         embed = discord.Embed(
@@ -313,10 +314,17 @@ class StaffPoints(commands.Cog):
         )
         
         leaderboard_text = ""
-        for i, (user_id, points, total_earned, last_updated) in enumerate(leaderboard_rows, 1):
+        seen_users = set()  # Track users we've already added to prevent duplicates
+        rank = 1
+        for user_id, points, total_earned, last_updated in leaderboard_rows:
+            if user_id in seen_users:
+                continue  # Skip duplicate entries
+            seen_users.add(user_id)
+            
             user = self.bot.get_user(user_id)
             if user:
-                leaderboard_text += f"{i}. {user.display_name} - {points} aura\n"
+                leaderboard_text += f"{rank}. **{user.name}** - {points} aura\n"
+                rank += 1
         
         if leaderboard_text:
             # Split into chunks if too long
@@ -361,15 +369,15 @@ class StaffPoints(commands.Cog):
                 top_staff = await cursor.fetchall()
         
         if not top_staff:
-            await ctx.reply("❌ No staff members with points found!", ephemeral=True)
+            await ctx.reply(" No staff members with points found!", ephemeral=True)
             return
         
         embed = discord.Embed(
-            title="🏆 Top 3 Staff Members",
+            title=" Top 3 Staff Members",
             color=0xFFD700
         )
         
-        medals = ["🥇", "🥈", "🥉"]
+        medals = ["", "", ""]
         colors = [0xFFD700, 0xC0C0C0, 0xCD7F32]  # Gold, Silver, Bronze
         
         for i, (user_id, points, total_earned) in enumerate(top_staff):
@@ -393,7 +401,7 @@ class StaffPoints(commands.Cog):
             member = ctx.author  # type: ignore
             
         if not await self.is_staff_member(member):
-            await ctx.reply("❌ This command is only for staff members!", ephemeral=True)
+            await ctx.reply(" This command is only for staff members!", ephemeral=True)
             return
         
         async with aiosqlite.connect(self.db_path) as db:
@@ -435,18 +443,18 @@ class StaffPoints(commands.Cog):
         rank = rank_data[0] if rank_data else 1
         
         embed = discord.Embed(
-            title=f"📊 Staff Statistics - {member.display_name}",
+            title=f" Staff Statistics - {member.display_name}",
             color=0x3498DB
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         
         # Basic stats
-        embed.add_field(name="Current Points", value=f"⭐ {points}", inline=True)
-        embed.add_field(name="Leaderboard Rank", value=f"🏆 #{rank}", inline=True)
-        embed.add_field(name="Total Earned", value=f"📈 {total_earned}", inline=True)
+        embed.add_field(name="Current Points", value=f" {points}", inline=True)
+        embed.add_field(name="Leaderboard Rank", value=f" #{rank}", inline=True)
+        embed.add_field(name="Total Earned", value=f" {total_earned}", inline=True)
         
         if total_spent > 0:
-            embed.add_field(name="Total Spent", value=f"💸 {total_spent}", inline=True)
+            embed.add_field(name="Total Spent", value=f" {total_spent}", inline=True)
         
         # Recent activity
         recent_earned = 0
@@ -463,7 +471,7 @@ class StaffPoints(commands.Cog):
         if recent_actions > 0:
             embed.add_field(
                 name="Last 30 Days",
-                value=f"📊 {recent_actions} actions\n⬆️ {recent_earned} earned\n⬇️ {recent_lost} lost",
+                value=f" {recent_actions} actions\n {recent_earned} earned\n {recent_lost} lost",
                 inline=True
             )
         
@@ -472,7 +480,7 @@ class StaffPoints(commands.Cog):
             retention_rate = ((total_earned - total_spent) / total_earned) * 100
             embed.add_field(
                 name="Retention Rate",
-                value=f"💎 {retention_rate:.1f}%",
+                value=f" {retention_rate:.1f}%",
                 inline=True
             )
         
@@ -483,7 +491,7 @@ class StaffPoints(commands.Cog):
         except:
             last_activity = "Unknown"
         
-        embed.add_field(name="Last Updated", value=f"🕒 {last_activity}", inline=True)
+        embed.add_field(name="Last Updated", value=f" {last_activity}", inline=True)
         embed.set_footer(text="Use /points history for detailed activity log")
         
         await ctx.reply(embed=embed)
@@ -500,12 +508,12 @@ class StaffPoints(commands.Cog):
         current_points = await self.get_user_points(ctx.guild.id, member.id)
         
         if current_points == 0:
-            await ctx.reply(f"❌ {member.display_name} already has 0 points!", ephemeral=True)
+            await ctx.reply(f" {member.display_name} already has 0 points!", ephemeral=True)
             return
         
         # Confirm reset
         embed = create_warning_embed(
-            "Confirm Points Reset ⚠️",
+            "Confirm Points Reset ",
             f"Are you sure you want to reset **{member.display_name}**'s points?\n\n"
             f"**Current Points:** {current_points}\n"
             f"**Reason:** {reason}\n\n"
@@ -513,27 +521,47 @@ class StaffPoints(commands.Cog):
         )
         
         view = ConfirmView()
-        message = await ctx.reply(embed=embed, view=view)
         
-        await view.wait()
-        
-        if view.value:
-            await self.set_user_points(ctx.guild.id, member.id, 0, ctx.author.id, reason)
+        # Handle both interaction and prefix contexts
+        if ctx.interaction:
+            await ctx.send(embed=embed, view=view, ephemeral=True)
+            await view.wait()
             
-            embed = create_success_embed(
-                "Points Reset",
-                f"**{member.display_name}**'s points have been reset to 0.\n\n**Reason:** {reason}"
-            )
-            embed.add_field(name="Previous Points", value=f"{current_points} points", inline=True)
-            embed.add_field(name="Reset by", value=ctx.author.mention, inline=True)
-            
-            await message.edit(embed=embed, view=None)
-            
-            # Log the reset
-            await self.log_points_change(ctx.guild, member, -current_points, ctx.author, reason, "reset")
+            if view.value:
+                await self.set_user_points(ctx.guild.id, member.id, 0, ctx.author.id, reason)
+                
+                embed = create_success_embed(
+                    "Points Reset",
+                    f"**{member.display_name}**'s points have been reset to 0.\n\n**Reason:** {reason}"
+                )
+                embed.add_field(name="Previous Points", value=f"{current_points} points", inline=True)
+                embed.add_field(name="Reset by", value=ctx.author.mention, inline=True)
+                
+                await ctx.interaction.edit_original_response(embed=embed, view=None)
+            else:
+                embed = create_error_embed("Reset Cancelled", "Points reset has been cancelled.")
+                await ctx.interaction.edit_original_response(embed=embed, view=None)
         else:
-            embed = create_error_embed("Reset Cancelled", "Points reset has been cancelled.")
-            await message.edit(embed=embed, view=None)
+            message = await ctx.send(embed=embed, view=view)
+            await view.wait()
+            
+            if view.value:
+                await self.set_user_points(ctx.guild.id, member.id, 0, ctx.author.id, reason)
+                
+                embed = create_success_embed(
+                    "Points Reset",
+                    f"**{member.display_name}**'s points have been reset to 0.\n\n**Reason:** {reason}"
+                )
+                embed.add_field(name="Previous Points", value=f"{current_points} points", inline=True)
+                embed.add_field(name="Reset by", value=ctx.author.mention, inline=True)
+                
+                await message.edit(embed=embed, view=None)
+                
+                # Log the reset
+                await self.log_points_change(ctx.guild, member, -current_points, ctx.author, reason, "reset")
+            else:
+                embed = create_error_embed("Reset Cancelled", "Points reset has been cancelled.")
+                await message.edit(embed=embed, view=None)
 
     @aura.command(name="config", description="Configure staff aura settings")
     @app_commands.describe(
@@ -554,7 +582,7 @@ class StaffPoints(commands.Cog):
         
         if action == "channel":
             if value is None:
-                await ctx.reply("❌ Please specify a channel: `/points config channel #channel`", ephemeral=True)
+                await ctx.reply(" Please specify a channel: `/points config channel #channel`", ephemeral=True)
                 return
             
             # Parse channel mention or ID
@@ -570,7 +598,7 @@ class StaffPoints(commands.Cog):
                 return
             
             if channel is None:
-                await ctx.reply("❌ Channel not found!", ephemeral=True)
+                await ctx.reply(" Channel not found!", ephemeral=True)
                 return
             
             await self.set_config(ctx.guild.id, "points_channel_id", channel.id)
@@ -578,7 +606,7 @@ class StaffPoints(commands.Cog):
         
         elif action in ["addrole", "add_role", "role"]:
             if value is None:
-                await ctx.reply("❌ Please specify a role: `/points config addrole @role`", ephemeral=True)
+                await ctx.reply(" Please specify a role: `/points config addrole @role`", ephemeral=True)
                 return
             
             # Parse role mention or ID
@@ -593,14 +621,14 @@ class StaffPoints(commands.Cog):
                 role = discord.utils.get(ctx.guild.roles, name=value)
             
             if role is None:
-                await ctx.reply("❌ Role not found!", ephemeral=True)
+                await ctx.reply(" Role not found!", ephemeral=True)
                 return
             
             await self.add_staff_role(ctx.guild.id, role.id)
             await ctx.reply(f"Added {role.mention} as a staff role.", ephemeral=True)
         
         else:
-            await ctx.reply("❌ Unknown configuration action. Use: `channel`, `addrole`", ephemeral=True)
+            await ctx.reply(" Unknown configuration action. Use: `channel`, `addrole`", ephemeral=True)
 
     # Helper methods
     async def init_user(self, guild_id: int, user_id: int):
@@ -706,7 +734,7 @@ class StaffPoints(commands.Cog):
         points = await self.get_user_points(ctx.guild.id, member.id)
         
         if points == 0 and member != ctx.author:
-            await ctx.reply(f"❌ {member.display_name} has no points recorded.", ephemeral=True)
+            await ctx.reply(f" {member.display_name} has no points recorded.", ephemeral=True)
             return
         
         # Get rank
@@ -721,7 +749,7 @@ class StaffPoints(commands.Cog):
         rank = rank_data[0] if rank_data else 1
         
         embed = discord.Embed(
-            title=f"⭐ {member.display_name}'s Points",
+            title=f" {member.display_name}'s Points",
             color=0xFFD700
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -753,15 +781,15 @@ class StaffPoints(commands.Cog):
         # Create log embed
         if points_change > 0:
             color = 0x00FF00  # Green
-            emoji = "⭐"
+            emoji = ""
             action_text = "Points Added"
         elif action_type == "reset":
             color = 0xFF6600  # Orange
-            emoji = "🔄"
+            emoji = ""
             action_text = "Points Reset"
         else:
             color = 0xFF0000  # Red
-            emoji = "⚠️"
+            emoji = ""
             action_text = "Points Removed"
         
         embed = discord.Embed(
@@ -800,7 +828,7 @@ class StaffPoints(commands.Cog):
                 result = await cursor.fetchone()
         
         embed = discord.Embed(
-            title="⚙️ Staff Points Configuration",
+            title=" Staff Points Configuration",
             color=0x3498DB
         )
         
@@ -924,7 +952,7 @@ class ConfirmView(discord.ui.View):
         self.stop()
         await interaction.response.defer()
     
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="❌")
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.value = False
         self.stop()
