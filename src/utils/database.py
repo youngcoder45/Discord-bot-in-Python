@@ -3,95 +3,104 @@ import discord
 from datetime import datetime
 from config import DATABASE_NAME, MODERATION_POINT_CAP, MODERATION_POINT_RESET_DAYS
 
+# NOTE: This module now acts as a compatibility layer. The new point system lives in
+# `commands/point_moderation.py`. We retain these functions so existing imports
+# (e.g., protection.py) do not crash.
+
 # Global data storage
 moderation_points = {}
 last_reset = datetime.utcnow()
 
 def init_db():
-    """Initialize the database with required tables"""
-    conn = sqlite3.connect(DATABASE_NAME)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS moderation_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id INTEGER,
-            user_id INTEGER,
-            moderator_id INTEGER,
-            action TEXT,
-            reason TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS unban_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            guild_id INTEGER,
-            reason TEXT,
-            status TEXT DEFAULT 'pending',
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS moderation_points (
-            user_id INTEGER PRIMARY KEY,
-            points INTEGER DEFAULT 0,
-            last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+    """Initialize legacy tables if still relied upon by old code."""
+    try:
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS moderation_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id INTEGER,
+                user_id INTEGER,
+                moderator_id INTEGER,
+                action TEXT,
+                reason TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS unban_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                guild_id INTEGER,
+                reason TEXT,
+                status TEXT DEFAULT 'pending',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        # Keep legacy moderation_points for backward compatibility (not authoritative anymore)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS moderation_points (
+                user_id INTEGER PRIMARY KEY,
+                points INTEGER DEFAULT 0,
+                last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 async def log_action(guild_id: int, user_id: int, moderator_id: int, action: str, reason: str):
-    """Log moderation actions to database"""
-    conn = sqlite3.connect(DATABASE_NAME)
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO moderation_log (guild_id, user_id, moderator_id, action, reason)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (guild_id, user_id, moderator_id, action, reason))
-    conn.commit()
-    conn.close()
+    """Log moderation actions to legacy table (best effort)."""
+    try:
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS moderation_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id INTEGER,
+                user_id INTEGER,
+                moderator_id INTEGER,
+                action TEXT,
+                reason TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            INSERT INTO moderation_log (guild_id, user_id, moderator_id, action, reason)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (guild_id, user_id, moderator_id, action, reason))
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 async def add_points(member: discord.Member, points: int, reason: str, moderator: discord.Member | None = None):
-    """Add moderation points to a user"""
-    from utils.embeds import create_points_embed, create_ban_embed
-    
-    user_id = member.id
-    guild_id = member.guild.id
-    moderator_id = moderator.id if moderator else member.guild.me.id
-    
-    # Update points
-    moderation_points[user_id] = moderation_points.get(user_id, 0) + points
-    
-    # Log the action
-    await log_action(guild_id, user_id, moderator_id, f"Added {points} points", reason)
-    
-    # Check if user should be banned
-    if moderation_points[user_id] >= MODERATION_POINT_CAP:
+    """Compatibility wrapper: route to new point system if available, else legacy in-memory fallback."""
+    guild = member.guild
+    moderator_id = (moderator.id if moderator else (guild.me.id if guild and guild.me else member.id))
+    guild_id = guild.id if guild else 0
+
+    # Try new point system
+    point_system = getattr(guild._state._get_client(), 'point_system', None) if guild else None
+    if point_system:
         try:
-            await member.ban(reason=f'Reached {MODERATION_POINT_CAP} moderation points: {reason}')
-            await log_action(guild_id, user_id, moderator_id, "Auto-ban", f"Reached {MODERATION_POINT_CAP} points")
-            
-            # Send DM to banned user
-            try:
-                embed = create_ban_embed(member.guild.name, reason)
-                await member.send(embed=embed)
-            except:
-                pass
-        except discord.Forbidden:
-            pass
-    else:
-        # Send points notification
-        try:
-            embed = create_points_embed(member.guild.name, points, reason, moderation_points[user_id])
-            await member.send(embed=embed)
-        except:
-            pass
+            # Use underlying internal add (amount positive) and attribute action to moderator_id
+            point_system._add_points_internal(guild_id, member.id, moderator_id, points, reason)
+            await log_action(guild_id, member.id, moderator_id, f"Added {points} points (bridge)", reason)
+            return
+        except Exception:
+            pass  # Fallback to legacy path
+
+    # Legacy fallback (non-persistent except for log table)
+    moderation_points[member.id] = moderation_points.get(member.id, 0) + points
+    await log_action(guild_id, member.id, moderator_id, f"Added {points} points (legacy)", reason)
 
 def get_user_points(user_id: int) -> int:
     """Get moderation points for a user"""

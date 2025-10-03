@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import sqlite3
 import sys
 from pathlib import Path
@@ -8,14 +9,158 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from config import MODERATION_ROLE_ID
 
-from utils.database import DATABASE_NAME
+from utils.database import DATABASE_NAME, init_db
 from utils.embeds import create_error_embed, create_success_embed, create_info_embed
 
 class Appeals(commands.Cog):
-    """Unban appeal system"""
+    """Unban appeal system with auto-DM for moderation actions"""
     
     def __init__(self, bot):
         self.bot = bot
+        # Ensure database tables exist
+        init_db()
+    
+    async def _send_appeal_form(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str | None = None):
+        """Send modern appeal form DM to user"""
+        try:
+            # Don't send appeals to bots or the bot itself
+            if user.bot or user.id == self.bot.user.id:
+                print(f"⚠️ Skipping appeal DM - target is a bot: {user}")
+                return
+                
+            embed = discord.Embed(
+                title="Moderation Action Appeal",
+                description=f"You have been {action_type} from **{guild.name}**. If you believe this action was taken in error or would like to appeal, please read the information below.",
+                color=0x5865F2  # Discord Blurple
+            )
+            
+            if reason and reason != "No reason provided":
+                embed.add_field(
+                    name="Reason",
+                    value=reason,
+                    inline=False
+                )
+            
+            embed.add_field(
+                name="Appeal Process",
+                value="To submit an appeal, simply reply to this message with:\n"
+                      "• A detailed explanation of what happened\n"
+                      "• Why you believe the action was incorrect\n"
+                      "• What you will do differently in the future",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="Guidelines",
+                value="• Be respectful and honest in your appeal\n"
+                      "• Provide specific details about the situation\n"
+                      "• Appeals are reviewed within 24-48 hours\n"
+                      "• Only one appeal per action is allowed",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="Alternative Contact",
+                value=f"If you're unable to use this system, you can contact server moderators through other means if available.",
+                inline=False
+            )
+            
+            embed.set_footer(text=f"Server: {guild.name} | Appeal System")
+            
+            print(f"🚨 Sending appeal DM to {user} ({user.id}) for action: {action_type}")
+            await user.send(embed=embed)
+            print(f"✅ Appeal DM sent successfully to {user}")
+            
+        except discord.Forbidden:
+            # User has DMs disabled
+            print(f"❌ Cannot send appeal DM to {user} - DMs disabled or bot blocked")
+        except Exception as e:
+            # Any other error
+            print(f"❌ Error sending appeal DM to {user}: {e}")
+
+    @commands.Cog.listener()
+    async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
+        """Auto-send appeal forms for kick, ban, and timeout actions"""
+        if not entry.target or not isinstance(entry.target, (discord.User, discord.Member)):
+            return
+        
+        # Don't send appeals to bots
+        if entry.target.bot:
+            return
+        
+        # Check for kick, ban, or timeout actions
+        action_type = None
+        if entry.action == discord.AuditLogAction.kick:
+            action_type = "kicked"
+        elif entry.action == discord.AuditLogAction.ban:
+            action_type = "banned"
+        elif entry.action == discord.AuditLogAction.member_update:
+            # Check if this is a timeout action
+            if hasattr(entry, 'changes'):
+                try:
+                    # Discord.py 2.0+ audit log changes structure
+                    changes_dict = entry.changes
+                    if hasattr(changes_dict, 'timed_out_until') or 'timed_out_until' in str(changes_dict):
+                        action_type = "timed out"
+                except Exception as e:
+                    print(f"Error checking audit log changes: {e}")
+        
+        if action_type:
+            # Send appeal form
+            await self._send_appeal_form(
+                user=entry.target,
+                guild=entry.guild,
+                action_type=action_type,
+                reason=entry.reason
+            )
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        """Handle timeout detection via member update"""
+        # Don't process bot updates
+        if after.bot:
+            return
+            
+        # Check if member was timed out (using the correct attribute for discord.py 2.0+)
+        before_timeout = before.timed_out_until
+        after_timeout = after.timed_out_until
+        
+        if before_timeout is None and after_timeout is not None:
+            # Member was just timed out
+            print(f"🚨 TIMEOUT DETECTED for {after.display_name} until {after_timeout}")
+            
+            # Get timeout reason from audit log
+            reason = "Timeout applied"
+            try:
+                async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=5):
+                    if entry.target and entry.target.id == after.id:
+                        reason = entry.reason or "Timeout applied"
+                        break
+            except Exception as e:
+                print(f"Could not fetch audit log for timeout: {e}")
+            
+            print(f"📨 Sending appeal DM to {after.display_name} for timeout: {reason}")
+            await self._send_appeal_form(
+                user=after,
+                guild=after.guild,
+                action_type="timed out",
+                reason=reason
+            )
+            
+            # Also notify in moderation log channel that appeal DM was sent
+            log_channel = self.bot.get_channel(1399746928585085068)
+            if log_channel:
+                embed = discord.Embed(
+                    title="📨 Appeal DM Sent",
+                    description=f"Auto-sent appeal form to {after.mention} for timeout",
+                    color=0x3498db
+                )
+                embed.add_field(name="User", value=f"{after} ({after.id})", inline=True)
+                embed.add_field(name="Timeout Until", value=f"<t:{int(after_timeout.timestamp())}:F>", inline=True)
+                embed.add_field(name="Reason", value=reason, inline=False)
+                embed.add_field(name="Next Steps", value="User can reply to the DM to submit an appeal", inline=False)
+                embed.timestamp = discord.utils.utcnow()
+                await log_channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -69,25 +214,24 @@ class Appeals(commands.Cog):
             embed.set_footer(text="Professional Moderation System")
             await message.author.send(embed=embed)
             
-            # Notify staff in appeals channel
-            for guild in self.bot.guilds:
-                staff_role = guild.get_role(MODERATION_ROLE_ID)
-                if staff_role:
-                    for channel in guild.text_channels:
-                        if 'appeal' in channel.name.lower() or 'staff' in channel.name.lower():
-                            embed_staff = discord.Embed(
-                                title="New Appeal Submitted",
-                                description=f"Appeal #{appeal_id} from {message.author}",
-                                color=0x3498db
-                            )
-                            embed_staff.add_field(name="User", value=f"{message.author} ({message.author.id})", inline=True)
-                            embed_staff.add_field(name="Appeal Content", value=message.content[:500] + "..." if len(message.content) > 500 else message.content, inline=False)
-                            embed_staff.add_field(name="Review Commands", value="`!appeals` to view all\n`!approve <id>` to approve\n`!deny <id> <reason>` to deny", inline=False)
-                            await channel.send(embed=embed_staff)
-                            break
+            # Notify staff in appeals channel (using moderation log channel)
+            appeals_channel_id = 1399746928585085068  # Moderation log channel
+            appeals_channel = self.bot.get_channel(appeals_channel_id)
+            if appeals_channel:
+                embed_staff = discord.Embed(
+                    title="📨 New Appeal Submitted",
+                    description=f"Appeal #{appeal_id} from {message.author}",
+                    color=0x3498db
+                )
+                embed_staff.add_field(name="User", value=f"{message.author} ({message.author.id})", inline=True)
+                embed_staff.add_field(name="Appeal Content", value=message.content[:500] + "..." if len(message.content) > 500 else message.content, inline=False)
+                embed_staff.add_field(name="Review Commands", value="`/appeals` to view all\n`/approve <id>` to approve\n`/deny <id> <reason>` to deny", inline=False)
+                embed_staff.timestamp = discord.utils.utcnow()
+                await appeals_channel.send(embed=embed_staff)
 
-    @commands.command()
+    @commands.hybrid_command(name="appeals")
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(status="Filter appeals by status: pending, approved, denied, or all")
     async def appeals(self, ctx, status: str = "pending"):
         """View appeal requests"""
         valid_statuses = ["pending", "approved", "denied", "all"]
@@ -130,11 +274,15 @@ class Appeals(commands.Cog):
                 inline=False
             )
         
-        embed.set_footer(text=f"Use !approve <id> or !deny <id> <reason> to process appeals")
+        embed.set_footer(text=f"Use /approve <id> or /deny <id> <reason> to process appeals")
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.hybrid_command(name="approve")
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(
+        appeal_id="The ID of the appeal to approve",
+        reason="Reason for approving the appeal"
+    )
     async def approve(self, ctx, appeal_id: int, *, reason: str = "Appeal approved"):
         """Approve an unban appeal"""
         conn = sqlite3.connect(DATABASE_NAME)
@@ -195,8 +343,12 @@ class Appeals(commands.Cog):
             embed = create_error_embed("Error", f"Error processing appeal: {str(e)}")
             await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.hybrid_command(name="deny")
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(
+        appeal_id="The ID of the appeal to deny",
+        reason="Reason for denying the appeal"
+    )
     async def deny(self, ctx, appeal_id: int, *, reason: str = "Appeal denied"):
         """Deny an unban appeal"""
         conn = sqlite3.connect(DATABASE_NAME)
@@ -239,8 +391,9 @@ class Appeals(commands.Cog):
         except:
             pass
 
-    @commands.command()
+    @commands.hybrid_command(name="appealinfo")
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(appeal_id="The ID of the appeal to get information about")
     async def appealinfo(self, ctx, appeal_id: int):
         """Get detailed information about an appeal"""
         conn = sqlite3.connect(DATABASE_NAME)
@@ -274,6 +427,44 @@ class Appeals(commands.Cog):
         embed.add_field(name="Appeal Content", value=reason[:1000] + "..." if len(reason) > 1000 else reason, inline=False)
         
         await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="test_appeal")
+    @commands.has_permissions(administrator=True)
+    @app_commands.describe(user="User to send a test appeal DM to", action="Type of moderation action (timeout, kick, ban)")
+    async def test_appeal(self, ctx, user: discord.Member, action: str = "timeout"):
+        """Test the appeal DM system by manually sending an appeal form"""
+        valid_actions = ["timeout", "kick", "ban", "timed out", "kicked", "banned"]
+        
+        if action not in valid_actions:
+            embed = create_error_embed("Invalid Action", f"Valid actions: {', '.join(valid_actions)}")
+            await ctx.send(embed=embed)
+            return
+        
+        # Normalize action names
+        action_map = {
+            "timeout": "timed out",
+            "kick": "kicked", 
+            "ban": "banned"
+        }
+        action_type = action_map.get(action, action)
+        
+        try:
+            await self._send_appeal_form(
+                user=user,
+                guild=ctx.guild,
+                action_type=action_type,
+                reason=f"Test {action_type} action from {ctx.author.mention}"
+            )
+            
+            embed = create_success_embed(
+                "Test Appeal Sent",
+                f"Successfully sent test appeal DM to {user.mention} for '{action_type}' action."
+            )
+            await ctx.send(embed=embed)
+            
+        except Exception as e:
+            embed = create_error_embed("Failed to Send Appeal", f"Error: {str(e)}")
+            await ctx.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Appeals(bot))

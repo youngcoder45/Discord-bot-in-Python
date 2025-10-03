@@ -24,6 +24,7 @@ intents.message_content = True  # Needed for legacy text commands
 intents.members = True
 intents.guilds = True
 intents.reactions = True
+intents.moderation = True  # Needed for audit log events
 
 # Essential cogs only - Moderation, Management, and Core functionality
 COGS_TO_LOAD = [
@@ -33,7 +34,9 @@ COGS_TO_LOAD = [
     
     # Moderation & Protection (Essential)
     'commands.moderation',    # Advanced moderation with point system (purge, kick, ban, addpoints, etc.)
+    'commands.point_moderation',  # Point-based escalation & two-step ban approvals
     'commands.moderation_extended',  # Extended moderation (serverinfo, userinfo, lockdown, role management, etc.)
+    'commands.advanced_moderation',  # Advanced moderation with automod, tempban, mute, safety features
     'commands.protection',    # Protection features (anti-spam, anti-raid, anti-nuke)
     'commands.appeals',       # Appeal system for bans and mutes
     
