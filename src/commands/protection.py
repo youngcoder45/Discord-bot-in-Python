@@ -31,59 +31,11 @@ class Protection(commands.Cog):
         self.recent_kicks = deque(maxlen=MASS_KICK_THRESHOLD * 2)
         self.recent_deletes = defaultdict(lambda: deque(maxlen=MASS_DELETE_THRESHOLD * 2))
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        """Handle anti-spam checks"""
-        if message.author.bot or not message.guild:
-            return
-        
-        user_id = message.author.id
-        now = time.time()
-        
-        # Check for spam (rate limiting) - auto cleanup old messages
-        self.user_messages[user_id].append(now)
-        # Remove old messages outside the time window
-        while self.user_messages[user_id] and now - self.user_messages[user_id][0] > SPAM_TIME_WINDOW:
-            self.user_messages[user_id].popleft()
-        
-        if len(self.user_messages[user_id]) > SPAM_THRESHOLD:
-            await add_points(message.author, 15, "Spam detection (rate limiting)")
-            try:
-                await message.delete()
-            except:
-                pass
-            return
-        
-        # Check for duplicate messages (simplified - just use content as key)
-        msg_content = message.content.lower()[:100]  # First 100 chars
-        self.user_duplicates[user_id][msg_content] += 1
-        if self.user_duplicates[user_id][msg_content] >= DUPLICATE_THRESHOLD:
-            await add_points(message.author, 10, "Spam detection (duplicate messages)")
-            try:
-                await message.delete()
-            except:
-                pass
-            return
-        
-        # Check for mention spam
-        if len(message.mentions) > MENTION_THRESHOLD:
-            await add_points(message.author, 20, "Mention spam")
-            try:
-                await message.delete()
-            except:
-                pass
-            return
-        
-        # Check for excessive caps
-        if len(message.content) > 10:
-            caps_count = sum(1 for c in message.content if c.isupper())
-            if caps_count / len(message.content) > CAPS_THRESHOLD:
-                await add_points(message.author, 5, "Excessive caps")
-                try:
-                    await message.delete()
-                except:
-                    pass
-                return
+    # @commands.Cog.listener()
+    # async def on_message(self, message):
+    #     """Handle anti-spam checks - DISABLED BY USER REQUEST"""
+    #     # Anti-spam completely removed - user got false flagged for typing "oh" twice
+    #     pass
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
