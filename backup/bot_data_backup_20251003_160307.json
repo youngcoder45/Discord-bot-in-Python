@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-02T08:19:15.893540+00:00",
+  "timestamp": "2025-10-03T10:33:07.358928+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -1538,6 +1538,157 @@
             ]
           ],
           "data": []
+        },
+        "mod_points": {
+          "schema": [
+            [
+              0,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              1
+            ],
+            [
+              1,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              2
+            ],
+            [
+              2,
+              "points",
+              "INTEGER",
+              1,
+              "0",
+              0
+            ],
+            [
+              3,
+              "period",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "last_updated",
+              "TIMESTAMP",
+              1,
+              null,
+              0
+            ]
+          ],
+          "data": []
+        },
+        "mod_point_bans": {
+          "schema": [
+            [
+              0,
+              "id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "guild_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              2,
+              "user_id",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              3,
+              "created_at",
+              "TIMESTAMP",
+              1,
+              null,
+              0
+            ],
+            [
+              4,
+              "reason",
+              "TEXT",
+              0,
+              null,
+              0
+            ],
+            [
+              5,
+              "points_at_creation",
+              "INTEGER",
+              1,
+              null,
+              0
+            ],
+            [
+              6,
+              "status",
+              "TEXT",
+              1,
+              null,
+              0
+            ],
+            [
+              7,
+              "approver_one",
+              "INTEGER",
+              0,
+              null,
+              0
+            ],
+            [
+              8,
+              "approver_two",
+              "INTEGER",
+              0,
+              null,
+              0
+            ],
+            [
+              9,
+              "finalized_at",
+              "TIMESTAMP",
+              0,
+              null,
+              0
+            ]
+          ],
+          "data": []
+        },
+        "mod_point_config": {
+          "schema": [
+            [
+              0,
+              "guild_id",
+              "INTEGER",
+              0,
+              null,
+              1
+            ],
+            [
+              1,
+              "fallback_points",
+              "INTEGER",
+              1,
+              "80",
+              0
+            ]
+          ],
+          "data": []
         }
       }
     }
@@ -2129,7 +2280,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-10-02T08:19:16.041462+00:00",
+    "last_backup": "2025-10-03T10:33:07.425076+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }

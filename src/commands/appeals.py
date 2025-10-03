@@ -62,14 +62,16 @@ class Appeals(commands.Cog):
             
             embed.set_footer(text=f"Server: {guild.name} | Appeal System")
             
+            print(f"🚨 Sending appeal DM to {user} ({user.id}) for action: {action_type}")
             await user.send(embed=embed)
+            print(f"✅ Appeal DM sent successfully to {user}")
             
         except discord.Forbidden:
-            # User has DMs disabled, silently fail
-            pass
-        except Exception:
-            # Any other error, silently fail
-            pass
+            # User has DMs disabled
+            print(f"❌ Cannot send appeal DM to {user} - DMs disabled or bot blocked")
+        except Exception as e:
+            # Any other error
+            print(f"❌ Error sending appeal DM to {user}: {e}")
 
     @commands.Cog.listener()
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
@@ -112,7 +114,7 @@ class Appeals(commands.Cog):
         
         if before_timeout is None and after_timeout is not None:
             # Member was just timed out
-            print(f"🚨 Timeout detected for {after.display_name} until {after_timeout}")
+            print(f"🚨 TIMEOUT DETECTED for {after.display_name} until {after_timeout}")
             
             # Get timeout reason from audit log
             reason = "Timeout applied"
@@ -124,6 +126,7 @@ class Appeals(commands.Cog):
             except Exception as e:
                 print(f"Could not fetch audit log for timeout: {e}")
             
+            print(f"📨 Sending appeal DM to {after.display_name} for timeout: {reason}")
             await self._send_appeal_form(
                 user=after,
                 guild=after.guild,

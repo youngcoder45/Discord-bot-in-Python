@@ -24,6 +24,7 @@ intents.message_content = True  # Needed for legacy text commands
 intents.members = True
 intents.guilds = True
 intents.reactions = True
+intents.moderation = True  # Needed for audit log events
 
 # Essential cogs only - Moderation, Management, and Core functionality
 COGS_TO_LOAD = [
