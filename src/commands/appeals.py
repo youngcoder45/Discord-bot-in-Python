@@ -18,12 +18,29 @@ class Appeals(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         init_db()
+        self._timeout_dedupe_cache = {}  # {user_id: timestamp} - prevents double DM within 5s
 
     # ---------------- Internal Helper ----------------
-    async def _send_appeal_form(self, user: discord.abc.User, guild: discord.Guild, action_type: str, reason: str | None = None):
+    async def _send_appeal_form(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str | None = None):
         try:
             if user.bot or (self.bot.user and user.id == self.bot.user.id):
                 return
+            
+            # Dedupe check: if sent within 5s, skip (prevents both audit log + member_update firing)
+            import time
+            now = time.time()
+            last_sent = self._timeout_dedupe_cache.get(user.id)
+            if last_sent and (now - last_sent) < 5:
+                print(f"[Appeals] Skipped duplicate DM to {user} (sent {now - last_sent:.1f}s ago)")
+                return
+            self._timeout_dedupe_cache[user.id] = now
+            
+            # Cleanup old cache entries (keep last 50)
+            if len(self._timeout_dedupe_cache) > 50:
+                oldest = sorted(self._timeout_dedupe_cache.items(), key=lambda x: x[1])[:25]
+                for uid, _ in oldest:
+                    del self._timeout_dedupe_cache[uid]
+            
             embed = discord.Embed(
                 title="Moderation Action Appeal",
                 description=f"You have been {action_type} from **{guild.name}**.",
@@ -82,7 +99,7 @@ class Appeals(commands.Cog):
                 pass
             await self._send_appeal_form(after, after.guild, "timed out", reason)
             # Log channel notification
-            for cid in (1418492683277570109, 1399746928585085068):
+            for cid in (1423635286520500406, 1399746928585085068):
                 ch = self.bot.get_channel(cid)
                 if ch:
                     embed = discord.Embed(
@@ -135,11 +152,11 @@ class Appeals(commands.Cog):
             pass
         # Staff channel notify
         staff_channel = None
-        for cid in (1418492683277570109, 1399746928585085068):
+        for cid in (1423635286520500406, 1399746928585085068):
             ch = self.bot.get_channel(cid)
             if ch:
                 staff_channel = ch
-                if cid != 1418492683277570109:
+                if cid != 1423635286520500406:
                     print(f"[Appeals] Using fallback staff channel {cid}")
                 break
         if not staff_channel:
@@ -227,47 +244,75 @@ class Appeals(commands.Cog):
         conn.commit()
         conn.close()
         
-        # Unban the user
+        # Determine if user is still a member (timeout case) or banned
+        guild = ctx.guild
+        member = guild.get_member(user_id) if guild else None
+        user = None
         try:
             user = await self.bot.fetch_user(user_id)
-            await ctx.guild.unban(user, reason=f'Appeal #{appeal_id} approved by {ctx.author}')
-            
-            # Clear points for unbanned user
-            from utils.database import clear_user_points
-            clear_user_points(user_id)
-            
+        except Exception:
+            pass
+
+        action_taken = None
+        error_embed = None
+
+        if member:
+            # User is still in server (likely timeout appeal). Clear timeout if active.
+            try:
+                if getattr(member, 'timed_out_until', None):
+                    await member.timeout(None, reason=f"Appeal #{appeal_id} approved by {ctx.author}")
+                    action_taken = "Timeout Cleared"
+                else:
+                    action_taken = "No Punishment Active"
+            except discord.Forbidden:
+                error_embed = create_error_embed("Permission Error", "I lack permission to modify this member's timeout.")
+            except Exception as e:
+                error_embed = create_error_embed("Error", f"Failed clearing timeout: {e}")
+        else:
+            # User not in guild; attempt unban (ban appeal)
+            try:
+                if user is None:
+                    raise ValueError("User fetch failed; cannot unban")
+                await guild.unban(user, reason=f'Appeal #{appeal_id} approved by {ctx.author}')
+                action_taken = "User Unbanned"
+            except discord.NotFound:
+                error_embed = create_error_embed("User Not Found", "User not found or already unbanned.")
+            except discord.Forbidden:
+                error_embed = create_error_embed("Permission Error", "I don't have permission to unban this user.")
+            except Exception as e:
+                error_embed = create_error_embed("Error", f"Error processing unban: {e}")
+
+        # Clear points only if we actually lifted a punishment
+        if action_taken in ("Timeout Cleared", "User Unbanned"):
+            try:
+                from utils.database import clear_user_points
+                clear_user_points(user_id)
+            except Exception:
+                pass
+
+        if error_embed:
+            await ctx.send(embed=error_embed)
+        else:
+            display_target = member or user or f"User {user_id}"
             embed = discord.Embed(title='Appeal Approved', color=0x2ecc71)
             embed.add_field(name='Appeal ID', value=f"#{appeal_id}", inline=True)
-            embed.add_field(name='User', value=f'{user} ({user_id})', inline=True)
+            embed.add_field(name='User', value=f'{display_target} ({user_id})', inline=True)
+            embed.add_field(name='Action', value=action_taken or 'Completed', inline=True)
             embed.add_field(name='Approved By', value=ctx.author.mention, inline=True)
             embed.add_field(name='Reason', value=reason, inline=False)
             await ctx.send(embed=embed)
-            
-            # Send DM to user
-            try:
-                embed_dm = discord.Embed(
-                    title="Appeal Approved",
-                    description=f"Your appeal has been approved! You have been unbanned from **{ctx.guild.name}**.",
-                    color=0x2ecc71
-                )
-                embed_dm.add_field(name="Appeal ID", value=f"#{appeal_id}", inline=True)
-                embed_dm.add_field(name="Approved By", value=str(ctx.author), inline=True)
-                embed_dm.add_field(name="Reason", value=reason, inline=False)
-                embed_dm.add_field(name="Welcome Back", value="Please make sure to follow our community guidelines.", inline=False)
-                embed_dm.set_footer(text="Professional Moderation System")
-                await user.send(embed=embed_dm)
-            except:
-                pass
-                
-        except discord.NotFound:
-            embed = create_error_embed("User Not Found", "User not found or not banned.")
-            await ctx.send(embed=embed)
-        except discord.Forbidden:
-            embed = create_error_embed("Permission Error", "I don't have permission to unban this user.")
-            await ctx.send(embed=embed)
-        except Exception as e:
-            embed = create_error_embed("Error", f"Error processing appeal: {str(e)}")
-            await ctx.send(embed=embed)
+            # DM user if possible
+            if user:
+                try:
+                    dm = discord.Embed(title="Appeal Approved", color=0x2ecc71)
+                    dm.add_field(name="Appeal ID", value=f"#{appeal_id}", inline=True)
+                    dm.add_field(name="Result", value=action_taken or 'Processed', inline=True)
+                    dm.add_field(name="Reason", value=reason, inline=False)
+                    dm.add_field(name="Note", value="Please continue following the rules.", inline=False)
+                    dm.set_footer(text="Professional Moderation System")
+                    await user.send(embed=dm)
+                except Exception:
+                    pass
 
     @commands.hybrid_command(name="deny")
     @commands.has_permissions(administrator=True)
