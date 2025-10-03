@@ -577,6 +577,7 @@ class HelpDropdown(discord.ui.Select):
                 "**`/unmute <@user>`** - Remove timeout *(Moderate Members)*\n"
                 "**`/slowmode <seconds> [#channel]`** - Set slowmode (max 6h) *(Manage Channels)*\n"
                 "**`/modstats [@user]`** - View moderation statistics\n"
+                "**`/advmodstats [@user]`** - Advanced moderation stats with rate limits\n"
                 "**Auto-logging:** All actions logged to <#1399746928585085068>"
             ),
             inline=False

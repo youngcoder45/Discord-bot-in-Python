@@ -308,10 +308,10 @@ class AdvancedModeration(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
-    @commands.hybrid_command(name="modstats")
+    @commands.hybrid_command(name="advmodstats")
     @commands.has_permissions(manage_messages=True)
     @app_commands.describe(moderator="Get stats for specific moderator")
-    async def mod_stats(self, ctx, moderator: Optional[discord.Member] = None):
+    async def advanced_mod_stats(self, ctx, moderator: Optional[discord.Member] = None):
         """View moderation statistics"""
         embed = discord.Embed(
             title="📊 Moderation Statistics",
