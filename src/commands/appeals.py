@@ -23,6 +23,11 @@ class Appeals(commands.Cog):
     async def _send_appeal_form(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str | None = None):
         """Send modern appeal form DM to user"""
         try:
+            # Don't send appeals to bots or the bot itself
+            if user.bot or user.id == self.bot.user.id:
+                print(f"⚠️ Skipping appeal DM - target is a bot: {user}")
+                return
+                
             embed = discord.Embed(
                 title="Moderation Action Appeal",
                 description=f"You have been {action_type} from **{guild.name}**. If you believe this action was taken in error or would like to appeal, please read the information below.",
@@ -79,6 +84,10 @@ class Appeals(commands.Cog):
         if not entry.target or not isinstance(entry.target, (discord.User, discord.Member)):
             return
         
+        # Don't send appeals to bots
+        if entry.target.bot:
+            return
+        
         # Check for kick, ban, or timeout actions
         action_type = None
         if entry.action == discord.AuditLogAction.kick:
@@ -108,6 +117,10 @@ class Appeals(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         """Handle timeout detection via member update"""
+        # Don't process bot updates
+        if after.bot:
+            return
+            
         # Check if member was timed out (using the correct attribute for discord.py 2.0+)
         before_timeout = before.timed_out_until
         after_timeout = after.timed_out_until
