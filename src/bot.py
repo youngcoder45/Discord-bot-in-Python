@@ -40,6 +40,9 @@ COGS_TO_LOAD = [
     'commands.protection',    # Protection features (anti-spam, anti-raid, anti-nuke)
     'commands.appeals',       # Appeal system for bans and mutes
     
+    # SAM Module - Staff Activity Management
+    'commands.modules.sam.features.warnings.cogs',  # Warning system with SQLModel backend
+    
     # Staff Management (Essential)
     'commands.staff_shifts',  # Staff shift tracking and logging system
     'commands.staff_points',  # Staff aura system with leaderboard
@@ -88,6 +91,17 @@ class CodeVerseBot(commands.Bot):
                 logger.warning("⚠️ Database initialization had issues")
         except Exception as e:
             logger.error(f"❌ Database initialization failed: {e}")
+
+        # Initialize SAM module's database
+        try:
+            # Import models first to ensure they are registered with SQLModel
+            from commands.modules.sam.features.warnings.models import Warn
+            from commands.modules.sam.internal.database import init_db
+            # Create database tables
+            await init_db()
+            logger.info("✅ SAM module database initialized")
+        except Exception as e:
+            logger.error(f"❌ SAM module database initialization failed: {e}", exc_info=True)
         
         for cog in COGS_TO_LOAD:
             try:

@@ -295,9 +295,10 @@ class StaffPoints(commands.Cog):
             
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute("""
-                SELECT user_id, MAX(points) as points, MAX(total_earned) as total_earned, MAX(last_updated) as last_updated
+                SELECT user_id, points, total_earned, last_updated
                 FROM staff_points 
                 WHERE guild_id = ? AND points > 0
+                GROUP BY user_id
                 GROUP BY user_id
                 ORDER BY points DESC, total_earned DESC
             """, (ctx.guild.id,)) as cursor:
@@ -521,46 +522,31 @@ class StaffPoints(commands.Cog):
         )
         
         view = ConfirmView()
+        message = await ctx.send(embed=embed, view=view, ephemeral=True)
+        await view.wait()
         
-        # Handle both interaction and prefix contexts
-        if ctx.interaction:
-            await ctx.send(embed=embed, view=view, ephemeral=True)
-            await view.wait()
+        if view.value:
+            await self.set_user_points(ctx.guild.id, member.id, 0, ctx.author.id, reason)
             
-            if view.value:
-                await self.set_user_points(ctx.guild.id, member.id, 0, ctx.author.id, reason)
-                
-                embed = create_success_embed(
-                    "Points Reset",
-                    f"**{member.display_name}**'s points have been reset to 0.\n\n**Reason:** {reason}"
-                )
-                embed.add_field(name="Previous Points", value=f"{current_points} points", inline=True)
-                embed.add_field(name="Reset by", value=ctx.author.mention, inline=True)
-                
-                await ctx.interaction.edit_original_response(embed=embed, view=None)
-            else:
-                embed = create_error_embed("Reset Cancelled", "Points reset has been cancelled.")
-                await ctx.interaction.edit_original_response(embed=embed, view=None)
-        else:
-            message = await ctx.send(embed=embed, view=view)
-            await view.wait()
+            embed = create_success_embed(
+                "Points Reset",
+                f"**{member.display_name}**'s points have been reset to 0.\n\n**Reason:** {reason}"
+            )
+            embed.add_field(name="Previous Points", value=f"{current_points} points", inline=True)
+            embed.add_field(name="Reset by", value=ctx.author.mention, inline=True)
             
-            if view.value:
-                await self.set_user_points(ctx.guild.id, member.id, 0, ctx.author.id, reason)
-                
-                embed = create_success_embed(
-                    "Points Reset",
-                    f"**{member.display_name}**'s points have been reset to 0.\n\n**Reason:** {reason}"
-                )
-                embed.add_field(name="Previous Points", value=f"{current_points} points", inline=True)
-                embed.add_field(name="Reset by", value=ctx.author.mention, inline=True)
-                
+            # Log the reset
+            await self.log_points_change(ctx.guild, member, -current_points, ctx.author, reason, "reset")
+            
+            if isinstance(message, discord.InteractionMessage):
                 await message.edit(embed=embed, view=None)
-                
-                # Log the reset
-                await self.log_points_change(ctx.guild, member, -current_points, ctx.author, reason, "reset")
             else:
-                embed = create_error_embed("Reset Cancelled", "Points reset has been cancelled.")
+                await message.edit(embed=embed, view=None)
+        else:
+            embed = create_error_embed("Reset Cancelled", "Points reset has been cancelled.")
+            if isinstance(message, discord.InteractionMessage):
+                await message.edit(embed=embed, view=None)
+            else:
                 await message.edit(embed=embed, view=None)
 
     @aura.command(name="config", description="Configure staff aura settings")
@@ -948,15 +934,21 @@ class ConfirmView(discord.ui.View):
     
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.defer()
+        except discord.errors.InteractionResponded:
+            pass
         self.value = True
         self.stop()
-        await interaction.response.defer()
     
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.defer()
+        except discord.errors.InteractionResponded:
+            pass
         self.value = False
         self.stop()
-        await interaction.response.defer()
 
 
 async def setup(bot: commands.Bot):

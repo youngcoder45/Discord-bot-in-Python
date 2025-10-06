@@ -850,34 +850,7 @@ class ModerationExtended(commands.Cog):
         embed.add_field(name="Reason", value=reason, inline=False)
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="warnings", help="List warnings for a member")
-    @app_commands.describe(user="Member to list warnings for")
-    @commands.has_permissions(manage_messages=True)
-    @commands.guild_only()
-    async def warnings(self, ctx: commands.Context, user: discord.Member):
-        assert ctx.guild is not None
-        st = self._state(ctx.guild.id)
-        warns = st['warnings'].get(user.id, [])
-        if not warns:
-            await ctx.send(f"✅ {user.mention} has no warnings.")
-            return
-        embed = discord.Embed(title=f"Warnings for {user.display_name}", color=discord.Color.orange())
-        for w in warns[:15]:
-            embed.add_field(name=f"#{w['id']}", value=f"{w['reason']} - <t:{int(w['time'].timestamp())}:R>", inline=False)
-        if len(warns) > 15:
-            embed.set_footer(text=f"Showing first 15 of {len(warns)} warnings")
-        await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="clearwarn", help="Clear all warnings for a user")
-    @app_commands.describe(user="Member to clear")
-    @commands.has_permissions(manage_messages=True)
-    @commands.guild_only()
-    async def clearwarn(self, ctx: commands.Context, user: discord.Member):
-        assert ctx.guild is not None
-        st = self._state(ctx.guild.id)
-        if user.id not in st['warnings']:
-            await ctx.send("User has no warnings.")
-            return
         del st['warnings'][user.id]
         self._add_case(ctx.guild.id, user.id, ctx.author.id, 'CLEARWARN', 'All warnings cleared')
         await ctx.send(f"🧹 Cleared warnings for {user.mention}.")
