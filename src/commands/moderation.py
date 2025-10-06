@@ -45,7 +45,14 @@ class Moderation(commands.Cog):
         try:
             deleted = await ctx.channel.purge(limit=amount + (0 if ctx.interaction else 1))
             count = len(deleted)
-            await self._safe_reply(ctx, f"🧹 Deleted {count} messages.")
+            
+            # For slash commands (interactions), ephemeral already auto-hides
+            # For prefix commands, send regular message and delete after 5s
+            if ctx.interaction:
+                await self._safe_reply(ctx, f"🧹 Deleted {count} messages.\n-# This message will auto-dismiss")
+            else:
+                msg = await ctx.send(f"🧹 Deleted {count} messages.\n-# Note: This message will be deleted in 5 seconds")
+                await msg.delete(delay=5)
         except discord.Forbidden:
             await self._safe_reply(ctx, "❌ I lack permission to manage messages here.")
         except Exception as e:

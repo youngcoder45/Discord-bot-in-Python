@@ -143,7 +143,7 @@ class AFKSystem(commands.Cog):
         
         if not ctx.guild:
             embed = discord.Embed(
-                title="❌ Server Only",
+                title=" Server Only",
                 description="This command can only be used in a server.",
                 color=discord.Color.red()
             )
@@ -163,7 +163,7 @@ class AFKSystem(commands.Cog):
         
         # Create response embed
         embed = discord.Embed(
-            title=f"✅ AFK Status {action_text.title()}",
+            title=f" AFK Status {action_text.title()}",
             color=discord.Color.orange()
         )
         
@@ -175,12 +175,12 @@ class AFKSystem(commands.Cog):
             embed.description = f"**{ctx.author.display_name}** is now AFK"
             
         embed.add_field(
-            name="💡 Auto-Return",
+            name=" Auto-Return",
             value="You'll automatically return when you send any message!",
             inline=True
         )
         embed.add_field(
-            name="🔔 Mentions",
+            name=" Mentions",
             value="I'll respond to mentions while you're away",
             inline=True
         )
@@ -189,7 +189,7 @@ class AFKSystem(commands.Cog):
             old_reason = old_info['reason']
             if old_reason != reason:
                 embed.add_field(
-                    name="📝 Previous Reason",
+                    name=" Previous Reason",
                     value=old_reason[:100] + "..." if len(old_reason) > 100 else old_reason,
                     inline=False
                 )
@@ -212,12 +212,12 @@ class AFKSystem(commands.Cog):
         
         if not self.is_afk(ctx.author.id):
             embed = discord.Embed(
-                title="ℹ️ Not AFK",
+                title=" Not AFK",
                 description="You're not currently set as AFK.",
                 color=discord.Color.blue()
             )
             embed.add_field(
-                name="💡 Tip",
+                name=" Tip",
                 value="Use `/afk [reason]` to set yourself as AFK",
                 inline=False
             )
@@ -230,7 +230,7 @@ class AFKSystem(commands.Cog):
         
         # Create welcome back embed
         embed = discord.Embed(
-            title="🎉 Welcome Back!",
+            title=" Welcome Back!",
             description=f"**{ctx.author.display_name}** is no longer AFK",
             color=discord.Color.green()
         )
@@ -241,19 +241,19 @@ class AFKSystem(commands.Cog):
             reason = afk_info['reason']
             
             embed.add_field(
-                name="⏱️ AFK Duration",
+                name=" AFK Duration",
                 value=duration,
                 inline=True
             )
             embed.add_field(
-                name="🔔 Mentions Received",
+                name=" Mentions Received",
                 value=str(mention_count),
                 inline=True
             )
             
             if reason and reason != "No reason provided":
                 embed.add_field(
-                    name="📝 Previous Reason",
+                    name=" Previous Reason",
                     value=reason[:200] + "..." if len(reason) > 200 else reason,
                     inline=False
                 )
@@ -275,7 +275,7 @@ class AFKSystem(commands.Cog):
         
         if not ctx.guild:
             embed = discord.Embed(
-                title="❌ Server Only",
+                title=" Server Only",
                 description="This command can only be used in a server.",
                 color=discord.Color.red()
             )
@@ -298,12 +298,12 @@ class AFKSystem(commands.Cog):
                     
         if not guild_afk_users:
             embed = discord.Embed(
-                title="😴 AFK Users",
+                title=" AFK Users",
                 description="No users are currently AFK in this server.",
                 color=discord.Color.blue()
             )
             embed.add_field(
-                name="💡 Tip",
+                name=" Tip",
                 value="Use `/afk [reason]` to set yourself as AFK",
                 inline=False
             )
@@ -315,7 +315,7 @@ class AFKSystem(commands.Cog):
         
         # Create embed with AFK users
         embed = discord.Embed(
-            title="😴 Currently AFK Users",
+            title=" Currently AFK Users",
             description=f"Found **{len(guild_afk_users)}** AFK user(s) in **{ctx.guild.name}**",
             color=discord.Color.orange()
         )
@@ -336,14 +336,14 @@ class AFKSystem(commands.Cog):
             field_value += f"**Mentions:** {afk_user['mentions']}"
             
             embed.add_field(
-                name=f"👤 {member.display_name}",
+                name=f" {member.display_name}",
                 value=field_value,
                 inline=True
             )
             
         if len(guild_afk_users) > 10:
             embed.add_field(
-                name="📋 Note",
+                name=" Note",
                 value=f"Showing first 10 of {len(guild_afk_users)} AFK users.\nUse this command again to refresh the list.",
                 inline=False
             )
