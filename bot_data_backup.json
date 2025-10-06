@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-06T10:47:47.441446+00:00",
+  "timestamp": "2025-10-06T10:51:55.386377+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -2487,7 +2487,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-10-06T10:47:47.502897+00:00",
+    "last_backup": "2025-10-06T10:51:55.443187+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
