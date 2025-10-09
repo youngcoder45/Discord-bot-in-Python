@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import discord
 from discord.ext import commands
 from utils.json_store import add_or_update_user
-from utils.helpers import log_action
+from utils.helpers import log_action  # Keep for backward compatibility
 import asyncio
 
 class MemberEvents(commands.Cog):

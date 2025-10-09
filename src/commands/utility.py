@@ -467,83 +467,7 @@ class EmbedBuilder(commands.Cog):
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
 
-    @app_commands.command(
-        name="embedrules",
-        description="Create a pre-formatted rules embed"
-    )
-    @app_commands.describe(
-        rules="The rules text, one rule per line starting with a number and dot (e.g., 1. Be respectful)",
-        title="Custom title for the rules embed",
-        color="Color of the embed (e.g., red, blue, green, #FF0000)",
-        footer="Optional footer text",
-    )
-    async def create_rules_embed(
-        self,
-        interaction: discord.Interaction,
-        rules: str,
-        title: str = "📜 Server Rules",
-        color: str = "blue",
-        footer: Optional[str] = None
-    ):
-        """Create a beautifully formatted rules embed"""
-        try:
-            # Create the embed with proper spacing
-            embed = discord.Embed(title=title)
-            
-            # Process rules text with beautiful formatting
-            rule_lines = rules.replace('\\n', '\n').split('\n')
-            formatted_rules = []
-            
-            for i, line in enumerate(rule_lines):
-                line = line.strip()
-                if line:
-                    # Add emoji based on rule number with proper spacing
-                    if re.match(r'^\d+\.', line):
-                        rule_num = int(line.split('.')[0])
-                        # Use different emojis for better visual appeal
-                        if rule_num <= 10:
-                            emoji = f"{rule_num}\u20e3"  # Number emoji
-                        else:
-                            emoji = "📋"  # Generic rule emoji
-                        formatted_rules.append(f"\n{emoji} **{line}**\n")
-                    else:
-                        formatted_rules.append(f"\n🔸 **{line}**\n")
-            
-            # Join rules with extra spacing
-            embed.description = "\n".join(formatted_rules)
-            
-            # Set color
-            if color.startswith('#'):
-                try:
-                    embed.color = discord.Color(int(color[1:], 16))
-                except ValueError:
-                    embed.color = discord.Color.blue()
-            else:
-                embed.color = self.colors.get(color.lower(), discord.Color.blue())
-            
-            # Add a nice separator field for visual appeal
-            embed.add_field(name="\u200b", value="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", inline=False)
-            
-            # Add footer with proper styling
-            if footer:
-                embed.set_footer(text=f"📜 {footer}", icon_url="https://cdn.discordapp.com/emojis/741205308478832650.png")
-            else:
-                embed.set_footer(text="📜 Please read and follow all rules to maintain a positive community!", 
-                               icon_url="https://cdn.discordapp.com/emojis/741205308478832650.png")
-            
-            # Add timestamp for professionalism
-            embed.timestamp = discord.utils.utcnow()
-            
-            # Send the embed
-            await interaction.response.send_message(embed=embed)
-            
-        except Exception as e:
-            error_embed = discord.Embed(
-                title="❌ Rules Embed Creation Failed",
-                description=f"Error: {str(e)}",
-                color=discord.Color.red()
-            )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+    # embedrules command has been removed
 
     @app_commands.command(
         name="embedhelp",
@@ -602,16 +526,7 @@ class EmbedBuilder(commands.Cog):
             inline=False
         )
         
-        # Rules embed
-        help_embed.add_field(
-            name="📜 **Creating Rules**",
-            value="\n**Use `/embedrules` for formatted rules:**\n"
-                  "• Enter rules as numbered lines\n"
-                  "• Example: `1. Be respectful\\n2. No spam`\n"
-                  "• Automatically adds numbering emojis\n"
-                  "• Beautiful spacing and formatting\n",
-            inline=False
-        )
+        # Rules embed section removed
         
         # Separator
         help_embed.add_field(name="\u200b", value="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", inline=False)
@@ -635,9 +550,7 @@ class EmbedBuilder(commands.Cog):
                   "```/editembed message_id:123456789```\n"
                   "```/editembed message_url:https://discord.com/channels/.../.../.../```\n"
                   "\n**Quick embed:**\n"
-                  "```/embedquick title:Welcome! description:Hello everyone!\\n\\nEnjoy your stay! color:blue```\n"
-                  "\n**Rules embed:**\n"
-                  "```/embedrules rules:1. Be respectful\\n2. No spam\\n3. Stay on topic```\n",
+                  "```/embedquick title:Welcome! description:Hello everyone!\\n\\nEnjoy your stay! color:blue```\n",
             inline=True
         )
         
