@@ -5,7 +5,7 @@ from discord import app_commands
 from datetime import datetime, timezone
 
 class Core(commands.Cog):
-    """Core hybrid commands: ping, info, help."""
+    """Core hybrid commands: ping, info, help menu."""
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.start_time = getattr(bot, 'start_time', datetime.now(timezone.utc))
@@ -37,15 +37,13 @@ class Core(commands.Cog):
         embed.set_footer(text=f"Instance: {instance_id}")
         await ctx.reply(embed=embed, mention_author=False)
 
-    @commands.hybrid_command(name="help", help="Get information about the bot or a specific command (Dyno style)")
-    @app_commands.describe(command="Optional command name to get detailed help about")
-    async def help_cmd(self, ctx: commands.Context, command: str | None = None):
-        """Dyno-style help:
-        ?help            -> DM the user a categorized help overview
-        ?help ping       -> Show detailed help for the 'ping' command in the current channel/interaction
 
-        For slash usage: /help [command]
-        """
+
+    @commands.hybrid_command(name="help", aliases=["helpmenu"], help="Open the interactive dropdown help center")
+    @app_commands.describe(command="Optional command name to get detailed help about")
+    async def helpmenu(self, ctx: commands.Context, command: str | None = None):
+        """Interactive categorized help with dropdown menu."""
+        
         # If a specific command is requested, show detailed info inline
         if command:
             cmd = self.bot.get_command(command.lower())
@@ -79,48 +77,12 @@ class Core(commands.Cog):
             # Aliases
             if getattr(cmd, 'aliases', None):
                 embed.add_field(name="Aliases", value=", ".join(f"`{a}`" for a in cmd.aliases), inline=False)
-
-            embed.set_footer(text="Use ?help for the full categorized list in DM")
+        
+            embed.set_footer(text="Use ?help for the full interactive help menu")
             await ctx.reply(embed=embed, mention_author=False)
             return
-
-        # No specific command: send categorized help via DM
-        overview_embed = discord.Embed(
-            title="📬 CodeVerse Bot Command Reference",
-            description=(
-                "You are receiving this because you used `?help` with no arguments.\n"
-                "All commands support both prefix `?` and slash `/`.\n"
-                "Use `?help <command>` to see details about a specific command."
-            ),
-            color=discord.Color.green()
-        )
-        # Basic core commands quick list
-        core_list = ["`ping`", "`info`", "`help`", "`commands`"]
-        overview_embed.add_field(name="🏠 Core", value=" • ".join(core_list), inline=False)
-        # Provide link to interactive help menu
-        overview_embed.add_field(
-            name="Interactive Menu",
-            value="Use `?helpmenu` or `/helpmenu` for the rich dropdown help interface.",
-            inline=False
-        )
-        overview_embed.set_footer(text="Some administrative commands require specific permissions.")
-
-        sent_dm = True
-        try:
-            await ctx.author.send(embed=overview_embed)
-        except Exception:
-            sent_dm = False
-
-        # Acknowledge in channel / interaction
-        if sent_dm:
-            await ctx.reply("📨 I've sent you a DM with the command reference! Use `?help <command>` for specifics.", mention_author=False)
-        else:
-            # Fall back to channel if DM blocked
-            await ctx.reply(embed=overview_embed, mention_author=False)
-
-    @commands.hybrid_command(name="helpmenu", help="Open the interactive dropdown help center")
-    async def helpmenu(self, ctx: commands.Context):
-        """Interactive categorized help (original menu)."""
+            
+        # No specific command: show interactive help menu
         view = HelpView(self.bot)
         embed = await view.get_main_embed()
         await ctx.reply(embed=embed, view=view, mention_author=False)
@@ -321,7 +283,7 @@ class HelpView(discord.ui.View):
             name="📊 Quick Stats",
             value=(
                 f"**Total Commands:** {total_commands}\n"
-                f"**Categories:** 7\n"
+                f"**Categories:** 6\n"
                 f"**Server Exclusive:** Professional moderation\n"
                 f"**Uptime:** {self.get_uptime()}"
             ),
@@ -335,8 +297,8 @@ class HelpView(discord.ui.View):
                 "• `/help` - This help menu\n"
                 "• `/ping` - Check bot status\n"
                 "• `/afk` - Set away message\n"
-                "• `/tempban` - Temporary bans\n"
-                "• `/points` - Check mod points"
+                "• `/serverinfo` - Server details\n"
+                "• `/warnings` - Warning system"
             ),
             inline=True
         )
@@ -388,10 +350,16 @@ class HelpDropdown(discord.ui.Select):
                 emoji="😴"
             ),
             discord.SelectOption(
-                label="🛡️ Moderation",
-                description="Complete moderation and safety tools",
+                label="🛡️ ModCog",
+                description="Merged moderation system with warnings",
                 value="moderation",
                 emoji="🛡️"
+            ),
+            discord.SelectOption(
+                label="🔒 Advanced Moderation",
+                description="Extended moderation and protection tools",
+                value="advanced_moderation",
+                emoji="🔒"
             ),
             discord.SelectOption(
                 label="⭐ Staff Systems",
@@ -438,6 +406,7 @@ class HelpDropdown(discord.ui.Select):
             "core": self.get_core_embed(),
             "afk": self.get_afk_embed(),
             "moderation": self.get_moderation_embed(),
+            "advanced_moderation": self.get_advanced_moderation_embed(),
             "staff": self.get_staff_embed(),
             "embeds": self.get_embeds_embed(),
             "data": self.get_data_embed(),
@@ -457,8 +426,7 @@ class HelpDropdown(discord.ui.Select):
             ("**`/ping`**", "Check bot latency and responsiveness"),
             ("**`/info`**", "View bot information, uptime, and instance details"),
             ("**`/help`**", "Show this interactive help menu"),
-            ("**`/diag`**", "Get comprehensive bot diagnostics"),
-            ("**`/commands`**", "Quick list of all available commands")
+            ("**`/diag`**", "Get comprehensive bot diagnostics")
         ]
         
         for cmd, desc in commands:
@@ -511,74 +479,54 @@ class HelpDropdown(discord.ui.Select):
     def get_moderation_embed(self):
         """Moderation commands embed"""
         embed = discord.Embed(
-            title="🛡️ Moderation Tools",
-            description="Basic and advanced server management commands",
+            title="🛡️ ModCog - Combined Moderation System",
+            description="Unified moderation system with integrated warnings",
             color=0xE74C3C
         )
         
         embed.add_field(
             name="🔨 Basic Moderation",
             value=(
-                "**`/purge <amount> [@user]`** - Delete messages *(Manage Messages)*\n"
+                "**`/purge <amount>`** - Delete messages *(Manage Messages)*\n"
                 "**`/kick <member> [reason]`** - Kick member *(Kick Members)*\n"
-                "**`/ban <member> [days] [reason]`** - Ban member *(Ban Members)*\n"
-                "**`/unban <user> [reason]`** - Unban user *(Ban Members)*\n"
-                "**`/timeout <member> <minutes> [reason]`** - Timeout member *(Moderate Members)*\n"
-                "**`/warn <member> [reason]`** - Warn member *(Manage Messages)*\n"
-                "**`/slowmode <seconds> [#channel]`** - Set slowmode *(Manage Channels)*"
+                "**`/ban <member> [reason]`** - Ban member *(Ban Members)*\n"
+                "**`/unban <user_id>`** - Unban user *(Ban Members)*\n"
+                "**`/softban <user> [reason]`** - Kick and delete messages *(Ban Members)*\n"
+                "**`/clean [count]`** - Delete bot messages *(Manage Messages)*\n"
+                "**`/role <user> <role_name>`** - Toggle role for user *(Manage Roles)*"
             ),
             inline=False
         )
         
         embed.add_field(
-            name="⚔️ Advanced Moderation",
+            name="📊 Server Information",
             value=(
                 "**`/serverinfo`** - Detailed server information\n"
-                "**`/userinfo [@user]`** - Detailed user information\n"
-                "**`/lockdown [#channel] [reason]`** - Lock channel *(Manage Channels)*\n"
-                "**`/unlock [#channel] [reason]`** - Unlock channel *(Manage Channels)*\n"
-                "**`/nuke [#channel] [reason]`** - Delete and recreate channel *(Manage Channels)*\n"
-                "**`/massban <user_ids> [reason]`** - Mass ban users *(Ban Members)*\n"
-                "**`/listbans`** - List banned users *(Ban Members)*"
+                "**`/userinfo [@user]`** - Detailed user information"
             ),
             inline=False
         )
         
         embed.add_field(
-            name="📋 Appeal System",
+            name="⚠️ Warning System",
+            value=(
+                "**`/warnings add <@user> [reason]`** - Issue warning to user\n"
+                "**`/warnings remove <@user> <case_id> [reason]`** - Revoke specific warning\n"
+                "**`/warnings list <@user>`** - List all warnings for user\n"
+                "**`/warnings clear <@user> [reason]`** - Clear all warnings for user\n"
+                "**`/warnings view <case_id>`** - View details about specific warning"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="� Appeal System",
             value=(
                 "**`/appeals [status]`** - View appeal requests *(Admin)*\n"
                 "**`/approve <id> [reason]`** - Approve unban appeal *(Admin)*\n"
                 "**`/deny <id> <reason>`** - Deny unban appeal *(Admin)*\n"
                 "**`/appealinfo <id>`** - Get detailed appeal info *(Admin)*\n"
                 "**Auto-DM:** Appeals sent automatically on kick/ban/timeout"
-            ),
-            inline=False
-        )
-        
-        embed.add_field(
-            name="⚖️ Point Moderation",
-            value=(
-                "**`/addpoints <@user> <amount> [reason]`** - Add moderation points *(Ban Members)*\n"
-                "**`/points [@user]`** - Check moderation points\n"
-                "**`/pendingbans`** - View pending point bans *(Ban Members)*\n"
-                "**`/approveban <@user>`** - Approve point ban *(Ban Members)*\n"
-                "**`/declineban <@user>`** - Decline point ban *(Ban Members)*\n"
-                "**100 points = Auto-ban** with 2-moderator approval"
-            ),
-            inline=False
-        )
-        
-        embed.add_field(
-            name="🚀 Advanced Moderation", 
-            value=(
-                "**`/tempban <@user> <minutes> [reason]`** - Temporary ban (max 7 days) *(Ban Members)*\n"
-                "**`/mute <@user> <minutes> [reason]`** - Mute user with timeout *(Moderate Members)*\n"
-                "**`/unmute <@user>`** - Remove timeout *(Moderate Members)*\n"
-                "**`/slowmode <seconds> [#channel]`** - Set slowmode (max 6h) *(Manage Channels)*\n"
-                "**`/modstats [@user]`** - View moderation statistics\n"
-                "**`/advmodstats [@user]`** - Advanced moderation stats with rate limits\n"
-                "**Auto-logging:** All actions logged to <#1399746928585085068>"
             ),
             inline=False
         )
@@ -631,7 +579,8 @@ class HelpDropdown(discord.ui.Select):
         commands = [
             ("**`/embed`**", "Interactive embed creator with popup form"),
             ("**`/editembed <message_id>`**", "Edit existing embeds made by the bot"),
-            ("**`/embedquick <title> <description> [color]`**", "Quick embed creation")
+            ("**`/embedquick <title> <description> [color]`**", "Quick embed creation"),
+            ("**`/embedhelp`**", "Get help with embed creation")
         ]
         
         for cmd, desc in commands:
@@ -684,6 +633,54 @@ class HelpDropdown(discord.ui.Select):
         
         embed.set_footer(text="Data safety is our top priority")
         return embed
+    
+    def get_advanced_moderation_embed(self):
+        """Advanced moderation commands embed"""
+        embed = discord.Embed(
+            title="🔒 Advanced Moderation",
+            description="Extended moderation and protection tools",
+            color=0x9B59B6
+        )
+        
+        embed.add_field(
+            name="🚨 Protection Systems",
+            value=(
+                "**`/automod`** - Configure automatic moderation settings\n"
+                "**`/automodstatus`** - View current automod configuration\n"
+                "**`/antispam`** - Anti-spam protection settings\n"
+                "**`/antiraid`** - Configure anti-raid protection\n"
+                "**`/antinuke`** - Server anti-nuke protection"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🔍 Information Commands",
+            value=(
+                "**`/serverinfo`** - Detailed server statistics\n"
+                "**`/userinfo [@user]`** - Member information and history\n"
+                "**`/roleinfo <role>`** - Detailed role information\n"
+                "**`/channelinfo [#channel]`** - Channel configuration details"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="⚔️ Advanced Actions",
+            value=(
+                "**`/lockdown [#channel] [reason]`** - Restrict channel access\n"
+                "**`/unlock [#channel]`** - Remove channel restrictions\n"
+                "**`/slowmode <seconds> [#channel]`** - Set channel slowmode\n"
+                "**`/massban <user_ids> [reason]`** - Ban multiple users at once\n"
+                "**`/nuke [#channel] [reason]`** - Clone and replace channel"
+            ),
+            inline=False
+        )
+        
+        embed.set_footer(text="These commands require appropriate moderator permissions")
+        return embed
+    
+    # Removed point_moderation_embed and warnings_embed as they're now part of ModCog
     
     def get_diagnostics_embed(self):
         """Diagnostics embed"""

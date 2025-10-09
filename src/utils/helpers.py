@@ -2,6 +2,7 @@ import random
 import re
 import requests
 import discord
+import asyncio
 from datetime import datetime, timezone
 from typing import Optional, List, Dict
 
@@ -73,8 +74,42 @@ def sanitize_input(text: str, max_length: int = 1000) -> str:
     
     return text[:max_length] if len(text) > max_length else text
 
-async def log_action(action: str, user_id: int, details: str = ""):
-    """Log moderation actions (placeholder for future logging system)"""
+async def log_action(action: str, user_id: int, details: str = "", **extra):
+    """Log moderation actions - redirects to LoggingCog if available"""
     timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     log_entry = f"[{timestamp}] {action} - User: {user_id} - {details}"
-    print(log_entry)  # For now, just print. Later can be saved to file or database
+    print(log_entry)  # Fallback print if logging cog not available
+    
+    # Try to use LoggingCog if available
+    import inspect
+    current_frame = inspect.currentframe()
+    try:
+        # Find the bot instance to access the logging cog
+        if current_frame and current_frame.f_back and hasattr(current_frame.f_back, 'f_locals'):
+            # Look for the bot in the calling function's locals
+            for key, value in current_frame.f_back.f_locals.items():
+                if hasattr(value, 'get_cog'):
+                    bot = value
+                    # Try the new cog name first
+                    logging_cog = bot.get_cog('LoggingCog')
+                    if not logging_cog:
+                        # Try legacy name if new name not found
+                        logging_cog = bot.get_cog('LoggingCog')
+                        
+                    if logging_cog:
+                        # Extract guild_id and moderator_id if available
+                        guild_id = extra.get('guild_id', 0)
+                        moderator_id = extra.get('moderator_id', 0)
+                        asyncio.create_task(logging_cog.log_mod_action(
+                            action_type=action,
+                            user_id=user_id,
+                            guild_id=guild_id,
+                            moderator_id=moderator_id,
+                            reason=details,
+                            **extra
+                        ))
+                    break
+    except Exception as e:
+        print(f"Error redirecting to LoggingCog: {e}")
+    finally:
+        del current_frame  # Avoid reference cycles

@@ -31,19 +31,17 @@ intents.moderation = True  # Needed for audit log events
 # Essential cogs only - Moderation, Management, and Core functionality
 COGS_TO_LOAD = [
     # Core Commands (Essential)
-    'commands.core',          # Core hybrid commands (ping, info, help)
+    'commands.core',          # Core hybrid commands (ping, info, help menu)
     'commands.diagnostics',   # Diagnostics (?diag, /diag)
     
+    # Logging System (Essential - LOAD FIRST)
+    'commands.logging',       # Centralized logging system for all events
+    
     # Moderation & Protection (Essential)
-    'commands.moderation',    # Advanced moderation with point system (purge, kick, ban, addpoints, etc.)
-    'commands.point_moderation',  # Point-based escalation & two-step ban approvals
-    'commands.moderation_extended',  # Extended moderation (serverinfo, userinfo, lockdown, role management, etc.)
+    'commands.modcog',        # Combined moderation commands with warnings system
     'commands.advanced_moderation',  # Advanced moderation with automod, tempban, mute, safety features
     'commands.protection',    # Protection features (anti-spam, anti-raid, anti-nuke)
     'commands.appeals',       # Appeal system for bans and mutes
-    
-    # SAM Module - Staff Activity Management
-    'commands.modules.sam.features.warnings.cogs',  # Warning system with SQLModel backend
     
     # Staff Management (Essential)
     'commands.staff_shifts',  # Staff shift tracking and logging system
@@ -105,19 +103,20 @@ class CodeVerseBot(commands.Bot):
         except Exception as e:
             logger.error(f"❌ SAM module database initialization failed: {e}", exc_info=True)
         
+        # Load all cogs
         for cog in COGS_TO_LOAD:
             try:
                 await self.load_extension(cog)
                 logger.info(f"Loaded cog: {cog}")
             except Exception as e:
                 logger.warning(f"Failed to load cog {cog}: {e}")
-
-    # Connect SAM logger to bot's logging channel
-    try:
-        sam_bridge.connect_log_consumer(bot)
-        logger.info("🔗 SAM logging bridge connected.")
-    except Exception as e:
-        logger.error(f"❌ Failed to connect SAM logging bridge: {e}")
+                
+        # Connect SAM logger to bot's logging channel
+        try:
+            sam_bridge.connect_log_consumer(self)
+            logger.info("🔗 SAM logging bridge connected.")
+        except Exception as e:
+            logger.error(f"❌ Failed to connect SAM logging bridge: {e}")
 
 bot = CodeVerseBot()
 
