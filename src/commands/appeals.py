@@ -3,6 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 import sqlite3
 import sys
+import asyncio
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 # Add parent directory to path to import config
@@ -19,6 +21,79 @@ class Appeals(commands.Cog):
         self.bot = bot
         init_db()
         self._timeout_dedupe_cache = {}  # {user_id: timestamp} - prevents double DM within 5s
+        self._appeal_cleanup_task = None
+        self._setup_appeal_cleanup_task()
+        
+    def _setup_appeal_cleanup_task(self):
+        """Start background task to clean up expired appeals"""
+        if self._appeal_cleanup_task is None or self._appeal_cleanup_task.done():
+            self._appeal_cleanup_task = asyncio.create_task(self._cleanup_expired_appeals())
+            
+    async def _cleanup_expired_appeals(self):
+        """Background task that checks for appeals where punishment is expired"""
+        try:
+            while not self.bot.is_closed():
+                # Run every 10 minutes
+                await asyncio.sleep(600)
+                
+                # Get all pending appeals
+                conn = sqlite3.connect(DATABASE_NAME)
+                cursor = conn.cursor()
+                cursor.execute('SELECT id, user_id FROM unban_requests WHERE status = "pending"')
+                pending_appeals = cursor.fetchall()
+                conn.close()
+                
+                for appeal_id, user_id in pending_appeals:
+                    # Check if user is still punished in any guild
+                    is_punished = False
+                    for guild in self.bot.guilds:
+                        # Check if banned
+                        try:
+                            await guild.fetch_ban(discord.Object(id=user_id))
+                            is_punished = True
+                            break
+                        except discord.NotFound:
+                            pass
+                        except Exception:
+                            pass
+                        
+                        # Check if timed out
+                        member = guild.get_member(user_id)
+                        if member and getattr(member, 'timed_out_until', None):
+                            timeout_until = member.timed_out_until
+                            # If timeout is in the future, user is still punished
+                            if timeout_until and timeout_until > datetime.now(timezone.utc):
+                                is_punished = True
+                                break
+                    
+                    # Auto-approve appeal if punishment expired
+                    if not is_punished:
+                        print(f"[Appeals] Auto-approving appeal #{appeal_id} for {user_id} - punishment expired")
+                        conn = sqlite3.connect(DATABASE_NAME)
+                        cursor = conn.cursor()
+                        cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
+                        conn.commit()
+                        conn.close()
+                        
+                        # Try to DM the user
+                        try:
+                            user = await self.bot.fetch_user(user_id)
+                            if user:
+                                dm = discord.Embed(
+                                    title=" Appeal Automatically Approved",
+                                    description="## Your appeal has been automatically approved\n\nYour punishment has expired or been removed.",
+                                    color=0x2ecc71
+                                )
+                                dm.add_field(name=" Appeal ID", value=f"`#{appeal_id}`", inline=True)
+                                dm.add_field(name=" Result", value=f"**Auto-approved**", inline=True)
+                                dm.set_footer(text="CodeVerse Moderation System")
+                                await user.send(embed=dm)
+                        except Exception:
+                            pass
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(f"[Appeals] Error in cleanup task: {e}")
 
     # ---------------- Internal Helper ----------------
     async def _send_appeal_form(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str | None = None):
@@ -26,20 +101,22 @@ class Appeals(commands.Cog):
             if user.bot or (self.bot.user and user.id == self.bot.user.id):
                 return
             
-            # Dedupe check: if sent within 5s, skip (prevents both audit log + member_update firing)
+            # Dedupe check: if sent within 10s, skip (prevents duplicates from various event sources)
+            # This is important because ban and timeout events can fire from multiple sources
             import time
             now = time.time()
-            last_sent = self._timeout_dedupe_cache.get(user.id)
-            if last_sent and (now - last_sent) < 5:
-                print(f"[Appeals] Skipped duplicate DM to {user} (sent {now - last_sent:.1f}s ago)")
+            action_key = f"{user.id}:{action_type}:{guild.id}"  # Include action type and guild in key
+            last_sent = self._timeout_dedupe_cache.get(action_key)
+            if last_sent and (now - last_sent) < 10:
+                print(f"[Appeals] Skipped duplicate DM to {user} for {action_type} (sent {now - last_sent:.1f}s ago)")
                 return
-            self._timeout_dedupe_cache[user.id] = now
+            self._timeout_dedupe_cache[action_key] = now
             
             # Cleanup old cache entries (keep last 50)
-            if len(self._timeout_dedupe_cache) > 50:
-                oldest = sorted(self._timeout_dedupe_cache.items(), key=lambda x: x[1])[:25]
-                for uid, _ in oldest:
-                    del self._timeout_dedupe_cache[uid]
+            if len(self._timeout_dedupe_cache) > 100:  # Increased cache size
+                oldest = sorted(self._timeout_dedupe_cache.items(), key=lambda x: x[1])[:50]
+                for key, _ in oldest:
+                    del self._timeout_dedupe_cache[key]
             
             # Modern, professional appeal form
             embed = discord.Embed(
@@ -94,6 +171,7 @@ class Appeals(commands.Cog):
     # ---------------- Listeners ----------------
     @commands.Cog.listener()
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
+        """Process audit logs for kicks only - bans and timeouts handled by dedicated listeners"""
         if not entry.target or not isinstance(entry.target, (discord.User, discord.Member)):
             return
         if getattr(entry.target, 'bot', False):
@@ -104,49 +182,77 @@ class Appeals(commands.Cog):
             print(f"[Appeals] Skipped audit log entry with appeal-related reason: {entry.reason}")
             return
         
-        action_type = None
+        # ONLY handle kicks here (timeouts via member_update, bans via member_ban)
         if entry.action == discord.AuditLogAction.kick:
             action_type = "kicked"
-        elif entry.action == discord.AuditLogAction.ban:
-            action_type = "banned"
-        elif entry.action == discord.AuditLogAction.member_update:
-            # timeout detection via audit log (backup to on_member_update)
-            try:
-                changes = entry.changes
-                if hasattr(changes, 'timed_out_until') or 'timed_out_until' in str(changes):
-                    action_type = "timed out"
-            except Exception:
-                pass
-        if action_type:
             await self._send_appeal_form(entry.target, entry.guild, action_type, entry.reason)
+    
+    @commands.Cog.listener()
+    async def on_member_ban(self, guild: discord.Guild, user: discord.User):
+        """Handle ban events and send appeals"""
+        if user.bot or (self.bot.user and user.id == self.bot.user.id):
+            return
+            
+        # Get reason from audit logs
+        reason = "No reason provided"
+        try:
+            await asyncio.sleep(1)  # Wait briefly for audit log to be created
+            async for entry in guild.audit_logs(action=discord.AuditLogAction.ban, limit=5):
+                if entry.target and entry.target.id == user.id:
+                    if entry.reason:
+                        reason = entry.reason
+                    break
+        except Exception as e:
+            print(f"[Appeals] Error fetching ban reason: {e}")
+            
+        print(f"[Appeals] Ban detected for {user} in {guild.name}: {reason}")
+        await self._send_appeal_form(user, guild, "banned", reason)
+        
+        # Log channel notification
+        for cid in (1423642446616592385, 1399746928585085068):
+            ch = self.bot.get_channel(cid)
+            if ch:
+                embed = discord.Embed(
+                    title=" Appeal DM Sent",
+                    description=f"Sent appeal form to {user.mention} (ban)",
+                    color=0xe74c3c
+                )
+                embed.add_field(name="User", value=f"{user} ({user.id})", inline=True)
+                embed.add_field(name="Reason", value=reason, inline=False)
+                await ch.send(embed=embed)
+                break
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
+        """Handle timeout changes"""
         if after.bot:
             return
         
-        # Debug: Log timeout changes
         before_timeout = before.timed_out_until
         after_timeout = after.timed_out_until
         
         # Only send appeal form when timeout is APPLIED (not removed)
-        # before_timeout is None = no timeout before
-        # after_timeout is not None = has timeout after
-        # This means timeout was just added
         if before_timeout is None and after_timeout is not None:
+            # Use the timeout dedupe cache to prevent double-sending appeals
+            # (between this event and audit log)
+            
             reason = "Timeout applied"
             try:
+                # Small delay to allow audit log to be created
+                await asyncio.sleep(1)
                 async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=5):
                     if entry.target and entry.target.id == after.id:
                         audit_reason = entry.reason or reason
-                        # Skip if audit reason contains appeal-related keywords (likely from approval/manual untimeout)
+                        # Skip if audit reason contains appeal-related keywords
                         if audit_reason and not any(keyword in audit_reason.lower() for keyword in ['appeal', 'approved', 'unbanned', 'untimeout']):
                             reason = audit_reason
                         break
             except Exception:
                 pass
+                
             print(f"[Appeals] Timeout APPLIED to {after}: before={before_timeout}, after={after_timeout}, reason={reason}")
             await self._send_appeal_form(after, after.guild, "timed out", reason)
+            
             # Log channel notification
             for cid in (1423642446616592385, 1399746928585085068):
                 ch = self.bot.get_channel(cid)
@@ -162,6 +268,36 @@ class Appeals(commands.Cog):
                     embed.add_field(name="Reason", value=reason, inline=False)
                     await ch.send(embed=embed)
                     break
+        
+        # Check if timeout was REMOVED before expiry (manual untimeout/appeal approved)
+        # Only run this check if the before state had a timeout and after doesn't
+        elif before_timeout is not None and after_timeout is None:
+            # Auto-approve any pending appeals for this user in this guild
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute('SELECT id FROM unban_requests WHERE user_id = ? AND status = "pending"', (after.id,))
+            appeals = cursor.fetchall()
+            
+            if appeals:
+                for (appeal_id,) in appeals:
+                    # Update appeal status
+                    cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
+                    print(f"[Appeals] Auto-approved appeal #{appeal_id} - timeout removed for {after}")
+                
+                conn.commit()
+                # Try to DM the user about approval
+                try:
+                    dm = discord.Embed(
+                        title=" Appeal Automatically Approved",
+                        description=f"## Your appeal has been automatically approved\n\nYour timeout in **{after.guild.name}** has been removed.",
+                        color=0x2ecc71
+                    )
+                    dm.add_field(name=" Result", value="**Timeout removed**", inline=True)
+                    dm.set_footer(text=f"{after.guild.name} • Moderation System")
+                    await after.send(embed=dm)
+                except Exception:
+                    pass
+            conn.close()
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -177,6 +313,7 @@ class Appeals(commands.Cog):
         is_punished = False
         punishment_type = "unknown"
         guild_name = "the server"
+        punishment_guild = None
         
         for guild in self.bot.guilds:
             # Check if banned
@@ -185,6 +322,7 @@ class Appeals(commands.Cog):
                 is_punished = True
                 punishment_type = "banned"
                 guild_name = guild.name
+                punishment_guild = guild
                 break
             except discord.NotFound:
                 pass
@@ -194,27 +332,62 @@ class Appeals(commands.Cog):
             # Check if timed out (must be a member)
             member = guild.get_member(message.author.id)
             if member and getattr(member, 'timed_out_until', None):
-                is_punished = True
-                punishment_type = "timed out"
-                guild_name = guild.name
-                break
+                timeout_until = member.timed_out_until
+                # Check if timeout is actually still active
+                if timeout_until and timeout_until > datetime.now(timezone.utc):
+                    is_punished = True
+                    punishment_type = "timed out"
+                    guild_name = guild.name
+                    punishment_guild = guild
+                    break
         
-        # If not punished, auto-close any approved appeals and reject new appeal
+        # If not punished, auto-close any pending appeals and reject new appeal
         if not is_punished:
-            try:
-                embed = discord.Embed(
-                    title=" No Active Punishment",
-                    description="You don't currently have any active punishments (ban or timeout) in our servers.",
-                    color=0xe74c3c
-                )
-                embed.add_field(
-                    name=" Note",
-                    value="Appeals can only be submitted if you have an active punishment. If your punishment was already lifted, no appeal is needed.",
-                    inline=False
-                )
-                await message.author.send(embed=embed)
-            except Exception:
-                pass
+            # Auto-approve any pending appeals for this user
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute('SELECT id FROM unban_requests WHERE user_id = ? AND status = "pending"', (message.author.id,))
+            appeals = cursor.fetchall()
+            
+            if appeals:
+                for (appeal_id,) in appeals:
+                    # Update appeal status
+                    cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
+                    print(f"[Appeals] Auto-approved appeal #{appeal_id} - punishment expired for {message.author.id}")
+                
+                conn.commit()
+                
+                try:
+                    embed = discord.Embed(
+                        title=" Your Appeal Status",
+                        description="Your punishment appears to have expired or been removed, so your pending appeal has been automatically approved.",
+                        color=0x2ecc71
+                    )
+                    embed.add_field(
+                        name=" Note",
+                        value="No further action is required. You can now participate in our servers normally.",
+                        inline=False
+                    )
+                    await message.author.send(embed=embed)
+                except Exception:
+                    pass
+            else:
+                try:
+                    embed = discord.Embed(
+                        title=" No Active Punishment",
+                        description="You don't currently have any active punishments (ban or timeout) in our servers.",
+                        color=0xe74c3c
+                    )
+                    embed.add_field(
+                        name=" Note",
+                        value="Appeals can only be submitted if you have an active punishment. If your punishment was already lifted, no appeal is needed.",
+                        inline=False
+                    )
+                    await message.author.send(embed=embed)
+                except Exception:
+                    pass
+            
+            conn.close()
             print(f"[Appeals] DM rejected from {message.author.id} - no active punishment found")
             return
         
