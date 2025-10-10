@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-10T04:10:08.826954+00:00",
+  "timestamp": "2025-10-10T10:10:10.419225+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -476,9 +476,9 @@
               "guild_id": 1263067254153805905,
               "user_id": 1135729930366357536,
               "start": "2025-10-09T23:19:26.313710+00:00",
-              "end": null,
+              "end": "2025-10-10T04:35:44.149308+00:00",
               "start_note": null,
-              "end_note": null,
+              "end_note": "[Force ended by Aditya ✧ YC45]",
               "paused": 0,
               "pause_time": null,
               "pause_intervals": "[]"
@@ -488,7 +488,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 936241116469141535,
               "start": "2025-10-10T04:10:03.745721+00:00",
-              "end": null,
+              "end": "2025-10-10T05:24:10.401124+00:00",
               "start_note": null,
               "end_note": null,
               "paused": 0,
@@ -2904,7 +2904,20 @@
               0
             ]
           ],
-          "data": []
+          "data": [
+            {
+              "id": 1,
+              "user_id": 1058768857969479720,
+              "guild_id": 1263067254153805905,
+              "moderator_id": 1186872689038729237,
+              "reason": "bloody image",
+              "created_at": "2025-10-10 09:54:12.794800",
+              "revoked": 0,
+              "revoke_reason": null,
+              "revoke_moderator_id": null,
+              "revoked_at": null
+            }
+          ]
         }
       }
     }
@@ -3496,7 +3509,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-10-10T04:10:08.856424+00:00",
+    "last_backup": "2025-10-10T10:10:10.447346+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
