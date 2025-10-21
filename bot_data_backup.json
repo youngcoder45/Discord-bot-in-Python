@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-21T16:48:17.752962+00:00",
+  "timestamp": "2025-10-21T19:03:54.563668+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -992,7 +992,7 @@
               "guild_id": 1263067254153805905,
               "user_id": 936241116469141535,
               "start": "2025-10-21T13:08:00.672717+00:00",
-              "end": null,
+              "end": "2025-10-21T18:23:18.543978+00:00",
               "start_note": null,
               "end_note": null,
               "paused": 0,
@@ -4371,6 +4371,30 @@
               "revoke_reason": null,
               "revoke_moderator_id": null,
               "revoked_at": null
+            },
+            {
+              "id": 10,
+              "user_id": 1062747923294716006,
+              "guild_id": 1263067254153805905,
+              "moderator_id": 955695820999639120,
+              "reason": "this isn't a dating site!!!!",
+              "created_at": "2025-10-21 18:30:31.074225",
+              "revoked": 0,
+              "revoke_reason": null,
+              "revoke_moderator_id": null,
+              "revoked_at": null
+            },
+            {
+              "id": 11,
+              "user_id": 1428791512564629679,
+              "guild_id": 1263067254153805905,
+              "moderator_id": 955695820999639120,
+              "reason": "saale kutre yaser ka dabba kon khaata tha roz? Wtf is Aditya don't eat eggs",
+              "created_at": "2025-10-21 18:48:23.133714",
+              "revoked": 0,
+              "revoke_reason": null,
+              "revoke_moderator_id": null,
+              "revoked_at": null
             }
           ]
         }
@@ -4964,7 +4988,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-10-21T16:48:17.780517+00:00",
+    "last_backup": "2025-10-21T19:03:54.591510+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
