@@ -286,7 +286,586 @@ class ModCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Failed to toggle role: {str(e)}")
 
+    @commands.hybrid_command(name="timeout", help="Timeout a member for a specified duration")
+    @app_commands.describe(
+        member="Member to timeout",
+        duration="Duration (e.g., 10m, 2h, 1d)",
+        reason="Reason for the timeout"
+    )
+    @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
+    @commands.guild_only()
+    async def timeout(self, ctx: commands.Context, member: discord.Member, duration: str, *, reason: str = "No reason provided"):
+        """Timeout a member for a specified duration"""
+        if member == ctx.author:
+            return await ctx.send("❌ You cannot timeout yourself!")
+        
+        if isinstance(ctx.author, discord.Member) and ctx.guild is not None:
+            if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
+                return await ctx.send("❌ Target has an equal or higher role.")
+        
+        # Parse duration
+        time_regex = re.compile(r"(\d+)([smhd])")
+        matches = time_regex.findall(duration.lower())
+        
+        if not matches:
+            return await ctx.send("❌ Invalid duration format. Use: 10m, 2h, 1d, etc.")
+        
+        total_seconds = 0
+        for value, unit in matches:
+            value = int(value)
+            if unit == 's':
+                total_seconds += value
+            elif unit == 'm':
+                total_seconds += value * 60
+            elif unit == 'h':
+                total_seconds += value * 3600
+            elif unit == 'd':
+                total_seconds += value * 86400
+        
+        if total_seconds < 60:
+            return await ctx.send("❌ Timeout duration must be at least 1 minute.")
+        
+        if total_seconds > 2419200:  # 28 days
+            return await ctx.send("❌ Timeout duration cannot exceed 28 days.")
+        
+        try:
+            timeout_until = datetime.now(timezone.utc) + timedelta(seconds=total_seconds)
+            await member.timeout(timeout_until, reason=reason)
+            
+            embed = discord.Embed(
+                title="⏱️ Member Timed Out",
+                description=f"{member.mention} has been timed out.",
+                color=discord.Color.orange()
+            )
+            embed.add_field(name="Duration", value=duration, inline=True)
+            embed.add_field(name="Until", value=f"<t:{int(timeout_until.timestamp())}:F>", inline=True)
+            embed.add_field(name="Reason", value=reason, inline=False)
+            embed.set_footer(text=f"Timed out by {ctx.author}")
+            
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to timeout that member.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to timeout: {str(e)}")
+
+    @commands.hybrid_command(name="untimeout", help="Remove timeout from a member")
+    @app_commands.describe(member="Member to remove timeout from", reason="Reason for removing timeout")
+    @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
+    @commands.guild_only()
+    async def untimeout(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
+        """Remove timeout from a member"""
+        if not member.timed_out_until:
+            return await ctx.send(f"❌ {member.mention} is not timed out.")
+        
+        try:
+            await member.timeout(None, reason=reason)
+            
+            embed = discord.Embed(
+                title="✅ Timeout Removed",
+                description=f"Removed timeout from {member.mention}.",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="Reason", value=reason, inline=False)
+            embed.set_footer(text=f"Removed by {ctx.author}")
+            
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to remove timeout from that member.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to remove timeout: {str(e)}")
+
+    @commands.hybrid_command(name="slowmode", help="Set slowmode delay for the current channel")
+    @app_commands.describe(seconds="Slowmode delay in seconds (0 to disable, max 21600)")
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def slowmode(self, ctx: commands.Context, seconds: int):
+        """Set slowmode delay for the current channel"""
+        if not isinstance(ctx.channel, discord.TextChannel):
+            return await ctx.send("❌ This command can only be used in text channels.")
+        
+        if seconds < 0 or seconds > 21600:
+            return await ctx.send("❌ Slowmode delay must be between 0 and 21600 seconds (6 hours).")
+        
+        try:
+            await ctx.channel.edit(slowmode_delay=seconds, reason=f"Slowmode set by {ctx.author}")
+            
+            if seconds == 0:
+                embed = discord.Embed(
+                    title="✅ Slowmode Disabled",
+                    description=f"Slowmode has been disabled in {ctx.channel.mention}.",
+                    color=discord.Color.green()
+                )
+            else:
+                embed = discord.Embed(
+                    title="⏱️ Slowmode Enabled",
+                    description=f"Slowmode set to **{seconds}** seconds in {ctx.channel.mention}.",
+                    color=discord.Color.blue()
+                )
+            
+            embed.set_footer(text=f"Set by {ctx.author}")
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to modify this channel.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to set slowmode: {str(e)}")
+
+    @commands.hybrid_command(name="lock", help="Lock a channel to prevent members from sending messages")
+    @app_commands.describe(channel="Channel to lock (optional, defaults to current)")
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def lock(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
+        """Lock a channel to prevent members from sending messages"""
+        channel = channel or ctx.channel
+        assert ctx.guild is not None
+        
+        if not isinstance(channel, discord.TextChannel):
+            return await ctx.send("❌ This command can only be used on text channels.")
+        
+        try:
+            overwrites = channel.overwrites_for(ctx.guild.default_role)
+            overwrites.send_messages = False
+            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Channel locked by {ctx.author}")
+            
+            self.lockdown_channels.add(channel.id)
+            
+            embed = discord.Embed(
+                title="🔒 Channel Locked",
+                description=f"{channel.mention} has been locked. Members cannot send messages.",
+                color=discord.Color.red()
+            )
+            embed.set_footer(text=f"Locked by {ctx.author}")
+            
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to modify this channel.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to lock channel: {str(e)}")
+
+    @commands.hybrid_command(name="unlock", help="Unlock a previously locked channel")
+    @app_commands.describe(channel="Channel to unlock (optional, defaults to current)")
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def unlock(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
+        """Unlock a channel to allow members to send messages"""
+        channel = channel or ctx.channel
+        assert ctx.guild is not None
+        
+        if not isinstance(channel, discord.TextChannel):
+            return await ctx.send("❌ This command can only be used on text channels.")
+        
+        try:
+            overwrites = channel.overwrites_for(ctx.guild.default_role)
+            overwrites.send_messages = None  # Reset to default
+            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Channel unlocked by {ctx.author}")
+            
+            self.lockdown_channels.discard(channel.id)
+            
+            embed = discord.Embed(
+                title="🔓 Channel Unlocked",
+                description=f"{channel.mention} has been unlocked. Members can send messages again.",
+                color=discord.Color.green()
+            )
+            embed.set_footer(text=f"Unlocked by {ctx.author}")
+            
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to modify this channel.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to unlock channel: {str(e)}")
+
+    @commands.hybrid_command(name="lockdown", help="Lock all channels in the server")
+    @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def lockdown(self, ctx: commands.Context):
+        """Lock all channels in the server"""
+        assert ctx.guild is not None
+        
+        await ctx.send("🔒 Initiating server lockdown...")
+        
+        locked_count = 0
+        failed_count = 0
+        
+        for channel in ctx.guild.text_channels:
+            try:
+                overwrites = channel.overwrites_for(ctx.guild.default_role)
+                overwrites.send_messages = False
+                await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Server lockdown by {ctx.author}")
+                self.lockdown_channels.add(channel.id)
+                locked_count += 1
+            except:
+                failed_count += 1
+        
+        embed = discord.Embed(
+            title="🔒 Server Lockdown Complete",
+            description=f"Successfully locked **{locked_count}** channels.",
+            color=discord.Color.red()
+        )
+        
+        if failed_count > 0:
+            embed.add_field(name="⚠️ Failed", value=f"{failed_count} channels could not be locked.", inline=False)
+        
+        embed.set_footer(text=f"Lockdown initiated by {ctx.author}")
+        await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="unlockdown", help="Unlock all previously locked channels")
+    @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def unlockdown(self, ctx: commands.Context):
+        """Unlock all previously locked channels"""
+        assert ctx.guild is not None
+        
+        if not self.lockdown_channels:
+            return await ctx.send("❌ No channels are currently locked down.")
+        
+        await ctx.send("🔓 Removing server lockdown...")
+        
+        unlocked_count = 0
+        failed_count = 0
+        
+        for channel_id in list(self.lockdown_channels):
+            channel = ctx.guild.get_channel(channel_id)
+            if channel and isinstance(channel, discord.TextChannel):
+                try:
+                    overwrites = channel.overwrites_for(ctx.guild.default_role)
+                    overwrites.send_messages = None
+                    await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Lockdown removed by {ctx.author}")
+                    self.lockdown_channels.discard(channel_id)
+                    unlocked_count += 1
+                except:
+                    failed_count += 1
+        
+        embed = discord.Embed(
+            title="🔓 Server Lockdown Removed",
+            description=f"Successfully unlocked **{unlocked_count}** channels.",
+            color=discord.Color.green()
+        )
+        
+        if failed_count > 0:
+            embed.add_field(name="⚠️ Failed", value=f"{failed_count} channels could not be unlocked.", inline=False)
+        
+        embed.set_footer(text=f"Lockdown removed by {ctx.author}")
+        await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="nuke", help="Clone and delete a channel to clear all messages")
+    @app_commands.describe(channel="Channel to nuke (optional, defaults to current)")
+    @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def nuke(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
+        """Nuke a channel by cloning and deleting it"""
+        channel = channel or ctx.channel
+        
+        if not isinstance(channel, discord.TextChannel):
+            return await ctx.send("❌ This command can only be used on text channels.")
+        
+        try:
+            # Create confirmation message
+            embed = discord.Embed(
+                title="⚠️ Confirm Channel Nuke",
+                description=f"Are you sure you want to nuke {channel.mention}?\n\n**This will:**\n• Delete all messages\n• Reset channel position\n• Preserve permissions and settings",
+                color=discord.Color.red()
+            )
+            embed.set_footer(text="React with ✅ to confirm or ❌ to cancel")
+            
+            confirm_msg = await ctx.send(embed=embed)
+            await confirm_msg.add_reaction("✅")
+            await confirm_msg.add_reaction("❌")
+            
+            def check(reaction, user):
+                return user == ctx.author and str(reaction.emoji) in ["✅", "❌"] and reaction.message.id == confirm_msg.id
+            
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=30.0, check=check)
+                
+                if str(reaction.emoji) == "❌":
+                    await confirm_msg.delete()
+                    return await ctx.send("❌ Channel nuke cancelled.")
+                
+                # Proceed with nuke
+                position = channel.position
+                new_channel = await channel.clone(reason=f"Channel nuked by {ctx.author}")
+                await channel.delete(reason=f"Channel nuked by {ctx.author}")
+                await new_channel.edit(position=position)
+                
+                embed = discord.Embed(
+                    title="💥 Channel Nuked",
+                    description="This channel has been completely reset!",
+                    color=discord.Color.green()
+                )
+                embed.set_image(url="https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif")
+                embed.set_footer(text=f"Nuked by {ctx.author}")
+                
+                await new_channel.send(embed=embed)
+                
+            except asyncio.TimeoutError:
+                await confirm_msg.delete()
+                await ctx.send("❌ Channel nuke timed out.")
+                
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to manage this channel.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to nuke channel: {str(e)}")
+
+    @commands.hybrid_command(name="massban", help="Ban multiple users by ID")
+    @app_commands.describe(user_ids="User IDs to ban (space-separated)", reason="Reason for the bans")
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.guild_only()
+    async def massban(self, ctx: commands.Context, user_ids: str, *, reason: str = "Mass ban"):
+        """Ban multiple users by their IDs"""
+        assert ctx.guild is not None
+        
+        # Parse user IDs
+        ids = [int(id.strip()) for id in user_ids.split() if id.strip().isdigit()]
+        
+        if not ids:
+            return await ctx.send("❌ No valid user IDs provided.")
+        
+        if len(ids) > 50:
+            return await ctx.send("❌ Cannot ban more than 50 users at once.")
+        
+        await ctx.send(f"⚖️ Processing ban for {len(ids)} user(s)...")
+        
+        banned = []
+        failed = []
+        
+        for user_id in ids:
+            try:
+                user = await self.bot.fetch_user(user_id)
+                await ctx.guild.ban(user, reason=f"[MASSBAN] {reason}")
+                banned.append(f"{user} ({user_id})")
+            except Exception as e:
+                failed.append(f"{user_id}: {str(e)}")
+        
+        embed = discord.Embed(
+            title="🔨 Mass Ban Complete",
+            color=discord.Color.red()
+        )
+        
+        if banned:
+            embed.add_field(
+                name=f"✅ Banned ({len(banned)})",
+                value="\n".join(banned[:10]) + (f"\n...and {len(banned) - 10} more" if len(banned) > 10 else ""),
+                inline=False
+            )
+        
+        if failed:
+            embed.add_field(
+                name=f"❌ Failed ({len(failed)})",
+                value="\n".join(failed[:10]) + (f"\n...and {len(failed) - 10} more" if len(failed) > 10 else ""),
+                inline=False
+            )
+        
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.set_footer(text=f"Mass ban by {ctx.author}")
+        
+        await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="nickname", help="Change a member's nickname")
+    @app_commands.describe(member="Member to change nickname", nickname="New nickname (leave empty to reset)")
+    @commands.has_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(manage_nicknames=True)
+    @commands.guild_only()
+    async def nickname(self, ctx: commands.Context, member: discord.Member, *, nickname: Optional[str] = None):
+        """Change a member's nickname"""
+        if isinstance(ctx.author, discord.Member) and ctx.guild is not None:
+            if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
+                return await ctx.send("❌ Target has an equal or higher role.")
+        
+        old_nick = member.display_name
+        
+        try:
+            await member.edit(nick=nickname, reason=f"Nickname changed by {ctx.author}")
+            
+            embed = discord.Embed(
+                title="✏️ Nickname Changed",
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="Member", value=member.mention, inline=True)
+            embed.add_field(name="Old Nickname", value=old_nick, inline=True)
+            embed.add_field(name="New Nickname", value=nickname or member.name, inline=True)
+            embed.set_footer(text=f"Changed by {ctx.author}")
+            
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to change that member's nickname.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to change nickname: {str(e)}")
+
     # -------- Server Information Commands --------
+    
+    @commands.hybrid_command(name="userinfo", help="Get detailed information about a user")
+    @app_commands.describe(user="User to get information about (defaults to yourself)")
+    @commands.guild_only()
+    async def userinfo(self, ctx: commands.Context, user: Optional[Union[discord.Member, discord.User]] = None):
+        """Get comprehensive user information"""
+        user = user or ctx.author
+        assert ctx.guild is not None
+        
+        embed = discord.Embed(
+            title=f"User Information: {user}",
+            color=user.color if isinstance(user, discord.Member) and user.color != discord.Color.default() else discord.Color.blue(),
+            timestamp=datetime.now(tz=timezone.utc)
+        )
+        
+        if user.avatar:
+            embed.set_thumbnail(url=user.avatar.url)
+        
+        # Basic Info
+        embed.add_field(name="👤 Username", value=str(user), inline=True)
+        embed.add_field(name="🆔 User ID", value=f"`{user.id}`", inline=True)
+        embed.add_field(name="🤖 Bot", value="Yes" if user.bot else "No", inline=True)
+        
+        # Account Creation
+        embed.add_field(
+            name="📅 Account Created",
+            value=f"<t:{int(user.created_at.timestamp())}:F>\n(<t:{int(user.created_at.timestamp())}:R>)",
+            inline=False
+        )
+        
+        # Member-specific info
+        if isinstance(user, discord.Member):
+            # Join date
+            if user.joined_at:
+                embed.add_field(
+                    name="📥 Joined Server",
+                    value=f"<t:{int(user.joined_at.timestamp())}:F>\n(<t:{int(user.joined_at.timestamp())}:R>)",
+                    inline=False
+                )
+            
+            # Roles
+            if len(user.roles) > 1:
+                roles = [role.mention for role in reversed(user.roles[1:])][:20]
+                embed.add_field(
+                    name=f"🎭 Roles [{len(user.roles) - 1}]",
+                    value=" ".join(roles) if roles else "None",
+                    inline=False
+                )
+            
+            # Status
+            status_emoji = {
+                discord.Status.online: "🟢 Online",
+                discord.Status.idle: "🟡 Idle",
+                discord.Status.dnd: "🔴 Do Not Disturb",
+                discord.Status.offline: "⚫ Offline"
+            }
+            embed.add_field(name="📊 Status", value=status_emoji.get(user.status, "Unknown"), inline=True)
+            
+            # Highest role
+            if user.top_role != ctx.guild.default_role:
+                embed.add_field(name="⬆️ Highest Role", value=user.top_role.mention, inline=True)
+            
+            # Boost status
+            if user.premium_since:
+                embed.add_field(
+                    name="💎 Boosting Since",
+                    value=f"<t:{int(user.premium_since.timestamp())}:R>",
+                    inline=True
+                )
+            
+            # Timeout status
+            if user.timed_out_until:
+                embed.add_field(
+                    name="⏱️ Timed Out Until",
+                    value=f"<t:{int(user.timed_out_until.timestamp())}:F>",
+                    inline=False
+                )
+        
+        await ctx.send(embed=embed)
+    
+    @commands.hybrid_command(name="avatar", help="Get a user's avatar")
+    @app_commands.describe(user="User to get avatar from (defaults to yourself)")
+    async def avatar(self, ctx: commands.Context, user: Optional[Union[discord.Member, discord.User]] = None):
+        """Get a user's avatar in high resolution"""
+        user = user or ctx.author
+        
+        embed = discord.Embed(
+            title=f"{user}'s Avatar",
+            color=discord.Color.blue()
+        )
+        
+        if user.avatar:
+            embed.set_image(url=user.avatar.url)
+            embed.add_field(name="🔗 Links", value=f"[PNG]({user.avatar.replace(format='png', size=1024).url}) | [JPG]({user.avatar.replace(format='jpg', size=1024).url}) | [WEBP]({user.avatar.replace(format='webp', size=1024).url})", inline=False)
+        else:
+            embed.description = "This user has no custom avatar."
+        
+        await ctx.send(embed=embed)
+    
+    @commands.hybrid_command(name="roleinfo", help="Get information about a role")
+    @app_commands.describe(role="Role to get information about")
+    @commands.guild_only()
+    async def roleinfo(self, ctx: commands.Context, *, role: discord.Role):
+        """Get comprehensive role information"""
+        assert ctx.guild is not None
+        
+        embed = discord.Embed(
+            title=f"Role Information: {role.name}",
+            color=role.color if role.color != discord.Color.default() else discord.Color.blue(),
+            timestamp=datetime.now(tz=timezone.utc)
+        )
+        
+        # Basic info
+        embed.add_field(name="🎭 Name", value=role.name, inline=True)
+        embed.add_field(name="🆔 ID", value=f"`{role.id}`", inline=True)
+        embed.add_field(name="🎨 Color", value=str(role.color), inline=True)
+        
+        # Position
+        embed.add_field(name="📊 Position", value=f"{role.position}/{len(ctx.guild.roles)}", inline=True)
+        
+        # Members
+        member_count = len(role.members)
+        embed.add_field(name="👥 Members", value=str(member_count), inline=True)
+        
+        # Created
+        embed.add_field(
+            name="📅 Created",
+            value=f"<t:{int(role.created_at.timestamp())}:F>\n(<t:{int(role.created_at.timestamp())}:R>)",
+            inline=False
+        )
+        
+        # Properties
+        properties = []
+        if role.hoist:
+            properties.append("📌 Hoisted")
+        if role.mentionable:
+            properties.append("💬 Mentionable")
+        if role.managed:
+            properties.append("🤖 Managed")
+        if role.is_premium_subscriber():
+            properties.append("💎 Booster Role")
+        
+        if properties:
+            embed.add_field(name="⚙️ Properties", value="\n".join(properties), inline=False)
+        
+        # Key permissions
+        key_perms = []
+        if role.permissions.administrator:
+            key_perms.append("👑 Administrator")
+        if role.permissions.manage_guild:
+            key_perms.append("⚙️ Manage Server")
+        if role.permissions.manage_roles:
+            key_perms.append("🎭 Manage Roles")
+        if role.permissions.manage_channels:
+            key_perms.append("📝 Manage Channels")
+        if role.permissions.kick_members:
+            key_perms.append("👢 Kick Members")
+        if role.permissions.ban_members:
+            key_perms.append("🔨 Ban Members")
+        if role.permissions.moderate_members:
+            key_perms.append("⏱️ Timeout Members")
+        
+        if key_perms:
+            embed.add_field(name="🔑 Key Permissions", value="\n".join(key_perms), inline=False)
+        
+        await ctx.send(embed=embed)
     
     @commands.hybrid_command(name="serverinfo", help="Get detailed server information")
     @app_commands.describe()
