@@ -4,7 +4,7 @@ This document describes the centralized logging system implemented for the CodeV
 
 ## Overview
 
-The logging system centralizes all event logging for the Discord bot to ensure consistent format and storage of logs. It handles:
+The logging system centralizes all event logging for the Discord bot to ensure consistent format and storage of logs. It eliminates duplicate logging by handling all events in one place. It handles:
 
 1. Member events (join, leave, ban, unban)
 2. Moderation actions (warn, timeout, kick)

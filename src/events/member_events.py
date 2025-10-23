@@ -36,7 +36,7 @@ class MemberEvents(commands.Cog):
     async def on_member_join(self, member: discord.Member):
         """Handle member join: track user and send welcome message."""
         await add_or_update_user(member.id, str(member))
-        await log_action("MEMBER_JOIN", member.id, f"Username: {member}")
+        # Logging now handled by centralized logging system
         
         # Send welcome message
         await self.send_welcome_message(member)
@@ -135,7 +135,7 @@ class MemberEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         """Handle member leaving the guild (logging only)."""
-        await log_action("MEMBER_LEAVE", member.id, f"Username: {member}")
+        # Logging now handled by centralized logging system
         
         # Clean up any stored welcome message references
         if member.id in self.bot_welcome_messages:
@@ -144,51 +144,8 @@ class MemberEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         """Handle member updates (role changes, nickname changes, etc.)"""
-        # Log significant changes to server logs channel
-        server_logs_id = int(os.getenv('SERVER_LOGS_CHANNEL_ID', 0))
-        if not server_logs_id:
-            return
-            
-        log_channel = self.bot.get_channel(server_logs_id)
-        if not log_channel:
-            return
-
-        # Check for role changes
-        if before.roles != after.roles:
-            added_roles = [role for role in after.roles if role not in before.roles]
-            removed_roles = [role for role in before.roles if role not in after.roles]
-            
-            if added_roles or removed_roles:
-                embed = discord.Embed(
-                    title="🔄 Member Role Update",
-                    color=discord.Color.blue(),
-                    timestamp=datetime.utcnow()
-                )
-                embed.set_thumbnail(url=after.display_avatar.url)
-                
-                embed.add_field(
-                    name="Member",
-                    value=f"{after.mention} ({after.id})",
-                    inline=False
-                )
-                
-                if added_roles:
-                    roles_text = ", ".join([role.mention for role in added_roles])
-                    embed.add_field(
-                        name="➕ Roles Added",
-                        value=roles_text,
-                        inline=False
-                    )
-                
-                if removed_roles:
-                    roles_text = ", ".join([role.name for role in removed_roles])
-                    embed.add_field(
-                        name="➖ Roles Removed", 
-                        value=roles_text,
-                        inline=False
-                    )
-                
-                await log_channel.send(embed=embed)
+        # Nothing to do here - role changes now handled by the centralized logging system
+        # This method is kept for future compatibility
         
         # Check for nickname changes - removed per user request
         # if before.nick != after.nick:
@@ -303,7 +260,7 @@ class MemberEvents(commands.Cog):
                 
                 await log_channel.send(embed=embed)
         
-        await log_action("MEMBER_BAN", user.id, f"Username: {user}")
+        # Logging now handled by centralized logging system
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild, user):
@@ -322,7 +279,7 @@ class MemberEvents(commands.Cog):
                 
                 await log_channel.send(embed=embed)
         
-        await log_action("MEMBER_UNBAN", user.id, f"Username: {user}")
+        # Logging now handled by centralized logging system
 
 async def setup(bot):
     await bot.add_cog(MemberEvents(bot))
