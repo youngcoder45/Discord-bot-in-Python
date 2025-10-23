@@ -270,43 +270,7 @@ class AdvancedModeration(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
-    @commands.hybrid_command(name="slowmode")
-    @commands.has_permissions(manage_channels=True)
-    @app_commands.describe(
-        seconds="Slowmode delay in seconds (0-21600)",
-        channel="Channel to apply slowmode to"
-    )
-    async def slowmode(self, ctx, seconds: int, channel: Optional[discord.TextChannel] = None):
-        """Set channel slowmode (max 6 hours for safety)"""
-        if seconds < 0 or seconds > 21600:  # Max 6 hours
-            await ctx.send("❌ Slowmode must be between 0 and 21600 seconds (6 hours)", ephemeral=True)
-            return
-            
-        channel = channel or ctx.channel
-        
-        try:
-            await channel.edit(slowmode_delay=seconds)
-            
-            if seconds == 0:
-                embed = discord.Embed(
-                    title="🚀 Slowmode Disabled",
-                    description=f"Slowmode has been disabled in {channel.mention}",
-                    color=0x2ecc71
-                )
-            else:
-                embed = discord.Embed(
-                    title="🐌 Slowmode Enabled",
-                    description=f"Slowmode set to {seconds} seconds in {channel.mention}",
-                    color=0xf39c12
-                )
-                
-            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
-            await ctx.send(embed=embed)
-            
-        except discord.Forbidden:
-            await ctx.send("❌ I don't have permission to manage this channel", ephemeral=True)
-        except Exception as e:
-            await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
+    # Note: slowmode command removed - it's already implemented in modcog.py
 
     @commands.hybrid_command(name="advmodstats")
     @commands.has_permissions(manage_messages=True)
