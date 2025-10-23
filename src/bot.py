@@ -42,6 +42,7 @@ COGS_TO_LOAD = [
     'commands.advanced_moderation',  # Advanced moderation with automod, tempban, mute, safety features
     'commands.protection',    # Protection features (anti-spam, anti-raid, anti-nuke)
     'commands.appeals',       # Appeal system for bans and mutes
+    'commands.spam_catch',    # Spam detection and catching
     
     # Staff Management (Essential)
     'commands.staff_shifts',  # Staff shift tracking and logging system
