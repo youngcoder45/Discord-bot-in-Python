@@ -241,34 +241,34 @@ async def main():
     if os.getenv('ALLOW_MULTIPLE_INSTANCES', '0') != '1':
         try:
             if os.path.exists(LOCK_FILE):
-                    with open(LOCK_FILE,'r',encoding='utf-8') as lf:
-                        prev_data = lf.read().strip().split('|')
-                    if len(prev_data) == 3:
-                        prev_pid, prev_ts, prev_id = prev_data
-                        # If PID still alive (best effort) and lock age < 10 min -> block
-                        lock_age = time.time() - float(prev_ts)
-                        pid_alive = False
-                        try:
-                            os.kill(int(prev_pid), 0)
-                            pid_alive = True
-                        except Exception:
-                            pid_alive = False
-                        if lock_age < 600 and pid_alive and prev_id != INSTANCE_ID:
-                            logger.error("Another bot instance running (pid=%s id=%s age=%ss).", prev_pid, prev_id, int(lock_age))
-                            return
-            with open(LOCK_FILE,'w',encoding='utf-8') as f:
-                f.write(f"{os.getpid()}|{time.time()}|{INSTANCE_ID}")
-                # Register cleanup
-                def _cleanup():
+                with open(LOCK_FILE, 'r', encoding='utf-8') as lf:
+                    prev_data = lf.read().strip().split('|')
+                if len(prev_data) == 3:
+                    prev_pid, prev_ts, prev_id = prev_data
+                    # If PID still alive (best effort) and lock age < 10 min -> block
+                    lock_age = time.time() - float(prev_ts)
+                    pid_alive = False
                     try:
-                        if os.path.exists(LOCK_FILE):
-                            with open(LOCK_FILE,'r',encoding='utf-8') as lf:
-                                content = lf.read().strip()
-                            if content.startswith(str(os.getpid())):
-                                os.remove(LOCK_FILE)
+                        os.kill(int(prev_pid), 0)
+                        pid_alive = True
                     except Exception:
-                        pass
-                atexit.register(_cleanup)
+                        pid_alive = False
+                    if lock_age < 600 and pid_alive and prev_id != INSTANCE_ID:
+                        logger.error("Another bot instance running (pid=%s id=%s age=%ss).", prev_pid, prev_id, int(lock_age))
+                        return
+            with open(LOCK_FILE, 'w', encoding='utf-8') as f:
+                f.write(f"{os.getpid()}|{time.time()}|{INSTANCE_ID}")
+            # Register cleanup
+            def _cleanup():
+                try:
+                    if os.path.exists(LOCK_FILE):
+                        with open(LOCK_FILE, 'r', encoding='utf-8') as lf:
+                            content = lf.read().strip()
+                        if content.startswith(str(os.getpid())):
+                            os.remove(LOCK_FILE)
+                except Exception:
+                    pass
+            atexit.register(_cleanup)
         except Exception as e:
             logger.warning(f"Instance lock handling failed: {e}")
     # Start lightweight keep-alive server (optional)
