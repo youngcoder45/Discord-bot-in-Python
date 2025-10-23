@@ -15,6 +15,9 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, Union
 from utils.helpers import create_success_embed, create_error_embed, create_warning_embed, log_action
 
+# Bot owner ID for restricted commands
+BOT_OWNER_ID = 955695820999639120
+
 # SAM Module imports for warnings
 try:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -419,7 +422,9 @@ class ModCog(commands.Cog):
     @commands.guild_only()
     async def lock(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
         """Lock a channel to prevent members from sending messages"""
-        channel = channel or ctx.channel
+        # ctx.channel can be a DMChannel (MessageableChannel); only assign it if it's a TextChannel
+        if channel is None:
+            channel = ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None
         assert ctx.guild is not None
         
         if not isinstance(channel, discord.TextChannel):
@@ -452,7 +457,7 @@ class ModCog(commands.Cog):
     @commands.guild_only()
     async def unlock(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
         """Unlock a channel to allow members to send messages"""
-        channel = channel or ctx.channel
+        channel = channel or (ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None)
         assert ctx.guild is not None
         
         if not isinstance(channel, discord.TextChannel):
@@ -553,17 +558,22 @@ class ModCog(commands.Cog):
         embed.set_footer(text=f"Lockdown removed by {ctx.author}")
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="nuke", help="Clone and delete a channel to clear all messages")
+    @commands.hybrid_command(name="nuke", help="Clone and delete a channel to clear all messages (OWNER ONLY)")
     @app_commands.describe(channel="Channel to nuke (optional, defaults to current)")
-    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.guild_only()
     async def nuke(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
-        """Nuke a channel by cloning and deleting it"""
-        channel = channel or ctx.channel
+        """Nuke a channel by cloning and deleting it (Owner only)"""
+        # Check if user is the bot owner
+        if ctx.author.id != BOT_OWNER_ID:
+            return await ctx.send("❌ This command can only be used by the bot owner.")
         
-        if not isinstance(channel, discord.TextChannel):
-            return await ctx.send("❌ This command can only be used on text channels.")
+        # Ensure channel is a TextChannel: prefer provided channel, otherwise use ctx.channel if it's a TextChannel
+        if channel is None:
+            if isinstance(ctx.channel, discord.TextChannel):
+                channel = ctx.channel
+            else:
+                return await ctx.send("❌ This command can only be used on text channels.")
         
         try:
             # Create confirmation message
@@ -613,13 +623,16 @@ class ModCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Failed to nuke channel: {str(e)}")
 
-    @commands.hybrid_command(name="massban", help="Ban multiple users by ID")
+    @commands.hybrid_command(name="massban", help="Ban multiple users by ID (OWNER ONLY)")
     @app_commands.describe(user_ids="User IDs to ban (space-separated)", reason="Reason for the bans")
-    @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @commands.guild_only()
     async def massban(self, ctx: commands.Context, user_ids: str, *, reason: str = "Mass ban"):
-        """Ban multiple users by their IDs"""
+        """Ban multiple users by their IDs (Owner only)"""
+        # Check if user is the bot owner
+        if ctx.author.id != BOT_OWNER_ID:
+            return await ctx.send("❌ This command can only be used by the bot owner.")
+        
         assert ctx.guild is not None
         
         # Parse user IDs
