@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-24T11:46:04.707616+00:00",
+  "timestamp": "2025-10-24T17:46:06.699260+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -1070,6 +1070,18 @@
               "paused": 0,
               "pause_time": null,
               "pause_intervals": "[]"
+            },
+            {
+              "shift_id": 86,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "start": "2025-10-24T17:03:39.979406+00:00",
+              "end": null,
+              "start_note": "👀",
+              "end_note": null,
+              "paused": 0,
+              "pause_time": null,
+              "pause_intervals": "[]"
             }
           ]
         },
@@ -1176,19 +1188,19 @@
               "id": 1,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 52,
-              "total_earned": 52,
+              "points": 55,
+              "total_earned": 55,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 2,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 46,
-              "total_earned": 46,
+              "points": 47,
+              "total_earned": 47,
               "total_spent": 0,
-              "last_updated": "2025-10-22 17:34:55"
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 3,
@@ -1221,10 +1233,10 @@
               "id": 6,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 50,
-              "total_earned": 50,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 52,
+              "total_earned": 53,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 7,
@@ -1275,10 +1287,10 @@
               "id": 12,
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
-              "points": 10,
-              "total_earned": 10,
+              "points": 12,
+              "total_earned": 12,
               "total_spent": 0,
-              "last_updated": "2025-10-24 09:59:00"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 13,
@@ -1374,19 +1386,19 @@
               "id": 23,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 30,
-              "total_earned": 30,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 32,
+              "total_earned": 33,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 24,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 20,
-              "total_earned": 20,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 22,
+              "total_earned": 23,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 25,
@@ -1401,10 +1413,10 @@
               "id": 26,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 19,
-              "total_earned": 19,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 21,
+              "total_earned": 22,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 27,
@@ -1419,19 +1431,19 @@
               "id": 28,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 10,
-              "total_earned": 10,
+              "points": 13,
+              "total_earned": 13,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 29,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 9,
-              "total_earned": 9,
+              "points": 12,
+              "total_earned": 12,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 30,
@@ -1446,10 +1458,10 @@
               "id": 31,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 18,
-              "total_earned": 18,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 20,
+              "total_earned": 21,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 32,
@@ -1464,28 +1476,28 @@
               "id": 33,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 17,
-              "total_earned": 17,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 19,
+              "total_earned": 20,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 34,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 8,
-              "total_earned": 8,
+              "points": 11,
+              "total_earned": 11,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 35,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 7,
-              "total_earned": 7,
+              "points": 10,
+              "total_earned": 10,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 36,
@@ -1527,10 +1539,10 @@
               "id": 40,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 6,
-              "total_earned": 6,
+              "points": 9,
+              "total_earned": 9,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 41,
@@ -1554,10 +1566,10 @@
               "id": 43,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 9,
-              "total_earned": 9,
+              "points": 10,
+              "total_earned": 10,
               "total_spent": 0,
-              "last_updated": "2025-10-22 17:34:55"
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 44,
@@ -1572,19 +1584,19 @@
               "id": 45,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 5,
-              "total_earned": 5,
+              "points": 8,
+              "total_earned": 8,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 46,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 4,
-              "total_earned": 4,
+              "points": 7,
+              "total_earned": 7,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 47,
@@ -1617,19 +1629,19 @@
               "id": 50,
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
-              "points": 8,
-              "total_earned": 8,
+              "points": 10,
+              "total_earned": 10,
               "total_spent": 0,
-              "last_updated": "2025-10-24 09:59:00"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 51,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 16,
-              "total_earned": 16,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 18,
+              "total_earned": 19,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 52,
@@ -1698,10 +1710,10 @@
               "id": 59,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 8,
-              "total_earned": 8,
+              "points": 9,
+              "total_earned": 9,
               "total_spent": 0,
-              "last_updated": "2025-10-22 17:34:55"
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 60,
@@ -1743,10 +1755,10 @@
               "id": 64,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 15,
-              "total_earned": 15,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 17,
+              "total_earned": 18,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 65,
@@ -1869,19 +1881,19 @@
               "id": 78,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 14,
-              "total_earned": 14,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 16,
+              "total_earned": 17,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 79,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 3,
-              "total_earned": 3,
+              "points": 6,
+              "total_earned": 6,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 80,
@@ -1923,10 +1935,10 @@
               "id": 84,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 7,
-              "total_earned": 7,
+              "points": 8,
+              "total_earned": 8,
               "total_spent": 0,
-              "last_updated": "2025-10-22 17:34:55"
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 85,
@@ -1941,10 +1953,10 @@
               "id": 86,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 2,
-              "total_earned": 2,
+              "points": 5,
+              "total_earned": 5,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 87,
@@ -2013,55 +2025,55 @@
               "id": 94,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 6,
-              "total_earned": 6,
+              "points": 7,
+              "total_earned": 7,
               "total_spent": 0,
-              "last_updated": "2025-10-22 17:34:55"
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 95,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 5,
-              "total_earned": 5,
+              "points": 6,
+              "total_earned": 6,
               "total_spent": 0,
-              "last_updated": "2025-10-22 17:34:55"
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 96,
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
-              "points": 7,
-              "total_earned": 7,
+              "points": 9,
+              "total_earned": 9,
               "total_spent": 0,
-              "last_updated": "2025-10-24 09:59:00"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 97,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 13,
-              "total_earned": 13,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 15,
+              "total_earned": 16,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 98,
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
-              "points": 6,
-              "total_earned": 6,
+              "points": 8,
+              "total_earned": 8,
               "total_spent": 0,
-              "last_updated": "2025-10-24 09:59:00"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 99,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 12,
-              "total_earned": 12,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 14,
+              "total_earned": 15,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 100,
@@ -2103,10 +2115,10 @@
               "id": 104,
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
-              "points": 5,
-              "total_earned": 5,
+              "points": 7,
+              "total_earned": 7,
               "total_spent": 0,
-              "last_updated": "2025-10-24 09:59:00"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 105,
@@ -2130,19 +2142,19 @@
               "id": 107,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 11,
-              "total_earned": 11,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 13,
+              "total_earned": 14,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 108,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 10,
-              "total_earned": 10,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 12,
+              "total_earned": 13,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 109,
@@ -2166,10 +2178,10 @@
               "id": 111,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 9,
-              "total_earned": 9,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 11,
+              "total_earned": 12,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 112,
@@ -2184,19 +2196,19 @@
               "id": 113,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 4,
-              "total_earned": 4,
+              "points": 5,
+              "total_earned": 5,
               "total_spent": 0,
-              "last_updated": "2025-10-22 17:34:55"
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 114,
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
-              "points": 4,
-              "total_earned": 4,
+              "points": 6,
+              "total_earned": 6,
               "total_spent": 0,
-              "last_updated": "2025-10-24 09:59:00"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 115,
@@ -2220,37 +2232,37 @@
               "id": 117,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 8,
-              "total_earned": 8,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 10,
+              "total_earned": 11,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 118,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 7,
-              "total_earned": 7,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 9,
+              "total_earned": 10,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 119,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 6,
-              "total_earned": 6,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 8,
+              "total_earned": 9,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 120,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 5,
-              "total_earned": 5,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 7,
+              "total_earned": 8,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 121,
@@ -2274,10 +2286,10 @@
               "id": 123,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 4,
-              "total_earned": 4,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 6,
+              "total_earned": 7,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 124,
@@ -2292,10 +2304,10 @@
               "id": 125,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 3,
-              "total_earned": 3,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 5,
+              "total_earned": 6,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 126,
@@ -2310,10 +2322,10 @@
               "id": 127,
               "guild_id": 1263067254153805905,
               "user_id": 380987045008506880,
-              "points": 1,
-              "total_earned": 1,
+              "points": 4,
+              "total_earned": 4,
               "total_spent": 0,
-              "last_updated": "2025-10-21 06:39:03"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 128,
@@ -2337,28 +2349,28 @@
               "id": 130,
               "guild_id": 1263067254153805905,
               "user_id": 1186872689038729237,
-              "points": 1,
-              "total_earned": 1,
+              "points": 2,
+              "total_earned": 2,
               "total_spent": 0,
-              "last_updated": "2025-10-22 17:34:55"
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 131,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 2,
-              "total_earned": 2,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 4,
+              "total_earned": 5,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 132,
               "guild_id": 1263067254153805905,
               "user_id": 1058768857969479720,
-              "points": 1,
-              "total_earned": 1,
-              "total_spent": 0,
-              "last_updated": "2025-10-23 09:01:11"
+              "points": 3,
+              "total_earned": 4,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
             },
             {
               "id": 133,
@@ -2382,19 +2394,118 @@
               "id": 135,
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
-              "points": 3,
-              "total_earned": 3,
+              "points": 5,
+              "total_earned": 5,
               "total_spent": 0,
-              "last_updated": "2025-10-24 09:59:00"
+              "last_updated": "2025-10-24 17:38:18"
             },
             {
               "id": 136,
               "guild_id": 1263067254153805905,
               "user_id": 999915669791449098,
+              "points": 4,
+              "total_earned": 4,
+              "total_spent": 0,
+              "last_updated": "2025-10-24 17:38:18"
+            },
+            {
+              "id": 137,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "points": 3,
+              "total_earned": 3,
+              "total_spent": 0,
+              "last_updated": "2025-10-24 17:38:18"
+            },
+            {
+              "id": 138,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
               "points": 2,
               "total_earned": 2,
               "total_spent": 0,
-              "last_updated": "2025-10-24 09:59:00"
+              "last_updated": "2025-10-24 17:38:18"
+            },
+            {
+              "id": 139,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "points": 2,
+              "total_earned": 2,
+              "total_spent": 0,
+              "last_updated": "2025-10-24 17:38:18"
+            },
+            {
+              "id": 140,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "points": 2,
+              "total_earned": 3,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
+            },
+            {
+              "id": 141,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "points": 1,
+              "total_earned": 2,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
+            },
+            {
+              "id": 142,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "points": 0,
+              "total_earned": 1,
+              "total_spent": 1,
+              "last_updated": "2025-10-24 17:38:17"
+            },
+            {
+              "id": 143,
+              "guild_id": 1263067254153805905,
+              "user_id": 536991182035746816,
+              "points": 1,
+              "total_earned": 1,
+              "total_spent": 0,
+              "last_updated": "2025-10-24 17:29:24"
+            },
+            {
+              "id": 144,
+              "guild_id": 1263067254153805905,
+              "user_id": 1186872689038729237,
+              "points": 1,
+              "total_earned": 1,
+              "total_spent": 0,
+              "last_updated": "2025-10-24 17:38:17"
+            },
+            {
+              "id": 145,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "points": 1,
+              "total_earned": 1,
+              "total_spent": 0,
+              "last_updated": "2025-10-24 17:38:17"
+            },
+            {
+              "id": 146,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
+              "points": 1,
+              "total_earned": 1,
+              "total_spent": 0,
+              "last_updated": "2025-10-24 17:38:18"
+            },
+            {
+              "id": 147,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "points": 1,
+              "total_earned": 1,
+              "total_spent": 0,
+              "last_updated": "2025-10-24 17:38:18"
             }
           ]
         },
@@ -3825,6 +3936,116 @@
               "reason": "No reason provided",
               "action_type": "add",
               "timestamp": "2025-10-24 09:59:00"
+            },
+            {
+              "id": 137,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 15:33:45"
+            },
+            {
+              "id": 138,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Adudakqua",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:03:54"
+            },
+            {
+              "id": 139,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Adudakqua",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:03:54"
+            },
+            {
+              "id": 140,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Adudakqua",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:05:08"
+            },
+            {
+              "id": 141,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Script | Former Cult Leader",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:06:07"
+            },
+            {
+              "id": 142,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1186872689038729237,
+              "points_change": -1,
+              "reason": "seems like the user has negative opinions on the aura given",
+              "action_type": "remove",
+              "timestamp": "2025-10-24 17:07:46"
+            },
+            {
+              "id": 143,
+              "guild_id": 1263067254153805905,
+              "user_id": 536991182035746816,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:29:24"
+            },
+            {
+              "id": 144,
+              "guild_id": 1263067254153805905,
+              "user_id": 1186872689038729237,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:38:17"
+            },
+            {
+              "id": 145,
+              "guild_id": 1263067254153805905,
+              "user_id": 1058768857969479720,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:38:17"
+            },
+            {
+              "id": 146,
+              "guild_id": 1263067254153805905,
+              "user_id": 999915669791449098,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:38:18"
+            },
+            {
+              "id": 147,
+              "guild_id": 1263067254153805905,
+              "user_id": 380987045008506880,
+              "moderator_id": 1399720532513132556,
+              "points_change": 1,
+              "reason": "Thanks from Aditya ✧ YC45",
+              "action_type": "auto_add",
+              "timestamp": "2025-10-24 17:38:18"
             }
           ]
         },
@@ -3850,7 +4071,7 @@
           "data": [
             {
               "name": "points_history",
-              "seq": 136
+              "seq": 147
             }
           ]
         },
@@ -5243,7 +5464,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-10-24T11:46:04.750542+00:00",
+    "last_backup": "2025-10-24T17:46:06.783174+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
