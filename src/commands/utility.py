@@ -105,9 +105,9 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
             # Edit the original message with the new embed
             await self.original_message.edit(embed=embed)
             
-            # Send confirmation
+            # Send ephemeral confirmation
             success_embed = discord.Embed(
-                title="Embed Updated Successfully",
+                title="✅ Embed Updated",
                 description=f"The embed has been updated!\n[Jump to message]({self.original_message.jump_url})",
                 color=discord.Color.green()
             )
@@ -115,21 +115,21 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
             
         except discord.Forbidden:
             error_embed = discord.Embed(
-                title="Permission Error",
+                title="❌ Permission Error",
                 description="I don't have permission to edit that message. Make sure I sent the original message.",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
         except discord.NotFound:
             error_embed = discord.Embed(
-                title="Message Not Found",
+                title="❌ Message Not Found",
                 description="The message could not be found. It may have been deleted.",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
         except Exception as e:
             error_embed = discord.Embed(
-                title="Embed Edit Failed",
+                title="❌ Embed Edit Failed",
                 description=f"Error: {str(e)}",
                 color=discord.Color.red()
             )
@@ -212,8 +212,20 @@ class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
                 except:
                     pass  # Invalid URL, skip image
             
-            # Send the beautiful embed
-            await interaction.response.send_message(embed=embed)
+            # Send the beautiful embed to the channel (not as a reply)
+            if isinstance(interaction.channel, (discord.TextChannel, discord.Thread)):
+                await interaction.channel.send(embed=embed)
+                
+                # Send ephemeral confirmation to the user
+                success_embed = discord.Embed(
+                    title="✅ Embed Sent",
+                    description="Your embed has been sent to this channel!",
+                    color=discord.Color.green()
+                )
+                await interaction.response.send_message(embed=success_embed, ephemeral=True)
+            else:
+                # Fallback if not in a proper channel
+                await interaction.response.send_message(embed=embed)
             
         except Exception as e:
             error_embed = discord.Embed(
@@ -396,7 +408,7 @@ class EmbedBuilder(commands.Cog):
     ):
         """Create a beautiful customized embed message (quick method with parameters)"""
         try:
-            print(f"DEBUG: /embed called by {interaction.user} (ID: {interaction.user.id})")
+            print(f"DEBUG: /embedquick called by {interaction.user} (ID: {interaction.user.id})")
             print(f"DEBUG: Guild: {interaction.guild.name if interaction.guild else 'DM'}")
             
             # Create base embed with proper spacing
@@ -456,8 +468,20 @@ class EmbedBuilder(commands.Cog):
             if timestamp and timestamp.lower() in ['yes', 'true', 'y']:
                 embed.timestamp = discord.utils.utcnow()
             
-            # Send the embed
-            await interaction.response.send_message(embed=embed)
+            # Send the embed to the channel (not as a reply)
+            if isinstance(interaction.channel, (discord.TextChannel, discord.Thread)):
+                await interaction.channel.send(embed=embed)
+                
+                # Send ephemeral confirmation to the user
+                success_embed = discord.Embed(
+                    title="✅ Embed Sent",
+                    description="Your embed has been sent to this channel!",
+                    color=discord.Color.green()
+                )
+                await interaction.response.send_message(embed=success_embed, ephemeral=True)
+            else:
+                # Fallback if not in a proper channel
+                await interaction.response.send_message(embed=embed)
             
         except Exception as e:
             error_embed = discord.Embed(
