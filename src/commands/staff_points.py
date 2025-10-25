@@ -299,7 +299,6 @@ class StaffPoints(commands.Cog):
                 FROM staff_points 
                 WHERE guild_id = ? AND points > 0
                 GROUP BY user_id
-                GROUP BY user_id
                 ORDER BY points DESC, total_earned DESC
             """, (ctx.guild.id,)) as cursor:
                 leaderboard_rows = list(await cursor.fetchall())
@@ -522,10 +521,30 @@ class StaffPoints(commands.Cog):
         )
         
         view = ConfirmView()
-        message = await ctx.send(embed=embed, view=view, ephemeral=True)
-        await view.wait()
+        
+        # Send confirmation message
+        if ctx.interaction:
+            # For slash commands
+            await ctx.reply(embed=embed, view=view, ephemeral=True)
+            message = await ctx.interaction.original_response()
+        else:
+            # For text commands
+            message = await ctx.send(embed=embed, view=view)
+        
+        # Wait for user response
+        timed_out = await view.wait()
+        
+        if view.value is None or timed_out:
+            # Timeout or no response
+            embed = create_error_embed("Reset Timed Out", "Points reset confirmation timed out.")
+            try:
+                await message.edit(embed=embed, view=None)
+            except:
+                pass
+            return
         
         if view.value:
+            # Confirmed - reset points
             await self.set_user_points(ctx.guild.id, member.id, 0, ctx.author.id, reason)
             
             embed = create_success_embed(
@@ -538,16 +557,18 @@ class StaffPoints(commands.Cog):
             # Log the reset
             await self.log_points_change(ctx.guild, member, -current_points, ctx.author, reason, "reset")
             
-            if isinstance(message, discord.InteractionMessage):
+            try:
                 await message.edit(embed=embed, view=None)
-            else:
-                await message.edit(embed=embed, view=None)
+            except Exception as e:
+                # If edit fails, send new message
+                await ctx.send(embed=embed)
         else:
+            # Cancelled
             embed = create_error_embed("Reset Cancelled", "Points reset has been cancelled.")
-            if isinstance(message, discord.InteractionMessage):
+            try:
                 await message.edit(embed=embed, view=None)
-            else:
-                await message.edit(embed=embed, view=None)
+            except:
+                await ctx.send(embed=embed)
 
     @aura.command(name="config", description="Configure staff aura settings")
     @app_commands.describe(
@@ -932,7 +953,7 @@ class ConfirmView(discord.ui.View):
         super().__init__(timeout=30)
         self.value = None
     
-    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger)
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger, emoji="✅")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             await interaction.response.defer()
@@ -941,7 +962,7 @@ class ConfirmView(discord.ui.View):
         self.value = True
         self.stop()
     
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="")
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="❌")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             await interaction.response.defer()
