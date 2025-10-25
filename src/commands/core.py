@@ -39,9 +39,9 @@ class Core(commands.Cog):
 
 
 
-    @commands.hybrid_command(name="help", aliases=["helpmenu"], help="Open the interactive dropdown help center")
+    @commands.hybrid_command(name="help", help="Open the interactive dropdown help center")
     @app_commands.describe(command="Optional command name to get detailed help about")
-    async def helpmenu(self, ctx: commands.Context, command: str | None = None):
+    async def help(self, ctx: commands.Context, command: str | None = None):
         """Interactive categorized help with dropdown menu."""
         
         # If a specific command is requested, show detailed info inline
