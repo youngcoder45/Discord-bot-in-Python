@@ -48,9 +48,6 @@ COGS_TO_LOAD = [
     'commands.staff_shifts',  # Staff shift tracking and logging system
     'commands.staff_points',  # Staff aura system with leaderboard
     
-    # Server Utilities (Essential)
-    'commands.afk',           # AFK system for away message responses
-    
     # Data & Utility (Useful but not critical)
     'commands.data_management',  # Data backup and persistence management
     'commands.utility',       # Embed builder commands for announcements
