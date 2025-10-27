@@ -2,15 +2,18 @@ import os
 from datetime import datetime, timezone
 import discord
 from discord.ext import commands
+from discord import app_commands
 from utils.json_store import add_or_update_user
 from utils.helpers import log_action  # Keep for backward compatibility
 import asyncio
+import aiosqlite
 
 class MemberEvents(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         # Store bot welcome messages with their message IDs for auto-deletion
         self.bot_welcome_messages = {}  # {user_id: message_id}
+        self.db_path = "data/member_events.db"
         
     async def is_staff_member(self, member: discord.Member) -> bool:
         """Check if member is a staff member using staff-shifts module logic"""
@@ -32,6 +35,42 @@ class MemberEvents(commands.Cog):
         except:
             return False
 
+    async def cog_load(self):
+        """Initialize the database when the cog loads"""
+        await self.init_database()
+    
+    async def init_database(self):
+        """Initialize the member events database"""
+        async with aiosqlite.connect(self.db_path) as db:
+            # Welcome configuration table
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS welcome_config (
+                    guild_id INTEGER PRIMARY KEY,
+                    welcome_enabled BOOLEAN DEFAULT 1,
+                    welcome_channel_id INTEGER
+                )
+            """)
+            await db.commit()
+
+    async def get_welcome_enabled(self, guild_id: int) -> bool:
+        """Get whether welcome messages are enabled for a guild"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("""
+                SELECT welcome_enabled FROM welcome_config 
+                WHERE guild_id = ?
+            """, (guild_id,)) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else True  # Default to enabled
+
+    async def set_welcome_enabled(self, guild_id: int, enabled: bool):
+        """Set whether welcome messages are enabled for a guild"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                INSERT OR REPLACE INTO welcome_config (guild_id, welcome_enabled)
+                VALUES (?, ?)
+            """, (guild_id, enabled))
+            await db.commit()
+
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Handle member join: track user and send welcome message."""
@@ -43,6 +82,10 @@ class MemberEvents(commands.Cog):
         
     async def send_welcome_message(self, member: discord.Member):
         """Send professional welcome message to new member"""
+        # Check if welcome messages are enabled for this guild
+        if not await self.get_welcome_enabled(member.guild.id):
+            return
+            
         # Check if this is the correct guild
         guild_id = int(os.getenv('GUILD_ID', 0))
         if not guild_id or member.guild.id != guild_id:
@@ -78,6 +121,80 @@ class MemberEvents(commands.Cog):
             print(f"❌ No permission to send welcome message in channel {welcome_channel_id}")
         except Exception as e:
             print(f"❌ Error sending welcome message: {e}")
+
+    @commands.hybrid_group(name="welcome", description="Manage welcome message settings")
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def welcome(self, ctx: commands.Context):
+        """Main welcome command group"""
+        assert ctx.guild is not None, "This command can only be used in a guild"
+        if ctx.invoked_subcommand is None:
+            # Show current welcome settings
+            enabled = await self.get_welcome_enabled(ctx.guild.id)
+            embed = discord.Embed(
+                title="Welcome Message Settings",
+                color=0x3498DB
+            )
+            embed.add_field(
+                name="Status",
+                value=f"Welcome messages are **{'enabled' if enabled else 'disabled'}**",
+                inline=False
+            )
+            embed.add_field(
+                name="Commands",
+                value="• `/welcome toggle` - Toggle welcome messages on/off\n• `/welcome status` - Show current settings",
+                inline=False
+            )
+            await ctx.reply(embed=embed)
+
+    @welcome.command(name="toggle", description="Toggle welcome messages on/off")
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def toggle_welcome(self, ctx: commands.Context):
+        """Toggle welcome messages on or off"""
+        assert ctx.guild is not None, "This command can only be used in a guild"
+        current_status = await self.get_welcome_enabled(ctx.guild.id)
+        new_status = not current_status
+        
+        await self.set_welcome_enabled(ctx.guild.id, new_status)
+        
+        embed = discord.Embed(
+            title="Welcome Messages Updated",
+            color=0x00FF00 if new_status else 0xFF0000
+        )
+        embed.add_field(
+            name="Status",
+            value=f"Welcome messages are now **{'enabled' if new_status else 'disabled'}**",
+            inline=False
+        )
+        embed.set_footer(text=f"Changed by {ctx.author.display_name}")
+        
+        await ctx.reply(embed=embed)
+
+    @welcome.command(name="status", description="Show welcome message status")
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def welcome_status(self, ctx: commands.Context):
+        """Show current welcome message settings"""
+        assert ctx.guild is not None, "This command can only be used in a guild"
+        enabled = await self.get_welcome_enabled(ctx.guild.id)
+        
+        embed = discord.Embed(
+            title="Welcome Message Status",
+            color=0x3498DB
+        )
+        embed.add_field(
+            name="Welcome Messages",
+            value=f"**{'Enabled' if enabled else 'Disabled'}**",
+            inline=True
+        )
+        embed.add_field(
+            name="Channel",
+            value=f"<#{1263070188589547541}>",
+            inline=True
+        )
+        
+        await ctx.reply(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
