@@ -70,6 +70,16 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
         max_length=500
     )
 
+    # Optional pre-message (plain text sent BEFORE the embed; useful for mentions)
+    embed_premessage = discord.ui.TextInput(
+        label='Pre-Message (optional)',
+        placeholder='Write a plain message to send before the embed (you can @mention people or roles)...',
+        style=discord.TextStyle.paragraph,
+        required=False,
+        max_length=2000,
+        default=''
+    )
+
     async def on_submit(self, interaction: discord.Interaction):
         """Handle the form submission and edit the embed"""
         try:
@@ -212,9 +222,18 @@ class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
                 except:
                     pass  # Invalid URL, skip image
             
-            # Send the beautiful embed to the channel (not as a reply)
-            if isinstance(interaction.channel, (discord.TextChannel, discord.Thread)):
-                await interaction.channel.send(embed=embed)
+            # Send the pre-message (plain content) first if provided, then the embed
+            target_channel = interaction.channel
+            if isinstance(target_channel, (discord.TextChannel, discord.Thread)):
+                if self.embed_premessage.value:
+                    try:
+                        # Send plain message (mentions allowed)
+                        await target_channel.send(self.embed_premessage.value)
+                    except Exception:
+                        # Non-fatal; continue to send the embed
+                        pass
+
+                await target_channel.send(embed=embed)
                 
                 # Send ephemeral confirmation to the user
                 success_embed = discord.Embed(
