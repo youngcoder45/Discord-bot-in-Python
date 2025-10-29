@@ -80,6 +80,16 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
         default=''
     )
 
+    # Optional pre-message (plain text sent BEFORE the embed; useful for mentions)
+    embed_premessage = discord.ui.TextInput(
+        label='Pre-Message (optional)',
+        placeholder='Write a plain message to send before the embed (you can @mention people or roles)...',
+        style=discord.TextStyle.paragraph,
+        required=False,
+        max_length=2000,
+        default=''
+    )
+
     async def on_submit(self, interaction: discord.Interaction):
         """Handle the form submission and edit the embed"""
         try:
