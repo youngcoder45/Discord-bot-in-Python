@@ -69,26 +69,7 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
         required=False,
         max_length=500
     )
-
-    # Optional pre-message (plain text sent BEFORE the embed; useful for mentions)
-    embed_premessage = discord.ui.TextInput(
-        label='Pre-Message (optional)',
-        placeholder='Write a plain message to send before the embed (you can @mention people or roles)...',
-        style=discord.TextStyle.paragraph,
-        required=False,
-        max_length=2000,
-        default=''
-    )
-
-    # Optional pre-message (plain text sent BEFORE the embed; useful for mentions)
-    embed_premessage = discord.ui.TextInput(
-        label='Pre-Message (optional)',
-        placeholder='Write a plain message to send before the embed (you can @mention people or roles)...',
-        style=discord.TextStyle.paragraph,
-        required=False,
-        max_length=2000,
-        default=''
-    )
+    # (Edit modal) keep image in edit modal so users can update image URL when editing
 
     async def on_submit(self, interaction: discord.Interaction):
         """Handle the form submission and edit the embed"""
@@ -115,12 +96,7 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
             if self.embed_footer.value:
                 embed.set_footer(text=self.embed_footer.value)
             
-            # Add image if provided
-            if self.embed_image.value:
-                try:
-                    embed.set_image(url=self.embed_image.value)
-                except:
-                    pass  # Invalid URL, skip image
+            # (image field removed from create modal) skip image handling here
             
             # Edit the original message with the new embed
             await self.original_message.edit(embed=embed)
@@ -193,13 +169,6 @@ class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
         max_length=2048
     )
     
-    embed_image = discord.ui.TextInput(
-        label='Image URL (optional)',
-        placeholder='https://example.com/image.png',
-        required=False,
-        max_length=500
-    )
-
     # Optional pre-message (plain text sent BEFORE the embed; useful for mentions)
     embed_premessage = discord.ui.TextInput(
         label='Pre-Message (optional)',
@@ -209,6 +178,7 @@ class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
         max_length=2000,
         default=''
     )
+    # end of create modal fields
 
     async def on_submit(self, interaction: discord.Interaction):
         """Handle the form submission and create the embed"""
@@ -235,12 +205,7 @@ class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
             if self.embed_footer.value:
                 embed.set_footer(text=self.embed_footer.value)
             
-            # Add image if provided
-            if self.embed_image.value:
-                try:
-                    embed.set_image(url=self.embed_image.value)
-                except:
-                    pass  # Invalid URL, skip image
+            # image field removed from create modal; images can be added via /embedquick or edited later
             
             # Send the pre-message (plain content) first if provided, then the embed
             target_channel = interaction.channel
