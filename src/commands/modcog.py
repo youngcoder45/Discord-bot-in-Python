@@ -89,22 +89,26 @@ class ModCog(commands.Cog):
 
     # -------- Basic Moderation Commands --------
     
-    @commands.hybrid_command(name="purge", description="Delete a number of messages from the current channel.")
+    @commands.hybrid_command(name="purge", description="Delete a number of messages from the current channel or thread.")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     async def purge(self, ctx: commands.Context, amount: int):
-        """Delete messages (prefix: ?purge, slash: /purge)."""
+        """Delete messages (prefix: ?purge, slash: /purge). Works in channels and threads!"""
         if amount < 1 or amount > 100:
             return await self._safe_reply(ctx, "❌ Please provide a number between 1 and 100.")
-        if not isinstance(ctx.channel, discord.TextChannel):
-            return await self._safe_reply(ctx, "❌ This command must be used in a server text channel.")
+        
+        # Support both text channels and threads
+        is_thread = isinstance(ctx.channel, discord.Thread)
+        if not isinstance(ctx.channel, (discord.TextChannel, discord.Thread)):
+            return await self._safe_reply(ctx, "❌ This command must be used in a server text channel or thread.")
+        
         if ctx.interaction and not ctx.interaction.response.is_done():
             try:
                 await ctx.interaction.response.defer(ephemeral=True)
             except Exception:
                 pass
         try:
-            deleted = await ctx.channel.purge(limit=amount + (0 if ctx.interaction else 1))
+            deleted = await ctx.channel.purge(limit=amount + (0 if ctx.interaction else 1))  # type: ignore
             count = len(deleted)
             
             # For slash commands (interactions), ephemeral already auto-hides
@@ -415,20 +419,38 @@ class ModCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Failed to set slowmode: {str(e)}")
 
-    @commands.hybrid_command(name="lock", help="Lock a channel to prevent members from sending messages")
-    @app_commands.describe(channel="Channel to lock (optional, defaults to current)")
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
+    @commands.hybrid_command(name="lock", help="Lock a channel or thread to prevent members from sending messages")
+    @app_commands.describe(channel="Channel/thread to lock (optional, defaults to current)")
+    @commands.has_permissions(manage_channels=True, manage_threads=True)
+    @commands.bot_has_permissions(manage_channels=True, manage_threads=True)
     @commands.guild_only()
     async def lock(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
-        """Lock a channel to prevent members from sending messages"""
-        # ctx.channel can be a DMChannel (MessageableChannel); only assign it if it's a TextChannel
+        """Lock a channel or thread to prevent members from sending messages"""
+        # Handle threads
+        if isinstance(ctx.channel, discord.Thread):
+            thread = ctx.channel
+            try:
+                await thread.edit(locked=True)
+                embed = discord.Embed(
+                    title="🔒 Thread Locked",
+                    description=f"Thread '{thread.name}' has been locked. Members cannot send messages.",
+                    color=discord.Color.red()
+                )
+                embed.set_footer(text=f"Locked by {ctx.author}")
+                await ctx.send(embed=embed)
+            except discord.Forbidden:
+                await ctx.send("❌ I don't have permission to modify this thread.")
+            except Exception as e:
+                await ctx.send(f"❌ Failed to lock thread: {str(e)}")
+            return
+        
+        # Handle text channels
         if channel is None:
             channel = ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None
         assert ctx.guild is not None
         
         if not isinstance(channel, discord.TextChannel):
-            return await ctx.send("❌ This command can only be used on text channels.")
+            return await ctx.send("❌ This command can only be used on text channels or threads.")
         
         try:
             overwrites = channel.overwrites_for(ctx.guild.default_role)
@@ -450,18 +472,37 @@ class ModCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Failed to lock channel: {str(e)}")
 
-    @commands.hybrid_command(name="unlock", help="Unlock a previously locked channel")
-    @app_commands.describe(channel="Channel to unlock (optional, defaults to current)")
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
+    @commands.hybrid_command(name="unlock", help="Unlock a previously locked channel or thread")
+    @app_commands.describe(channel="Channel/thread to unlock (optional, defaults to current)")
+    @commands.has_permissions(manage_channels=True, manage_threads=True)
+    @commands.bot_has_permissions(manage_channels=True, manage_threads=True)
     @commands.guild_only()
     async def unlock(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
-        """Unlock a channel to allow members to send messages"""
+        """Unlock a channel or thread to allow members to send messages"""
+        # Handle threads
+        if isinstance(ctx.channel, discord.Thread):
+            thread = ctx.channel
+            try:
+                await thread.edit(locked=False)
+                embed = discord.Embed(
+                    title="🔓 Thread Unlocked",
+                    description=f"Thread '{thread.name}' has been unlocked. Members can send messages again.",
+                    color=discord.Color.green()
+                )
+                embed.set_footer(text=f"Unlocked by {ctx.author}")
+                await ctx.send(embed=embed)
+            except discord.Forbidden:
+                await ctx.send("❌ I don't have permission to modify this thread.")
+            except Exception as e:
+                await ctx.send(f"❌ Failed to unlock thread: {str(e)}")
+            return
+        
+        # Handle text channels
         channel = channel or (ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None)
         assert ctx.guild is not None
         
         if not isinstance(channel, discord.TextChannel):
-            return await ctx.send("❌ This command can only be used on text channels.")
+            return await ctx.send("❌ This command can only be used on text channels or threads.")
         
         try:
             overwrites = channel.overwrites_for(ctx.guild.default_role)

@@ -374,6 +374,12 @@ class HelpDropdown(discord.ui.Select):
                 emoji="🎨"
             ),
             discord.SelectOption(
+                label="🧵 Thread Management",
+                description="Manage threads and posts (close, lock, pin, purge)",
+                value="threads",
+                emoji="🧵"
+            ),
+            discord.SelectOption(
                 label="📊 Data Management",
                 description="Backup, restore, and data operations",
                 value="data",
@@ -409,6 +415,7 @@ class HelpDropdown(discord.ui.Select):
             "advanced_moderation": self.get_advanced_moderation_embed(),
             "staff": self.get_staff_embed(),
             "embeds": self.get_embeds_embed(),
+            "threads": self.get_threads_embed(),
             "data": self.get_data_embed(),
             "diagnostics": self.get_diagnostics_embed()
         }
@@ -599,6 +606,41 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.set_footer(text="Create professional embeds for server announcements")
+        return embed
+    
+    def get_threads_embed(self):
+        """Thread management commands embed"""
+        embed = discord.Embed(
+            title="🧵 Thread Management",
+            description="Manage threads and posts in Discord servers",
+            color=0x3498DB
+        )
+        
+        commands = [
+            ("**`/close [thread_id]`**", "Archive (close) a thread or post"),
+            ("**`/lock [thread_id]`**", "Lock a thread to prevent new messages"),
+            ("**`/unlock [thread_id]`**", "Unlock a thread to allow new messages"),
+            ("**`/pin [message_id]`**", "Pin a message in thread or channel"),
+            ("**`/unpin [message_id]`**", "Unpin a message from thread or channel"),
+            ("**`/mute [thread_id] [duration]`**", "Enable slow mode (default 30s)"),
+            ("**`/unmute [thread_id]`**", "Disable slow mode"),
+            ("**`/purge_thread [amount]`** (or `/purge`)", "Delete messages in thread (1-100)")
+        ]
+        
+        for cmd, desc in commands:
+            embed.add_field(name=cmd, value=desc, inline=False)
+            
+        embed.add_field(
+            name="💡 Tips",
+            value=(
+                "• Run commands inside a thread or provide thread ID\n"
+                "• Use reply feature for pinning specific messages\n"
+                "• Requires `manage_messages` or `manage_threads` permissions"
+            ),
+            inline=False
+        )
+        
+        embed.set_footer(text="Use /help <command> for more details")
         return embed
     
     def get_data_embed(self):

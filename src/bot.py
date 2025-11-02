@@ -52,6 +52,9 @@ COGS_TO_LOAD = [
     'commands.data_management',  # Data backup and persistence management
     'commands.utility',       # Embed builder commands for announcements
     
+    # Thread Management (Essential)
+    'commands.thread',        # Thread/post management (close, lock, pin, etc.)
+    
     # Event Handlers (Essential)
     'events.member_events',   # Member join/leave event handlers
     'events.message_handler', # Auto-thanks system for staff aura
