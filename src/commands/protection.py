@@ -26,10 +26,27 @@ class Protection(commands.Cog):
         # Anti-raid tracking - auto-cleanup with maxlen
         self.recent_joins = deque(maxlen=JOIN_THRESHOLD * 2)
         
-        # Anti-nuke tracking - auto-cleanup with maxlen
-        self.recent_bans = deque(maxlen=MASS_BAN_THRESHOLD * 2)
-        self.recent_kicks = deque(maxlen=MASS_KICK_THRESHOLD * 2)
+        # Anti-nuke tracking with dual time windows
+        # Short window: 1 minute, max 5 bans/kicks
+        self.recent_bans_1min = deque(maxlen=10)      # Track up to 10 bans in 1 min window
+        self.recent_kicks_1min = deque(maxlen=10)     # Track up to 10 kicks in 1 min window
+        
+        # Long window: 20 minutes, max 12 bans/kicks
+        self.recent_bans_20min = deque(maxlen=20)     # Track up to 20 bans in 20 min window
+        self.recent_kicks_20min = deque(maxlen=20)    # Track up to 20 kicks in 20 min window
+        
+        # Legacy tracking for deletion
         self.recent_deletes = defaultdict(lambda: deque(maxlen=MASS_DELETE_THRESHOLD * 2))
+        
+        # Blocked users (rate limit cooldown)
+        self.blocked_actors = {}  # {user_id: timestamp} - cooldown on blocking actions
+        
+        # Configuration constants
+        self.ANTINUKE_1MIN_WINDOW = 60          # 1 minute
+        self.ANTINUKE_1MIN_LIMIT = 5            # max 5 bans/kicks per minute
+        self.ANTINUKE_20MIN_WINDOW = 1200       # 20 minutes
+        self.ANTINUKE_20MIN_LIMIT = 12          # max 12 bans/kicks per 20 minutes
+        self.BLOCK_COOLDOWN = 300               # Block actions for 5 minutes
 
     # @commands.Cog.listener()
     # async def on_message(self, message):
@@ -83,22 +100,87 @@ class Protection(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, user):
-        """Handle anti-nuke ban detection"""
+        """Handle anti-nuke ban detection with dual-window rate limiting"""
         now = time.time()
-        self.recent_bans.append(now)
         
-        # Auto cleanup old bans outside the time window
-        while self.recent_bans and now - self.recent_bans[0] > NUKE_TIME_WINDOW:
-            self.recent_bans.popleft()
+        # Get the ban entry to find who banned the user
+        try:
+            async for entry in guild.audit_logs(action=discord.AuditLogAction.ban, limit=1):
+                if entry.target and entry.target.id == user.id:
+                    actor_id = entry.user.id if entry.user else None
+                    break
+            else:
+                actor_id = None
+        except:
+            actor_id = None
         
-        if len(self.recent_bans) > MASS_BAN_THRESHOLD:
+        if not actor_id:
+            return
+        
+        # Track bans in both time windows
+        self.recent_bans_1min.append((now, actor_id))
+        self.recent_bans_20min.append((now, actor_id))
+        
+        # Clean old entries outside time windows
+        while self.recent_bans_1min and now - self.recent_bans_1min[0][0] > self.ANTINUKE_1MIN_WINDOW:
+            self.recent_bans_1min.popleft()
+        
+        while self.recent_bans_20min and now - self.recent_bans_20min[0][0] > self.ANTINUKE_20MIN_WINDOW:
+            self.recent_bans_20min.popleft()
+        
+        # Count bans by this actor in each window
+        bans_1min = sum(1 for t, aid in self.recent_bans_1min if aid == actor_id and now - t < self.ANTINUKE_1MIN_WINDOW)
+        bans_20min = sum(1 for t, aid in self.recent_bans_20min if aid == actor_id and now - t < self.ANTINUKE_20MIN_WINDOW)
+        
+        # Check if actor is already blocked
+        if actor_id in self.blocked_actors:
+            if now - self.blocked_actors[actor_id] < self.BLOCK_COOLDOWN:
+                # Still blocked - attempt to undo the ban
+                try:
+                    await guild.unban(user, reason="Anti-nuke: Rate limit exceeded (user already blocked)")
+                    print(f"[Protection] 🛡️ Automatically undid ban for {user} by blocked actor {actor_id}")
+                except:
+                    pass
+                return
+            else:
+                # Cooldown expired, remove from blocked list
+                del self.blocked_actors[actor_id]
+        
+        # Check thresholds and trigger protection if exceeded
+        triggered = False
+        reason = ""
+        
+        if bans_1min > self.ANTINUKE_1MIN_LIMIT:
+            triggered = True
+            reason = f"Exceeded {self.ANTINUKE_1MIN_LIMIT} bans in 1 minute ({bans_1min} detected)"
+        elif bans_20min > self.ANTINUKE_20MIN_LIMIT:
+            triggered = True
+            reason = f"Exceeded {self.ANTINUKE_20MIN_LIMIT} bans in 20 minutes ({bans_20min} detected)"
+        
+        if triggered:
+            # Block the actor
+            self.blocked_actors[actor_id] = now
+            
             try:
+                actor = guild.get_member(actor_id) or await self.bot.fetch_user(actor_id)
+                
+                # Undo the ban
+                try:
+                    await guild.unban(user, reason="Anti-nuke: Rate limit protection triggered")
+                except:
+                    pass
+                
+                # Alert staff
                 embed = discord.Embed(
-                    title="Mass Ban Alert",
-                    description=f"Mass ban detected: {len(self.recent_bans)} bans in {NUKE_TIME_WINDOW//60} minutes",
+                    title="🛡️ Anti-Nuke: Ban Rate Limit Triggered",
+                    description=f"**{actor}** exceeded the ban rate limit and has been blocked from taking moderation actions.",
                     color=0xe74c3c
                 )
-                embed.add_field(name="Recommended Action", value="Check audit logs and consider revoking bot permissions", inline=False)
+                embed.add_field(name="⚠️ Reason", value=reason, inline=False)
+                embed.add_field(name="👤 Target", value=f"{user} ({user.id})", inline=True)
+                embed.add_field(name="🔒 Blocked Until", value=f"<t:{int(now + self.BLOCK_COOLDOWN)}:R>", inline=True)
+                embed.add_field(name="📋 Action Taken", value="Ban reversed and actor blocked", inline=False)
+                embed.set_footer(text="Anti-Nuke Protection System")
                 
                 # Find staff channel
                 staff_role = guild.get_role(MODERATION_ROLE_ID)
@@ -107,30 +189,87 @@ class Protection(commands.Cog):
                         if STAFF_ALERT_CHANNEL in channel.name.lower() or 'mod' in channel.name.lower():
                             await channel.send(embed=embed)
                             break
-            except:
-                pass
+                
+                print(f"[Protection] 🛡️ Anti-nuke ban protection triggered for {actor_id}: {reason}")
+            except Exception as e:
+                print(f"[Protection] ❌ Error in ban protection: {e}")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        """Handle anti-nuke kick detection"""
+        """Handle anti-nuke kick detection with dual-window rate limiting"""
         if not hasattr(member, 'guild'):
             return
         
         now = time.time()
-        self.recent_kicks.append(now)
         
-        # Auto cleanup old kicks outside the time window
-        while self.recent_kicks and now - self.recent_kicks[0] > NUKE_TIME_WINDOW:
-            self.recent_kicks.popleft()
+        # Get the kick entry to find who kicked the member
+        try:
+            async for entry in member.guild.audit_logs(action=discord.AuditLogAction.kick, limit=1):
+                if entry.target and entry.target.id == member.id:
+                    actor_id = entry.user.id if entry.user else None
+                    break
+            else:
+                actor_id = None
+        except:
+            actor_id = None
         
-        if len(self.recent_kicks) > MASS_KICK_THRESHOLD:
+        if not actor_id:
+            return
+        
+        # Track kicks in both time windows
+        self.recent_kicks_1min.append((now, actor_id))
+        self.recent_kicks_20min.append((now, actor_id))
+        
+        # Clean old entries outside time windows
+        while self.recent_kicks_1min and now - self.recent_kicks_1min[0][0] > self.ANTINUKE_1MIN_WINDOW:
+            self.recent_kicks_1min.popleft()
+        
+        while self.recent_kicks_20min and now - self.recent_kicks_20min[0][0] > self.ANTINUKE_20MIN_WINDOW:
+            self.recent_kicks_20min.popleft()
+        
+        # Count kicks by this actor in each window
+        kicks_1min = sum(1 for t, aid in self.recent_kicks_1min if aid == actor_id and now - t < self.ANTINUKE_1MIN_WINDOW)
+        kicks_20min = sum(1 for t, aid in self.recent_kicks_20min if aid == actor_id and now - t < self.ANTINUKE_20MIN_WINDOW)
+        
+        # Check if actor is already blocked
+        if actor_id in self.blocked_actors:
+            if now - self.blocked_actors[actor_id] < self.BLOCK_COOLDOWN:
+                # Still blocked - log but cannot undo kick (no direct unban API for kicks)
+                print(f"[Protection] 🛡️ Kick blocked for {member} by blocked actor {actor_id}")
+                return
+            else:
+                # Cooldown expired, remove from blocked list
+                del self.blocked_actors[actor_id]
+        
+        # Check thresholds and trigger protection if exceeded
+        triggered = False
+        reason = ""
+        
+        if kicks_1min > self.ANTINUKE_1MIN_LIMIT:
+            triggered = True
+            reason = f"Exceeded {self.ANTINUKE_1MIN_LIMIT} kicks in 1 minute ({kicks_1min} detected)"
+        elif kicks_20min > self.ANTINUKE_20MIN_LIMIT:
+            triggered = True
+            reason = f"Exceeded {self.ANTINUKE_20MIN_LIMIT} kicks in 20 minutes ({kicks_20min} detected)"
+        
+        if triggered:
+            # Block the actor
+            self.blocked_actors[actor_id] = now
+            
             try:
+                actor = member.guild.get_member(actor_id) or await self.bot.fetch_user(actor_id)
+                
+                # Alert staff (cannot undo kick, but can log and block)
                 embed = discord.Embed(
-                    title="Mass Kick Alert",
-                    description=f"Mass kick detected: {len(self.recent_kicks)} kicks in {NUKE_TIME_WINDOW//60} minutes",
+                    title="🛡️ Anti-Nuke: Kick Rate Limit Triggered",
+                    description=f"**{actor}** exceeded the kick rate limit and has been blocked from taking moderation actions.",
                     color=0xe74c3c
                 )
-                embed.add_field(name="Recommended Action", value="Check audit logs and consider revoking bot permissions", inline=False)
+                embed.add_field(name="⚠️ Reason", value=reason, inline=False)
+                embed.add_field(name="👤 Target", value=f"{member} ({member.id})", inline=True)
+                embed.add_field(name="🔒 Blocked Until", value=f"<t:{int(now + self.BLOCK_COOLDOWN)}:R>", inline=True)
+                embed.add_field(name="📋 Action Taken", value="Actor blocked from moderation actions", inline=False)
+                embed.set_footer(text="Anti-Nuke Protection System")
                 
                 # Find staff channel
                 staff_role = member.guild.get_role(MODERATION_ROLE_ID)
@@ -139,8 +278,10 @@ class Protection(commands.Cog):
                         if STAFF_ALERT_CHANNEL in channel.name.lower() or 'mod' in channel.name.lower():
                             await channel.send(embed=embed)
                             break
-            except:
-                pass
+                
+                print(f"[Protection] 🛡️ Anti-nuke kick protection triggered for {actor_id}: {reason}")
+            except Exception as e:
+                print(f"[Protection] ❌ Error in kick protection: {e}")
 
     @commands.Cog.listener()
     async def on_bulk_message_delete(self, messages):
@@ -218,23 +359,55 @@ class Protection(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def antinuke(self, ctx, action: str = "status"):
-        """Configure anti-nuke settings"""
+        """Configure anti-nuke settings with dual-window rate limiting"""
         if action.lower() == "status":
-            embed = discord.Embed(title="Anti-Nuke Status", color=0x3498db)
-            embed.add_field(name="Mass Ban Threshold", value=f"{MASS_BAN_THRESHOLD} bans", inline=True)
-            embed.add_field(name="Mass Kick Threshold", value=f"{MASS_KICK_THRESHOLD} kicks", inline=True)
-            embed.add_field(name="Mass Delete Threshold", value=f"{MASS_DELETE_THRESHOLD} deletes", inline=True)
-            embed.add_field(name="Time Window", value=f"{NUKE_TIME_WINDOW//60} minutes", inline=True)
+            embed = discord.Embed(title="🛡️ Anti-Nuke Status (Enhanced Rate Limiting)", color=0x3498db)
             
-            # Show current tracking stats
-            recent_bans_count = len(self.recent_bans)
-            recent_kicks_count = len(self.recent_kicks)
-            embed.add_field(name="Recent Bans", value=f"{recent_bans_count} in window", inline=True)
-            embed.add_field(name="Recent Kicks", value=f"{recent_kicks_count} in window", inline=True)
+            # Short window (1 minute)
+            embed.add_field(
+                name="⚡ 1-Minute Limit",
+                value=f"**Maximum:** {self.ANTINUKE_1MIN_LIMIT} bans/kicks per minute",
+                inline=False
+            )
             
+            # Long window (20 minutes)
+            embed.add_field(
+                name="🔔 20-Minute Limit",
+                value=f"**Maximum:** {self.ANTINUKE_20MIN_LIMIT} bans/kicks per 20 minutes",
+                inline=False
+            )
+            
+            # Block cooldown
+            embed.add_field(
+                name="🔒 Block Cooldown",
+                value=f"Violators blocked for **{self.BLOCK_COOLDOWN // 60} minutes**",
+                inline=False
+            )
+            
+            # Current tracking stats
+            now = time.time()
+            bans_1min = sum(1 for t, _ in self.recent_bans_1min if now - t < self.ANTINUKE_1MIN_WINDOW)
+            bans_20min = sum(1 for t, _ in self.recent_bans_20min if now - t < self.ANTINUKE_20MIN_WINDOW)
+            kicks_1min = sum(1 for t, _ in self.recent_kicks_1min if now - t < self.ANTINUKE_1MIN_WINDOW)
+            kicks_20min = sum(1 for t, _ in self.recent_kicks_20min if now - t < self.ANTINUKE_20MIN_WINDOW)
+            
+            embed.add_field(
+                name="📊 Recent Activity",
+                value=f"**Bans:** {bans_1min} (1m) / {bans_20min} (20m)\n**Kicks:** {kicks_1min} (1m) / {kicks_20min} (20m)",
+                inline=False
+            )
+            
+            blocked_count = sum(1 for exp in self.blocked_actors.values() if exp > now)
+            embed.add_field(
+                name="🚫 Currently Blocked",
+                value=f"**{blocked_count}** user(s) blocked from moderation",
+                inline=False
+            )
+            
+            embed.set_footer(text="⚠️ Actions exceeding limits will be reversed and actor blocked")
             await ctx.send(embed=embed)
         else:
-            embed = create_error_embed("Invalid Action", "Use `!antinuke status` to view current settings.")
+            embed = create_error_embed("Invalid Action", "Use `!antinuke status` to view current settings and activity.")
             await ctx.send(embed=embed)
 
 async def setup(bot):
