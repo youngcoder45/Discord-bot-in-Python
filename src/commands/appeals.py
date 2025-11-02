@@ -14,6 +14,174 @@ from config import MODERATION_ROLE_ID
 from utils.database import DATABASE_NAME, init_db
 from utils.embeds import create_error_embed, create_success_embed, create_info_embed
 
+
+class ConfirmAppealView(discord.ui.View):
+    """Confirmation view for appeal submissions - stays open until punishment expires."""
+    
+    def __init__(self, cog, user_id, appeal_content, punishment_type, guild_name, punishment_guild):
+        super().__init__(timeout=None)  # No timeout - window persists until punishment expires
+        self.cog = cog
+        self.user_id = user_id
+        self.appeal_content = appeal_content
+        self.punishment_type = punishment_type
+        self.guild_name = guild_name
+        self.punishment_guild = punishment_guild
+        self.confirmed = False
+    
+    async def _check_punishment_active(self) -> bool:
+        """Check if user still has active punishment."""
+        try:
+            # Check if banned
+            try:
+                await self.punishment_guild.fetch_ban(discord.Object(id=self.user_id))
+                return True
+            except discord.NotFound:
+                pass
+            
+            # Check if timed out
+            member = self.punishment_guild.get_member(self.user_id)
+            if member and getattr(member, 'timed_out_until', None):
+                timeout_until = member.timed_out_until
+                if timeout_until and timeout_until > datetime.now(timezone.utc):
+                    return True
+            
+            return False
+        except Exception:
+            return True  # Assume still punished on error
+    
+    async def _disable_buttons(self):
+        """Disable buttons in the view."""
+        for item in self.children:
+            if isinstance(item, discord.ui.Button):
+                item.disabled = True
+    
+    @discord.ui.button(label="✅ Yes, Submit My Appeal", style=discord.ButtonStyle.green)
+    async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """User confirmed - submit the appeal."""
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ This button is not for you.", ephemeral=True)
+            return
+        
+        # Check if punishment still active
+        if not await self._check_punishment_active():
+            await interaction.response.defer()
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="❌ Punishment Expired",
+                    description="Your punishment appears to have been lifted. No appeal is needed.",
+                    color=0xe74c3c
+                ),
+                ephemeral=True
+            )
+            await self._disable_buttons()
+            return
+        
+        # Create the appeal in the database
+        conn = sqlite3.connect(DATABASE_NAME)
+        cur = conn.cursor()
+        cur.execute('INSERT INTO unban_requests (user_id, reason) VALUES (?, ?)', (self.user_id, self.appeal_content))
+        conn.commit()
+        appeal_id = cur.lastrowid
+        conn.close()
+        
+        # Remove draft
+        if self.user_id in self.cog._appeal_drafts:
+            del self.cog._appeal_drafts[self.user_id]
+        
+        print(f"[Appeals] ✅ Appeal #{appeal_id} submitted by {interaction.user} ({self.user_id}) - {self.punishment_type} in {self.guild_name}")
+        
+        # Confirm to user
+        await interaction.response.defer()
+        
+        user_embed = discord.Embed(
+            title="✅ Appeal Submitted",
+            description="Your appeal has been submitted successfully. Staff will review it within 24-48 hours.",
+            color=0x2ecc71
+        )
+        user_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
+        user_embed.add_field(name="📊 Status", value="Pending Review", inline=True)
+        user_embed.add_field(name="📝 Your Appeal", value=self.appeal_content[:500] + ("..." if len(self.appeal_content) > 500 else ""), inline=False)
+        user_embed.set_footer(text=f"{self.guild_name} • Professional Moderation")
+        
+        await interaction.followup.send(embed=user_embed)
+        
+        # Disable buttons
+        await self._disable_buttons()
+        if interaction.message:
+            await interaction.message.edit(view=self)
+        
+        # Staff notification
+        staff_channel = None
+        for cid in (1423642446616592385, 1399746928585085068):
+            ch = self.cog.bot.get_channel(cid)
+            if ch:
+                staff_channel = ch
+                break
+        
+        if staff_channel:
+            staff_embed = discord.Embed(
+                title="📨 New Appeal Submitted",
+                description=f"Appeal #{appeal_id} from {interaction.user}",
+                color=0x3498db
+            )
+            trimmed = self.appeal_content[:800] + ("..." if len(self.appeal_content) > 800 else "")
+            staff_embed.add_field(name="👤 User", value=f"{interaction.user} ({self.user_id})", inline=True)
+            staff_embed.add_field(name="⚠️ Punishment", value=f"{self.punishment_type.title()} in {self.guild_name}", inline=True)
+            staff_embed.add_field(name="📝 Appeal Content", value=f"```{trimmed}```", inline=False)
+            staff_embed.add_field(name="🔧 Review Commands", value="Use: `/appeals` • `/approve <id>` • `/deny <id> <reason>`", inline=False)
+            staff_embed.timestamp = datetime.now(timezone.utc)
+            
+            try:
+                await staff_channel.send(embed=staff_embed)
+            except Exception as e:
+                print(f"[Appeals] ❌ Failed to send staff notification: {e}")
+    
+    @discord.ui.button(label="❌ No, I Want to Revise", style=discord.ButtonStyle.red)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """User wants to revise - remove draft and prompt for new appeal."""
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ This button is not for you.", ephemeral=True)
+            return
+        
+        # Check if punishment still active
+        if not await self._check_punishment_active():
+            await interaction.response.defer()
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="❌ Punishment Expired",
+                    description="Your punishment appears to have been lifted. No appeal is needed.",
+                    color=0xe74c3c
+                ),
+                ephemeral=True
+            )
+            await self._disable_buttons()
+            return
+        
+        # Remove draft
+        if self.user_id in self.cog._appeal_drafts:
+            del self.cog._appeal_drafts[self.user_id]
+        
+        revision_embed = discord.Embed(
+            title="📝 Draft Cancelled",
+            description="Your draft has been removed. You can now send a new appeal message whenever you're ready.",
+            color=0xf39c12
+        )
+        revision_embed.add_field(
+            name="💡 Tip",
+            value="Take your time to craft a thoughtful appeal that addresses the issue. Include:\n• What happened from your perspective\n• Why you believe the action was unwarranted\n• What you'll do differently moving forward",
+            inline=False
+        )
+        
+        await interaction.response.send_message(embed=revision_embed, ephemeral=False)
+        
+        # Disable buttons
+        await self._disable_buttons()
+        if interaction.message:
+            await interaction.message.edit(view=self)
+        
+        print(f"[Appeals] 📝 Appeal draft cancelled by {interaction.user} ({self.user_id})")
+
+
 class Appeals(commands.Cog):
     """Unban appeal system with auto-DM for moderation actions"""
 
@@ -24,6 +192,7 @@ class Appeals(commands.Cog):
         self._appeal_cleanup_task = None
         self._setup_appeal_cleanup_task()
         self._ban_event_handled = set()  # Track recently handled ban events to prevent duplicates
+        self._appeal_drafts = {}  # {user_id: (content, punishment_type, guild_name, punishment_guild)} - pending confirmation
         
     def _setup_appeal_cleanup_task(self):
         """Start background task to clean up expired appeals"""
@@ -432,59 +601,49 @@ class Appeals(commands.Cog):
             print(f"[Appeals] ⏳ DM blocked for user {message.author.id} - existing pending appeal #{appeal_id}")
             return
         
-        # Create new appeal
-        cur.execute('INSERT INTO unban_requests (user_id, reason) VALUES (?, ?)', (message.author.id, content))
-        conn.commit()
-        appeal_id = cur.lastrowid
         conn.close()
         
-        print(f"[Appeals] ✅ New appeal #{appeal_id} created from {message.author} ({message.author.id}) - {punishment_type} in {guild_name}")
+        # Store draft and show confirmation embed instead of directly creating appeal
+        self._appeal_drafts[message.author.id] = (content, punishment_type, guild_name, punishment_guild)
         
-        # User confirmation
-        try:
-            user_embed = discord.Embed(
-                title="✅ Appeal Received", 
-                description="Your appeal has been submitted successfully. Staff will review it within 24-48 hours.",
-                color=0x3498db
-            )
-            user_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
-            user_embed.add_field(name="📊 Status", value="Pending Review", inline=True)
-            user_embed.add_field(name="📝 Appeal Content", value=content[:500] + ("..." if len(content) > 500 else ""), inline=False)
-            user_embed.set_footer(text=f"{guild_name} • Professional Moderation")
-            await message.author.send(embed=user_embed)
-        except Exception:
-            pass
-        
-        # Staff channel notification
-        staff_channel = None
-        for cid in (1423642446616592385, 1399746928585085068):
-            ch = self.bot.get_channel(cid)
-            if ch:
-                staff_channel = ch
-                if cid != 1423642446616592385:
-                    print(f"[Appeals] Using fallback staff channel {cid}")
-                break
-        
-        if not staff_channel:
-            print("[Appeals] ⚠️ No staff channel available to post appeal.")
-            return
-        
-        staff_embed = discord.Embed(
-            title="📨 New Appeal Submitted", 
-            description=f"Appeal #{appeal_id} from {message.author}",
+        # Show confirmation embed with Yes/No buttons
+        confirm_embed = discord.Embed(
+            title="📋 Confirm Your Appeal",
+            description="Please review your appeal below and confirm you want to submit it.",
             color=0x3498db
         )
-        trimmed = content[:800] + ("..." if len(content) > 800 else "")
-        staff_embed.add_field(name="👤 User", value=f"{message.author} ({message.author.id})", inline=True)
-        staff_embed.add_field(name="⚠️ Punishment", value=f"{punishment_type.title()} in {guild_name}", inline=True)
-        staff_embed.add_field(name="📝 Appeal Content", value=f"```{trimmed}```", inline=False)
-        staff_embed.add_field(name="🔧 Review Commands", value="Use: `/appeals` • `/approve <id>` • `/deny <id> <reason>`", inline=False)
-        staff_embed.timestamp = datetime.now(timezone.utc)
+        confirm_embed.add_field(
+            name="⚠️ Your Appeal",
+            value=f"```{content[:500]}{'...' if len(content) > 500 else ''}```",
+            inline=False
+        )
+        confirm_embed.add_field(
+            name="📌 Punishment",
+            value=f"**{punishment_type.title()}** in {guild_name}",
+            inline=False
+        )
+        confirm_embed.add_field(
+            name="📝 Next Steps",
+            value="Click **Yes** to submit your appeal for staff review, or **No** if you want to revise it.",
+            inline=False
+        )
+        confirm_embed.set_footer(text="This window will remain open until your punishment is lifted.")
+        
+        view = ConfirmAppealView(self, message.author.id, content, punishment_type, guild_name, punishment_guild)
         
         try:
-            await staff_channel.send(embed=staff_embed)
+            await message.author.send(embed=confirm_embed, view=view)
         except Exception as e:
-            print(f"[Appeals] ❌ Failed to send staff notification: {e}")
+            print(f"[Appeals] ❌ Failed to send confirmation embed: {e}")
+            # Fallback: create appeal directly if confirmation fails
+            cur = conn.cursor()
+            cur.execute('INSERT INTO unban_requests (user_id, reason) VALUES (?, ?)', (message.author.id, content))
+            conn.commit()
+            appeal_id = cur.lastrowid
+            conn.close()
+            print(f"[Appeals] ⚠️ Fallback: Created appeal #{appeal_id} directly (confirmation failed)")
+        
+        print(f"[Appeals] 📋 Confirmation embed sent to {message.author} ({message.author.id}) for {punishment_type} appeal")
 
     @commands.hybrid_command(name="appeals")
     @commands.has_permissions(administrator=True)
@@ -774,6 +933,87 @@ class Appeals(commands.Cog):
         except Exception as e:
             embed = create_error_embed("Failed to Send Appeal", f"Error: {str(e)}")
             await ctx.send(embed=embed)
+    
+    @commands.hybrid_command(name="appealcancel")
+    @app_commands.describe()
+    async def appeal_cancel(self, ctx):
+        """Cancel your own pending appeal (users can use this, staff can add @user to cancel another's appeal)"""
+        # Check if user has a pending appeal
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM unban_requests WHERE user_id = ? AND status = "pending"', (ctx.author.id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            embed = create_error_embed(
+                "No Pending Appeal",
+                "You don't have any pending appeals to cancel."
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            conn.close()
+            return
+        
+        appeal_id = result[0]
+        
+        # Ask for confirmation
+        confirm_embed = discord.Embed(
+            title="⚠️ Cancel Appeal?",
+            description=f"Are you sure you want to cancel appeal **#{appeal_id}**?\n\nYou can submit a new appeal after this is cancelled.",
+            color=0xf39c12
+        )
+        
+        class CancelConfirmView(discord.ui.View):
+            def __init__(self, cog_ref: 'Appeals', appeal_id_val: int, user_id: int, author_id: int):
+                super().__init__(timeout=60)
+                self.confirmed = False
+                self.cog_ref = cog_ref
+                self.appeal_id_val = appeal_id_val
+                self.user_id_val = user_id
+                self.author_id = author_id
+            
+            @discord.ui.button(label="✅ Yes, Cancel", style=discord.ButtonStyle.red)
+            async def confirm(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if button_interaction.user.id != self.author_id:
+                    await button_interaction.response.send_message("❌ This button is not for you.", ephemeral=True)
+                    return
+                
+                self.confirmed = True
+                
+                # Delete the appeal from database
+                conn = sqlite3.connect(DATABASE_NAME)
+                cursor = conn.cursor()
+                cursor.execute('DELETE FROM unban_requests WHERE id = ?', (self.appeal_id_val,))
+                conn.commit()
+                conn.close()
+                
+                # Remove from draft storage if present
+                if self.author_id in self.cog_ref._appeal_drafts:
+                    del self.cog_ref._appeal_drafts[self.author_id]
+                
+                result_embed = discord.Embed(
+                    title="✅ Appeal Cancelled",
+                    description=f"Your appeal **#{self.appeal_id_val}** has been cancelled successfully.\n\nYou can submit a new appeal at any time.",
+                    color=0x2ecc71
+                )
+                await button_interaction.response.send_message(embed=result_embed, ephemeral=True)
+                
+                print(f"[Appeals] 🗑️ Appeal #{self.appeal_id_val} cancelled by {button_interaction.user} ({self.author_id})")
+            
+            @discord.ui.button(label="❌ No, Keep It", style=discord.ButtonStyle.green)
+            async def cancel(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if button_interaction.user.id != self.author_id:
+                    await button_interaction.response.send_message("❌ This button is not for you.", ephemeral=True)
+                    return
+                
+                result_embed = discord.Embed(
+                    title="Cancelled",
+                    description="Your appeal was not cancelled.",
+                    color=0x95a5a6
+                )
+                await button_interaction.response.send_message(embed=result_embed, ephemeral=True)
+        
+        view = CancelConfirmView(self, appeal_id, ctx.author.id, ctx.author.id)
+        await ctx.send(embed=confirm_embed, view=view, ephemeral=True)
     
     def cog_unload(self):
         """Cleanup when cog is unloaded"""
