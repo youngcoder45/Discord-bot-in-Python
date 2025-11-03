@@ -1,3 +1,7 @@
+> [!WARNING]
+> This Project is no longer be maintained and has been moved to [CodeVerseHub-Bot](https://github.com/TheCodeVerseHub/CodeVerse-Bot)
+
+
 <div align="center">
 
 # CodeVerse Bot
@@ -544,3 +548,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 🐛 **Issues**: Report bugs via GitHub Issues
 - 💬 **Discord**: https://discord.gg/3xKFvKhuGR
 - 📧 **Email**: youngcoder45@gmail.com
+
