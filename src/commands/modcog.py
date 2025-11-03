@@ -430,10 +430,18 @@ class ModCog(commands.Cog):
         if isinstance(ctx.channel, discord.Thread):
             thread = ctx.channel
             try:
+                # Lock the thread
                 await thread.edit(locked=True)
+                
+                # Add lock emoji to thread name if not already present
+                new_name = thread.name
+                if not new_name.startswith("🔒"):
+                    new_name = f"🔒 {thread.name}"
+                    await thread.edit(name=new_name, reason=f"Thread locked by {ctx.author}")
+                
                 embed = discord.Embed(
                     title="🔒 Thread Locked",
-                    description=f"Thread '{thread.name}' has been locked. Members cannot send messages.",
+                    description=f"Thread '{new_name}' has been locked. Members cannot send messages.",
                     color=discord.Color.red()
                 )
                 embed.set_footer(text=f"Locked by {ctx.author}")
@@ -483,10 +491,18 @@ class ModCog(commands.Cog):
         if isinstance(ctx.channel, discord.Thread):
             thread = ctx.channel
             try:
+                # Unlock the thread
                 await thread.edit(locked=False)
+                
+                # Remove lock emoji from thread name if present
+                new_name = thread.name
+                if new_name.startswith("🔒"):
+                    new_name = new_name[2:].lstrip()  # Remove emoji and extra space
+                    await thread.edit(name=new_name, reason=f"Thread unlocked by {ctx.author}")
+                
                 embed = discord.Embed(
                     title="🔓 Thread Unlocked",
-                    description=f"Thread '{thread.name}' has been unlocked. Members can send messages again.",
+                    description=f"Thread '{new_name}' has been unlocked. Members can send messages again.",
                     color=discord.Color.green()
                 )
                 embed.set_footer(text=f"Unlocked by {ctx.author}")
