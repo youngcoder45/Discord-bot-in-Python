@@ -509,7 +509,8 @@ class HelpDropdown(discord.ui.Select):
             name="📊 Server Information",
             value=(
                 "**`/serverinfo`** - Detailed server information\n"
-                "**`/userinfo [@user]`** - Detailed user information"
+                "**`/userinfo [@user]`** - Detailed user information\n"
+                "**`/avatar [@user]`** - Get user's high-res avatar"
             ),
             inline=False
         )
@@ -527,13 +528,19 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="� Appeal System",
+            name="📋 Appeal System (With Confirmation)",
             value=(
                 "**`/appeals [status]`** - View appeal requests *(Admin)*\n"
                 "**`/approve <id> [reason]`** - Approve unban appeal *(Admin)*\n"
                 "**`/deny <id> <reason>`** - Deny unban appeal *(Admin)*\n"
                 "**`/appealinfo <id>`** - Get detailed appeal info *(Admin)*\n"
-                "**Auto-DM:** Appeals sent automatically on kick/ban/timeout"
+                "**`/appealcancel`** - Cancel pending appeal with confirmation\n\n"
+                "**✅ NEW Appeal Flow:**\n"
+                "1. User gets kicked/banned/timed out\n"
+                "2. Bot sends DM with appeal form\n"
+                "3. Shows confirmation embed with Yes/No buttons\n"
+                "4. Window stays open until punishment expires\n"
+                "5. Staff reviews and approves/denies"
             ),
             inline=False
         )
@@ -616,31 +623,54 @@ class HelpDropdown(discord.ui.Select):
             color=0x3498DB
         )
         
-        commands = [
-            ("**`/close [thread_id]`**", "Archive (close) a thread or post"),
-            ("**`/lock [thread_id]`**", "Lock a thread to prevent new messages"),
-            ("**`/unlock [thread_id]`**", "Unlock a thread to allow new messages"),
-            ("**`/pin [message_id]`**", "Pin a message in thread or channel"),
-            ("**`/unpin [message_id]`**", "Unpin a message from thread or channel"),
-            ("**`/mute [thread_id] [duration]`**", "Enable slow mode (default 30s)"),
-            ("**`/unmute [thread_id]`**", "Disable slow mode"),
-            ("**`/purge_thread [amount]`** (or `/purge`)", "Delete messages in thread (1-100)")
-        ]
-        
-        for cmd, desc in commands:
-            embed.add_field(name=cmd, value=desc, inline=False)
-            
         embed.add_field(
-            name="💡 Tips",
+            name="📌 Thread Controls",
             value=(
-                "• Run commands inside a thread or provide thread ID\n"
-                "• Use reply feature for pinning specific messages\n"
-                "• Requires `manage_messages` or `manage_threads` permissions"
+                "**`/close [thread_id]`** - Archive (close) a thread with embed notification *(Mod / Creator)*\n"
+                "  ➜ *Sends embed before archiving to prevent reopening*\n"
+                "**`/lock [thread_id]`** - Lock thread & rename with 🔒 emoji *(Manage Threads)*\n"
+                "  ➜ *Adds lock emoji to thread name for visibility*\n"
+                "**`/unlock [thread_id]`** - Unlock thread & remove 🔒 emoji *(Manage Threads)*\n"
+                "  ➜ *Restores original thread name*"
             ),
             inline=False
         )
         
-        embed.set_footer(text="Use /help <command> for more details")
+        embed.add_field(
+            name="📍 Message Management",
+            value=(
+                "**`/pin [message_id]`** - Pin a message in thread or channel *(Manage Messages)*\n"
+                "  ➜ *Reply to message or provide ID*\n"
+                "**`/unpin [message_id]`** - Unpin a message from thread or channel *(Manage Messages)*\n"
+                "  ➜ *Works with replies or message IDs*"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🧹 Message Cleanup",
+            value=(
+                "**`/purge <amount>`** - Delete 1-100 messages *(Manage Messages)*\n"
+                "  ➜ *Works in channels and threads*\n"
+                "**`/mute [thread_id] [duration]`** - Enable slow mode *(Manage Threads)*\n"
+                "**`/unmute [thread_id]`** - Disable slow mode *(Manage Threads)*"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="💡 Tips",
+            value=(
+                "• **Close**: Only mods or thread creator can close\n"
+                "• **Lock/Unlock**: Auto-adds/removes 🔒 emoji prefix\n"
+                "• **Pin**: Reply to a message or use message ID\n"
+                "• Run in thread or provide thread ID\n"
+                "• Use `/help <command>` for more details"
+            ),
+            inline=False
+        )
+        
+        embed.set_footer(text="Thread commands make server organization easier")
         return embed
     
     def get_data_embed(self):
@@ -679,19 +709,34 @@ class HelpDropdown(discord.ui.Select):
     def get_advanced_moderation_embed(self):
         """Advanced moderation commands embed"""
         embed = discord.Embed(
-            title="🔒 Advanced Moderation",
+            title="🔒 Advanced Moderation & Protection",
             description="Extended moderation and protection tools",
             color=0x9B59B6
         )
         
         embed.add_field(
-            name="🚨 Protection Systems",
+            name="🚨 Anti-Nuke Protection",
+            value=(
+                "**`/antinuke [action] [value]`** - Configure anti-nuke settings *(Admin)*\n"
+                "**`/antinuke status`** - View current protection status\n\n"
+                "**Dual-Window Rate Limiting:**\n"
+                "• **1-Minute Window:** Max 5 bans/kicks\n"
+                "• **20-Minute Window:** Max 12 bans/kicks\n"
+                "• **Auto-Block:** Violators blocked for 5 minutes\n"
+                "• **Auto-Unban:** Illegal bans automatically reversed\n"
+                "• **Staff Alerts:** Detailed embed notifications on violation"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🛡️ Anti-Spam & Anti-Raid",
             value=(
                 "**`/automod`** - Configure automatic moderation settings\n"
                 "**`/automodstatus`** - View current automod configuration\n"
                 "**`/antispam`** - Anti-spam protection settings\n"
-                "**`/antiraid`** - Configure anti-raid protection\n"
-                "**`/antinuke`** - Server anti-nuke protection"
+                "**`/antiraid`** - Configure anti-raid protection\n\n"
+                "*Automatically detects and prevents mass attacks*"
             ),
             inline=False
         )
@@ -710,11 +755,11 @@ class HelpDropdown(discord.ui.Select):
         embed.add_field(
             name="⚔️ Advanced Actions",
             value=(
-                "**`/lockdown [#channel] [reason]`** - Restrict channel access\n"
-                "**`/unlock [#channel]`** - Remove channel restrictions\n"
-                "**`/slowmode <seconds> [#channel]`** - Set channel slowmode\n"
-                "**`/massban <user_ids> [reason]`** - Ban multiple users at once\n"
-                "**`/nuke [#channel] [reason]`** - Clone and replace channel"
+                "**`/lockdown [#channel]`** - Lock channel to prevent messages *(Admin)*\n"
+                "**`/unlockdown [#channel]`** - Unlock channel *(Admin)*\n"
+                "**`/slowmode <seconds> [#channel]`** - Set channel slowmode *(Manage Channels)*\n"
+                "**`/massban <user_ids> [reason]`** - Ban multiple users *(Ban Members)*\n"
+                "**`/nuke [#channel]`** - Clone and replace channel *(OWNER ONLY)*"
             ),
             inline=False
         )
