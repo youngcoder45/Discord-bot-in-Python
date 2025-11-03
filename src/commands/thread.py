@@ -55,8 +55,18 @@ class ThreadCloser(commands.Cog):
             return
         
         try:
+            # Create embed for close message
+            embed = discord.Embed(
+                title="🔒 Thread Closed",
+                description=f"This thread has been closed and archived.",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Thread Name", value=thread.name, inline=False)
+            embed.add_field(name="Closed By", value=ctx.author.mention, inline=True)
+            embed.set_footer(text=f"Closed at {discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+            
             # Send close message first
-            await ctx.send(f"🔒 Thread '{thread.name}' has been closed by {ctx.author.mention}")
+            await ctx.send(embed=embed)
             
             # Small delay to ensure message is sent before archiving
             await asyncio.sleep(0.5)
