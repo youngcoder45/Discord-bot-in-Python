@@ -18,7 +18,7 @@ class AdvancedModeration(commands.Cog):
         self.command_cooldowns = defaultdict(list)
         # Automod disabled by user request
         self.automod_settings = {
-            'invite_links': False,
+            'invite_links': True,
             'excessive_caps': False,
             'excessive_mentions': False,
             'banned_words': [],
