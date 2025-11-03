@@ -12,6 +12,13 @@
 
 ## Features Overview
 
+### ✨ Recent Updates (November 2025)
+- **🔒 Thread Lock with Emoji Prefix** - `/lock` command now automatically renames threads with 🔒 prefix for visibility
+- **📋 Appeal Confirmation System** - Appeals now show confirmation embed with Yes/No buttons before submission; window persists until punishment expires; new `/appealcancel` command for canceling pending appeals
+- **🔐 Dual-Window Anti-Nuke Protection** - Max 5 bans/kicks per minute OR 12 per 20 minutes; automatic action reversal and actor blocking on violation; detailed staff alerts
+- **📌 Enhanced Thread Close** - `/close` command now sends professional embed notification before archiving (prevents message from reopening); restricted to mods and thread creator only
+- **🎨 Lock/Unlock Emoji Management** - `/lock` adds emoji prefix, `/unlock` removes it to restore original thread name
+
 ### Core Commands
 - **`?ping`** / **`/ping`** - Check bot latency and responsiveness
 - **`?info`** / **`/info`** - View bot information, uptime, and instance details
@@ -52,6 +59,33 @@
 | `?addrole <@user> <role> [reason]` / `/addrole <@user> <role> [reason]` | Add role to user | Manage Roles |
 | `?removerole <@user> <role> [reason]` / `/removerole <@user> <role> [reason]` | Remove role from user | Manage Roles |
 
+#### 🔐 Anti-Nuke Protection System
+**Dual-window rate limiting with automatic action reversal and actor blocking**
+
+**Protection Thresholds:**
+- **1-Minute Window:** Max 5 bans/kicks per minute
+- **20-Minute Window:** Max 12 bans/kicks across 20 minutes
+- **Violation Response:** Automatic ban reversal, 5-minute actor block, staff alerts
+
+**Features:**
+- ✅ **Dual-Window Tracking** - Sophisticated sliding window detection
+- ✅ **Actor Attribution** - Identifies who performed illegal actions via audit logs
+- ✅ **Auto-Unban** - Bans are automatically reversed when limits exceeded
+- ✅ **Actor Blocking** - Violators blocked for 5 minutes from taking moderation actions
+- ✅ **Staff Alerts** - Professional embed notifications with detailed information
+- ✅ **Real-Time Status** - `/antinuke status` shows current protection metrics
+
+**Commands:**
+- **`/antinuke status`** - View current anti-nuke protection status and real-time metrics
+- **`/antinuke [action] [value]`** - Configure protection settings *(Admin)*
+
+**Example Alert:**
+When a user tries to ban/kick more than the limits, staff receives an embed showing:
+- Violator identity and action
+- Violation details (action count, time window, limit exceeded)
+- Block duration (5 minutes)
+- Automatic action taken (ban reversed)
+
 ### Point-Based Moderation System
 **Advanced escalation-based moderation** with monthly resets and approval workflow
 - **`?addpoints <@user> <amount> [reason]`** / **`/addpoints <@user> <amount> [reason]`** - Add moderation points (Ban Members)
@@ -71,6 +105,25 @@
 - **`?approve <appeal_id> [reason]`** / **`/approve <appeal_id> [reason]`** - Approve unban appeal (Admin)
 - **`?deny <appeal_id> <reason>`** / **`/deny <appeal_id> <reason>`** - Deny unban appeal (Admin)
 - **`?appealinfo <appeal_id>`** / **`/appealinfo <appeal_id>`** - Get detailed appeal information (Admin)
+- **`?appealcancel`** - Cancel pending appeal with confirmation *(User)*
+
+**Appeal Confirmation System** *(NEW)*
+- **Confirmation Embed** - Users see appeal preview with Yes/No buttons before submission
+- **Persistent Window** - Confirmation window stays open until punishment (ban/timeout) expires
+- **Appeal Revision** - Users can click "No" to revise their appeal before sending
+- **No Response** - If user doesn't respond, nothing happens (stays open indefinitely)
+- **Auto-Expiry Check** - System validates punishment is still active before final submission
+- **Appeal Cancel** - Users can cancel pending appeals with `/appealcancel` command
+
+**Appeal Workflow:**
+1. User gets kicked/banned/timed out
+2. Bot sends DM with appeal form
+3. ✅ **NEW:** Shows confirmation embed with preview
+4. User clicks Yes/No or ignores
+5. If Yes: Appeal submitted to staff for review
+6. If No: User can revise and submit again
+7. Staff approves or denies with reason
+
 - **Auto-DM system** - Appeals automatically sent when users are kicked/banned/timed out
 - **Professional embeds** - Clean, modern design without emojis
 - **Staff notifications** - Automatic notifications in designated appeals channel
@@ -154,6 +207,35 @@
 - **Advanced embed customization** with colors, fields, footers, and images
 - **JSON import/export** for embed templates
 - **Message editing capabilities** for dynamic content
+
+### 🧵 Thread Management System
+**Professional thread and post management tools with enhanced visibility and safety**
+
+#### Thread Control Commands
+- **`?close [thread_id]`** / **`/close [thread_id]`** - Archive thread with embed notification *(Mods / Thread Creator)*
+  - Sends professional embed before archiving to prevent message-induced reopening
+  - Only moderators and thread creator can execute
+  - Creates audit trail for compliance
+  
+- **`?lock [thread_id]`** / **`/lock [thread_id]`** - Lock thread and add 🔒 emoji prefix *(Manage Threads)*
+  - Example: `"discussion about linux"` → `"🔒 discussion about linux"`
+  - Prevents accidental reopening by members
+  - Clear visual indicator for locked threads
+  
+- **`?unlock [thread_id]`** / **`/unlock [thread_id]`** - Unlock thread and remove 🔒 emoji *(Manage Threads)*
+  - Restores original thread name automatically
+  - Allows members to participate again
+
+#### Message Management
+- **`?pin [message_id]`** / **`/pin [message_id]`** - Pin important messages *(Manage Messages)*
+- **`?unpin [message_id]`** / **`/unpin [message_id]`** - Unpin messages *(Manage Messages)*
+- **`?purge <amount>`** / **`/purge <amount>`** - Delete 1-100 messages *(Manage Messages)*
+
+#### Features
+- ✅ Works in channels and threads
+- ✅ Reply feature for pinning specific messages
+- ✅ Automatic permission validation
+- ✅ Requires `manage_messages` or `manage_threads` permissions
 
 ### AFK System
 **Away From Keyboard status management with auto-responses**
