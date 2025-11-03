@@ -37,20 +37,37 @@ class ThreadCloser(commands.Cog):
             return thread
 
     @commands.command(name="close", aliases=["close_thread", "archive"], help="Close (archive) a thread.")
-    @commands.has_permissions(manage_threads=True)
     async def close_thread(self, ctx: commands.Context, thread_id: Optional[int] = None):
-        """Close (archive) a thread by ID or in current thread."""
+        """Close (archive) a thread by ID or in current thread. Only mods and original poster can close."""
         thread = await self._resolve_thread(ctx, thread_id)
         if thread is None:
             return
+        
+        # Check permissions: only mods (manage_threads) or original poster can close
+        is_mod = False
+        if isinstance(ctx.author, discord.Member):
+            is_mod = ctx.author.guild_permissions.manage_threads
+        
+        is_original_poster = thread.owner_id == ctx.author.id
+        
+        if not (is_mod or is_original_poster):
+            await ctx.reply("❌ Only moderators or the thread creator can close this thread.")
+            return
+        
         try:
+            # Send close message first
+            await ctx.send(f"🔒 Thread '{thread.name}' has been closed by {ctx.author.mention}")
+            
+            # Small delay to ensure message is sent before archiving
+            await asyncio.sleep(0.5)
+            
+            # Then archive the thread (so bot message doesn't reopen it)
             await thread.edit(archived=True)
-            await ctx.reply(f" Thread '{thread.name}' has been archived.")
             print(f"[Thread] Archived '{thread.name}' (ID: {thread.id}) by {ctx.author}")
         except discord.Forbidden:
-            await ctx.reply(" I do not have permission to archive this thread.")
+            await ctx.reply("❌ I do not have permission to archive this thread.")
         except Exception as e:
-            await ctx.reply(f" Error archiving thread: {e}")
+            await ctx.reply(f"❌ Error archiving thread: {e}")
             print(f"[Thread] Error archiving {thread.id}: {e}")
 
     @commands.command(name="pin", help="Pin a message in thread/post or current channel.")
