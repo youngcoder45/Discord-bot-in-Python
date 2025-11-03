@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-11-02T18:13:39.041558+00:00",
+  "timestamp": "2025-11-03T00:13:40.996486+00:00",
   "databases": {
     "staff_shifts.db": {
       "tables": {
@@ -6374,6 +6374,18 @@
               "revoke_reason": null,
               "revoke_moderator_id": null,
               "revoked_at": null
+            },
+            {
+              "id": 19,
+              "user_id": 419463672700600322,
+              "guild_id": 1263067254153805905,
+              "moderator_id": 1126958577039454250,
+              "reason": "NSFW comment",
+              "created_at": "2025-11-02 19:02:46.141554",
+              "revoked": 0,
+              "revoke_reason": null,
+              "revoke_moderator_id": null,
+              "revoked_at": null
             }
           ]
         }
@@ -6967,7 +6979,7 @@
     }
   },
   "config": {
-    "last_backup": "2025-11-02T18:13:39.084916+00:00",
+    "last_backup": "2025-11-03T00:13:41.107824+00:00",
     "version": "1.0",
     "bot_instance": "unknown"
   }
