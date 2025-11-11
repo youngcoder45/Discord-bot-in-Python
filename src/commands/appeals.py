@@ -245,17 +245,41 @@ class Appeals(commands.Cog):
                         conn.commit()
                         conn.close()
                         
+                        # Log to appeals channel
+                        for cid in (1423642446616592385, 1399746928585085068):
+                            ch = self.bot.get_channel(cid)
+                            if ch:
+                                auto_approve_embed = discord.Embed(
+                                    title="✅ Appeal Auto-Approved (Expired)",
+                                    description=f"Appeal **#{appeal_id}** has been automatically approved - punishment expired.",
+                                    color=0x2ecc71
+                                )
+                                auto_approve_embed.add_field(name="👤 User", value=f"<@{user_id}> ({user_id})", inline=True)
+                                auto_approve_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
+                                auto_approve_embed.add_field(
+                                    name="ℹ️ Reason", 
+                                    value="Punishment (ban/timeout) has naturally expired or been manually removed.",
+                                    inline=False
+                                )
+                                auto_approve_embed.timestamp = datetime.now(timezone.utc)
+                                auto_approve_embed.set_footer(text="Appeals System - Auto-Cleanup")
+                                try:
+                                    await ch.send(embed=auto_approve_embed)
+                                except Exception as e:
+                                    print(f"[Appeals] Failed to send auto-approve log to channel {cid}: {e}")
+                                break
+                        
                         # Try to DM the user
                         try:
                             user = await self.bot.fetch_user(user_id)
                             if user:
                                 dm = discord.Embed(
-                                    title=" Appeal Automatically Approved",
+                                    title="✅ Appeal Automatically Approved",
                                     description="## Your appeal has been automatically approved\n\nYour punishment has expired or been removed.",
                                     color=0x2ecc71
                                 )
-                                dm.add_field(name=" Appeal ID", value=f"`#{appeal_id}`", inline=True)
-                                dm.add_field(name=" Result", value=f"**Auto-approved**", inline=True)
+                                dm.add_field(name="📋 Appeal ID", value=f"`#{appeal_id}`", inline=True)
+                                dm.add_field(name="📊 Result", value=f"**Auto-approved**", inline=True)
                                 dm.set_footer(text="CodeVerse Moderation System")
                                 await user.send(embed=dm)
                         except Exception:
@@ -268,6 +292,9 @@ class Appeals(commands.Cog):
     # ---------------- Internal Helper ----------------
     async def _send_appeal_form(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str | None = None):
         """Send appeal form to user with improved deduplication"""
+        dm_success = False
+        dm_error = None
+        
         try:
             if user.bot or (self.bot.user and user.id == self.bot.user.id):
                 return
@@ -335,11 +362,72 @@ class Appeals(commands.Cog):
             embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
             
             await user.send(embed=embed)
+            dm_success = True
             print(f"[Appeals] ✅ Sent appeal form to {user} ({user.id}) for {action_type} in {guild.name}")
+            
+            # Log success to appeals channel
+            await self._log_dm_success(user, guild, action_type, reason or "No reason provided")
         except discord.Forbidden:
+            dm_error = "DMs are closed or bot is blocked"
             print(f"[Appeals] ❌ Cannot DM {user} ({user.id}) - DMs closed or bot blocked")
         except Exception as e:
+            dm_error = str(e)
             print(f"[Appeals] ❌ DM error to {user} ({user.id}): {e}")
+        
+        # Log DM failure to appeals channel
+        if not dm_success and dm_error:
+            await self._log_dm_failure(user, guild, action_type, reason or "No reason provided", dm_error)
+    
+    async def _log_dm_failure(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str, error: str):
+        """Log to appeals channel when DM fails"""
+        for cid in (1423642446616592385, 1399746928585085068):
+            ch = self.bot.get_channel(cid)
+            if ch:
+                embed = discord.Embed(
+                    title="⚠️ Appeal DM Failed",
+                    description=f"**Could not send appeal form to {user.mention}**\n\nUser will NOT be able to submit an appeal via DM.",
+                    color=0xe67e22
+                )
+                embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
+                embed.add_field(name="🏛️ Guild", value=guild.name, inline=True)
+                embed.add_field(name="⚠️ Action", value=action_type.title(), inline=True)
+                embed.add_field(name="📋 Reason", value=reason or "No reason provided", inline=False)
+                embed.add_field(name="❌ Error", value=f"```{error}```", inline=False)
+                embed.add_field(
+                    name="💡 Note", 
+                    value="This user's DMs are blocked. They cannot submit appeals through the bot. Consider alternative appeal methods or manual review.",
+                    inline=False
+                )
+                embed.timestamp = datetime.now(timezone.utc)
+                embed.set_footer(text="Appeals System - DM Delivery Failed")
+                try:
+                    await ch.send(embed=embed)
+                    print(f"[Appeals] 📝 Logged DM failure to channel {cid}")
+                except Exception as e:
+                    print(f"[Appeals] Failed to send DM failure log to channel {cid}: {e}")
+                break
+    
+    async def _log_dm_success(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str):
+        """Log to appeals channel when DM is successfully sent"""
+        for cid in (1423642446616592385, 1399746928585085068):
+            ch = self.bot.get_channel(cid)
+            if ch:
+                embed = discord.Embed(
+                    title="📧 Appeal DM Sent",
+                    description=f"Successfully sent appeal form to {user.mention}",
+                    color=0x2ecc71
+                )
+                embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
+                embed.add_field(name="🏛️ Guild", value=guild.name, inline=True)
+                embed.add_field(name="⚠️ Action", value=action_type.title(), inline=True)
+                embed.add_field(name="📋 Reason", value=reason or "No reason provided", inline=False)
+                embed.timestamp = datetime.now(timezone.utc)
+                embed.set_footer(text="Appeals System")
+                try:
+                    await ch.send(embed=embed)
+                except Exception as e:
+                    print(f"[Appeals] Failed to send DM success log to channel {cid}: {e}")
+                break
 
     # ---------------- Listeners ----------------
     @commands.Cog.listener()
@@ -384,27 +472,8 @@ class Appeals(commands.Cog):
         
         print(f"[Appeals] 🚫 Ban detected for {user} ({user.id}) in {guild.name}: {reason}")
         
-        # Send appeal form
+        # Send appeal form (logs will be sent by _send_appeal_form)
         await self._send_appeal_form(user, guild, "banned", reason)
-        
-        # Log to staff channel
-        for cid in (1423642446616592385, 1399746928585085068):
-            ch = self.bot.get_channel(cid)
-            if ch:
-                embed = discord.Embed(
-                    title="📧 Appeal DM Sent",
-                    description=f"Sent appeal form to {user.mention} (ban)",
-                    color=0xe74c3c
-                )
-                embed.add_field(name="User", value=f"{user} ({user.id})", inline=True)
-                embed.add_field(name="Guild", value=guild.name, inline=True)
-                embed.add_field(name="Reason", value=reason, inline=False)
-                embed.timestamp = datetime.now(timezone.utc)
-                try:
-                    await ch.send(embed=embed)
-                except Exception as e:
-                    print(f"[Appeals] Failed to send log to channel {cid}: {e}")
-                break
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
@@ -436,27 +505,9 @@ class Appeals(commands.Cog):
                 print(f"[Appeals] Error fetching timeout audit logs: {e}")
             
             print(f"[Appeals] ⏱️ Timeout APPLIED to {after} ({after.id}): before={before_timeout}, after={after_timeout}, reason={reason}")
-            await self._send_appeal_form(after, after.guild, "timed out", reason)
             
-            # Log to staff channel
-            for cid in (1423642446616592385, 1399746928585085068):
-                ch = self.bot.get_channel(cid)
-                if ch:
-                    embed = discord.Embed(
-                        title="📧 Appeal DM Sent",
-                        description=f"Sent appeal form to {after.mention} (timeout)",
-                        color=0x3498db
-                    )
-                    embed.add_field(name="User", value=f"{after} ({after.id})", inline=True)
-                    if after_timeout:
-                        embed.add_field(name="Until", value=f"<t:{int(after_timeout.timestamp())}:F>", inline=True)
-                    embed.add_field(name="Reason", value=reason, inline=False)
-                    embed.timestamp = datetime.now(timezone.utc)
-                    try:
-                        await ch.send(embed=embed)
-                    except Exception as e:
-                        print(f"[Appeals] Failed to send log to channel {cid}: {e}")
-                    break
+            # Send appeal form (logs will be sent by _send_appeal_form)
+            await self._send_appeal_form(after, after.guild, "timed out", reason)
         
         # Check if timeout was REMOVED before expiry (manual untimeout/appeal approved)
         elif before_timeout is not None and after_timeout is None:
@@ -713,11 +764,8 @@ class Appeals(commands.Cog):
             return
         
         user_id = result[0]
-        cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
-        conn.commit()
-        conn.close()
         
-        # Determine if user is still a member (timeout case) or banned
+        # Check if user is still punished BEFORE approving
         guild = ctx.guild
         member = guild.get_member(user_id) if guild else None
         user = None
@@ -725,6 +773,96 @@ class Appeals(commands.Cog):
             user = await self.bot.fetch_user(user_id)
         except Exception:
             pass
+
+        is_still_punished = False
+        punishment_type = None
+        
+        # Check for timeout
+        if member and getattr(member, 'timed_out_until', None):
+            timeout_until = member.timed_out_until
+            if timeout_until and timeout_until > datetime.now(timezone.utc):
+                is_still_punished = True
+                punishment_type = "timeout"
+        
+        # Check for ban
+        if not is_still_punished:
+            try:
+                await guild.fetch_ban(discord.Object(id=user_id))
+                is_still_punished = True
+                punishment_type = "ban"
+            except discord.NotFound:
+                pass
+            except Exception:
+                pass
+        
+        # If punishment already expired, inform the moderator
+        if not is_still_punished:
+            # Log to appeals channel that punishment expired
+            for cid in (1423642446616592385, 1399746928585085068):
+                ch = self.bot.get_channel(cid)
+                if ch:
+                    expired_embed = discord.Embed(
+                        title="⚠️ Punishment Already Expired",
+                        description=f"Appeal **#{appeal_id}** cannot be processed - punishment has already expired.",
+                        color=0xf39c12
+                    )
+                    expired_embed.add_field(name="👤 User", value=f"<@{user_id}> ({user_id})", inline=True)
+                    expired_embed.add_field(name="👮 Moderator", value=ctx.author.mention, inline=True)
+                    expired_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
+                    expired_embed.add_field(
+                        name="ℹ️ Status", 
+                        value="The user's punishment (ban/timeout) has already expired or been removed. No action needed.",
+                        inline=False
+                    )
+                    expired_embed.timestamp = datetime.now(timezone.utc)
+                    expired_embed.set_footer(text=f"Attempted by {ctx.author}")
+                    try:
+                        await ch.send(embed=expired_embed)
+                    except Exception as e:
+                        print(f"[Appeals] Failed to send expiry log to channel {cid}: {e}")
+                    break
+            
+            # Auto-approve the appeal since punishment is gone
+            cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
+            conn.commit()
+            conn.close()
+            
+            # Inform the moderator
+            expired_mod_embed = discord.Embed(
+                title="⚠️ Punishment Already Expired",
+                description=f"The punishment for this appeal has already expired or been removed.\n\nAppeal **#{appeal_id}** has been automatically approved.",
+                color=0xf39c12
+            )
+            expired_mod_embed.add_field(name="👤 User", value=f"<@{user_id}> ({user_id})", inline=True)
+            expired_mod_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
+            expired_mod_embed.add_field(
+                name="💡 Info",
+                value="No moderation action was taken since the user's timeout/ban was already lifted.",
+                inline=False
+            )
+            await ctx.send(embed=expired_mod_embed)
+            
+            # Try to DM the user
+            if user:
+                try:
+                    dm = discord.Embed(
+                        title="✅ Appeal Automatically Approved",
+                        description=f"## Your appeal has been automatically approved\n\nYour punishment in **{ctx.guild.name}** had already expired.",
+                        color=0x2ecc71
+                    )
+                    dm.add_field(name="📋 Appeal ID", value=f"`#{appeal_id}`", inline=True)
+                    dm.add_field(name="📊 Result", value="**Auto-approved (expired)**", inline=True)
+                    dm.set_footer(text=f"{ctx.guild.name} • Moderation System")
+                    await user.send(embed=dm)
+                except Exception:
+                    pass
+            
+            return
+        
+        # Punishment still active, proceed with approval
+        cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
+        conn.commit()
+        conn.close()
 
         action_taken = None
         error_embed = None
