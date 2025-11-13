@@ -6,13 +6,14 @@
 
 ![Status](https://img.shields.io/badge/status-active-success) ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![Features](https://img.shields.io/badge/features-100+-green)
 
-*Professional Staff Management • Advanced Moderation • Data Persistence • Programming Utilities • Community Engagement*
+*Professional Staff Management • Advanced Moderation • Support Ticket System • Data Persistence • Programming Utilities • Community Engagement*
 
 </div>
 
 ## Features Overview
 
 ### ✨ Recent Updates (November 2025)
+- **🎫 Professional Support Ticket System** - Enterprise thread-based ticket system with specialized role routing, information preview, and partnership guidelines
 - **🔒 Thread Lock with Emoji Prefix** - `/lock` command now automatically renames threads with 🔒 prefix for visibility
 - **📋 Appeal Confirmation System** - Appeals now show confirmation embed with Yes/No buttons before submission; window persists until punishment expires; new `/appealcancel` command for canceling pending appeals
 - **🔐 Dual-Window Anti-Nuke Protection** - Max 5 bans/kicks per minute OR 12 per 20 minutes; automatic action reversal and actor blocking on violation; detailed staff alerts
@@ -129,6 +130,60 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **Staff notifications** - Automatic notifications in designated appeals channel
 - **User guidance** - Clear instructions for appeal process and requirements
 - **Status tracking** - Pending, approved, denied status with timestamps
+
+### 🎫 Professional Support Ticket System
+**Enterprise-grade thread-based ticket system** with specialized role routing and information preview
+- **`/ticketpanel [#channel] [@support] [@report] [@partner]`** - Create ticket panel with specialized roles (Admin)
+- **`?close`** - Intelligent ticket closure (auto-detects ticket threads)
+- **`🎫 Create Ticket`** - Interactive button with category selection and information preview
+
+#### Setup & Configuration Commands
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `/ticketsupport [@role]` | Set/view general support team role | Administrator |
+| `/ticketreport [@role]` | Set/view specialized report team role | Administrator |
+| `/ticketpartner [@role]` | Set/view specialized partnership team role | Administrator |
+| `/ticketlog [#channel]` | Set/view ticket logging channel | Administrator |
+| `/ticketsupport-disable` | Remove support role setting | Administrator |
+| `/ticketreport-disable` | Remove report team role setting | Administrator |
+| `/ticketpartner-disable` | Remove partner team role setting | Administrator |
+
+#### Management Commands
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `/forceclose <thread_id> [reason]` | Force close any ticket with reason | Administrator |
+| `🔒 Close` | Close button within ticket threads | Staff/Thread Creator |
+| `📌 Claim` | Claim ticket button (Staff only) | Staff |
+
+#### Key Features
+- **🔍 Information Preview** - Users see detailed guidelines and examples before creating tickets
+- **🎯 Specialized Routing** - Different teams handle different ticket types:
+  - 🐛 **Bug Reports** → General support team
+  - ❓ **General Support** → General support team  
+  - 👤 **Partnerships** → Partner team (with server requirements and terms)
+  - 🚨 **Reports** → Report team (with evidence guidelines)
+  - 💡 **Suggestions** → General support team
+- **🧵 Thread-Based** - Each ticket creates a private thread with automatic staff assignment
+- **📊 Complete Logging** - All ticket actions logged with timestamps and details
+- **🔒 Smart Closure** - Intelligent detection between regular threads and ticket threads
+- **👥 Role Integration** - Automatic addition of relevant team members to ticket threads
+- **⚡ Fallback System** - Specialized roles fall back to general support if not configured
+
+#### Partnership Requirements *(Built-in Guidelines)*
+- **Server Requirements:** 100+ members, 1/9 activity ratio, 500+ daily messages, SFW content
+- **Community Focus:** Tech/IT related but different specialization from CodeVerse
+- **Staff Requirements:** Active and reliable moderation team
+- **Mutual Benefits:** Custom advertisement channels, partnership channels, collaborative events
+- **Terms & Conditions:** Clear partnership removal conditions and guidelines
+
+#### Ticket Workflow
+1. User clicks **🎫 Create Ticket** button
+2. Selects category from dropdown menu
+3. Views detailed information and guidelines for selected category
+4. Clicks **Create This Ticket** button to confirm
+5. Private thread created with appropriate team automatically added
+6. Staff receives notification and can manage via embed controls
+7. Ticket tracked and logged throughout entire lifecycle
 
 ### Staff Aura System (Points & Recognition)
 **Comprehensive staff recognition and promotion system** with leaderboards and statistics

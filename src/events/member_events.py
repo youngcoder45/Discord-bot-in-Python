@@ -71,6 +71,25 @@ class MemberEvents(commands.Cog):
             """, (guild_id, enabled))
             await db.commit()
 
+    async def get_welcome_channel(self, guild_id: int) -> int:
+        """Get the welcome channel ID for a guild"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("""
+                SELECT welcome_channel_id FROM welcome_config 
+                WHERE guild_id = ?
+            """, (guild_id,)) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result and result[0] else 1263070188589547541  # Default channel
+
+    async def set_welcome_channel(self, guild_id: int, channel_id: int):
+        """Set the welcome channel for a guild"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                INSERT OR REPLACE INTO welcome_config (guild_id, welcome_channel_id)
+                VALUES (?, ?)
+            """, (guild_id, channel_id))
+            await db.commit()
+
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Handle member join: track user and send welcome message."""
@@ -91,8 +110,8 @@ class MemberEvents(commands.Cog):
         if not guild_id or member.guild.id != guild_id:
             return
             
-        # Get welcome channel
-        welcome_channel_id = 1263070188589547541  # The specified channel ID
+        # Get welcome channel from database
+        welcome_channel_id = await self.get_welcome_channel(member.guild.id)
         welcome_channel = self.bot.get_channel(welcome_channel_id)
         if not welcome_channel:
             return
@@ -142,21 +161,30 @@ class MemberEvents(commands.Cog):
             )
             embed.add_field(
                 name="Commands",
-                value="• `/welcome toggle` - Toggle welcome messages on/off\n• `/welcome status` - Show current settings",
+                value="• `/welcome toggle [channel]` - Toggle welcome messages on/off and set channel\n• `/welcome status` - Show current settings\n• `/welcome channel <#channel>` - Set welcome channel",
                 inline=False
             )
             await ctx.reply(embed=embed)
 
-    @welcome.command(name="toggle", description="Toggle welcome messages on/off")
+    @welcome.command(name="toggle", description="Toggle welcome messages on/off and optionally set channel")
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
-    async def toggle_welcome(self, ctx: commands.Context):
-        """Toggle welcome messages on or off"""
+    @app_commands.describe(channel="Channel where welcome messages will be sent (optional)")
+    async def toggle_welcome(self, ctx: commands.Context, channel: discord.TextChannel | None = None):
+        """Toggle welcome messages on or off and optionally set the channel"""
         assert ctx.guild is not None, "This command can only be used in a guild"
         current_status = await self.get_welcome_enabled(ctx.guild.id)
         new_status = not current_status
         
         await self.set_welcome_enabled(ctx.guild.id, new_status)
+        
+        # If a channel is provided, update the welcome channel
+        if channel:
+            await self.set_welcome_channel(ctx.guild.id, channel.id)
+        
+        # Get current welcome channel to display
+        current_channel_id = await self.get_welcome_channel(ctx.guild.id)
+        current_channel = ctx.guild.get_channel(current_channel_id)
         
         embed = discord.Embed(
             title="Welcome Messages Updated",
@@ -165,6 +193,45 @@ class MemberEvents(commands.Cog):
         embed.add_field(
             name="Status",
             value=f"Welcome messages are now **{'enabled' if new_status else 'disabled'}**",
+            inline=False
+        )
+        embed.add_field(
+            name="Channel",
+            value=f"{current_channel.mention if current_channel else 'Channel not found'}",
+            inline=True
+        )
+        if channel:
+            embed.add_field(
+                name="Updated",
+                value=f"Welcome channel set to {channel.mention}",
+                inline=True
+            )
+        embed.set_footer(text=f"Changed by {ctx.author.display_name}")
+        
+        await ctx.reply(embed=embed)
+
+    @welcome.command(name="channel", description="Set the welcome message channel")
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    @app_commands.describe(channel="Channel where welcome messages will be sent")
+    async def welcome_channel_command(self, ctx: commands.Context, channel: discord.TextChannel):
+        """Set the channel where welcome messages will be sent"""
+        assert ctx.guild is not None, "This command can only be used in a guild"
+        
+        await self.set_welcome_channel(ctx.guild.id, channel.id)
+        
+        embed = discord.Embed(
+            title="Welcome Channel Updated",
+            color=0x00FF00
+        )
+        embed.add_field(
+            name="New Welcome Channel",
+            value=f"{channel.mention}",
+            inline=False
+        )
+        embed.add_field(
+            name="Note",
+            value="Welcome messages will now be sent to this channel when enabled.",
             inline=False
         )
         embed.set_footer(text=f"Changed by {ctx.author.display_name}")
@@ -178,6 +245,8 @@ class MemberEvents(commands.Cog):
         """Show current welcome message settings"""
         assert ctx.guild is not None, "This command can only be used in a guild"
         enabled = await self.get_welcome_enabled(ctx.guild.id)
+        channel_id = await self.get_welcome_channel(ctx.guild.id)
+        channel = ctx.guild.get_channel(channel_id)
         
         embed = discord.Embed(
             title="Welcome Message Status",
@@ -190,7 +259,7 @@ class MemberEvents(commands.Cog):
         )
         embed.add_field(
             name="Channel",
-            value=f"<#{1263070188589547541}>",
+            value=f"{channel.mention if channel else 'Channel not found'}",
             inline=True
         )
         

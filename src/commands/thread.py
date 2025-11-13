@@ -3,6 +3,11 @@ import discord
 from discord.ext import commands
 from typing import Optional
 import asyncio
+import sqlite3
+from datetime import datetime, timezone
+
+from utils.database import DATABASE_NAME
+from utils.embeds import create_error_embed, create_success_embed
 
 
 class ThreadCloser(commands.Cog):
@@ -36,13 +41,101 @@ class ThreadCloser(commands.Cog):
                 return None
             return thread
 
+    async def _is_ticket_thread(self, thread: discord.Thread) -> tuple[bool, Optional[dict]]:
+        """Check if thread is a ticket and return ticket info"""
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT ticket_id, user_id, category FROM tickets WHERE ticket_thread_id = ? AND status = "open"',
+                (thread.id,)
+            )
+            result = cursor.fetchone()
+            conn.close()
+            
+            if result:
+                ticket_id, user_id, category = result
+                return True, {
+                    'ticket_id': ticket_id,
+                    'user_id': user_id,
+                    'category': category
+                }
+            return False, None
+        except Exception:
+            return False, None
+
+    async def _close_ticket_thread(self, ctx: commands.Context, thread: discord.Thread, ticket_info: dict):
+        """Close a ticket thread"""
+        ticket_id = ticket_info['ticket_id']
+        user_id = ticket_info['user_id']
+        category = ticket_info['category']
+        staff_role_id = 1417900662053671073  # Staff role ID from tickets.py
+        
+        # Check permissions (ticket owner or staff)
+        has_permission = False
+        if isinstance(ctx.author, discord.Member):
+            has_permission = (
+                ctx.author.id == user_id or
+                any(role.id == staff_role_id for role in ctx.author.roles) or
+                ctx.author.guild_permissions.administrator
+            )
+        elif ctx.author.id == user_id:
+            has_permission = True
+        
+        if not has_permission:
+            await ctx.reply("❌ Only the ticket owner or staff can close this ticket.")
+            return
+        
+        # Update database
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE tickets SET status = "closed", closed_at = CURRENT_TIMESTAMP, close_reason = ? WHERE ticket_id = ?',
+            (f"Closed by {ctx.author} (via ?close)", ticket_id)
+        )
+        conn.commit()
+        conn.close()
+        
+        # Send closure message
+        embed = discord.Embed(
+            title="🔒 Ticket Closed",
+            description=f"This ticket has been closed by {ctx.author.mention}",
+            color=0xe74c3c
+        )
+        embed.add_field(
+            name="📋 Next Steps",
+            value="This thread will be archived and locked in 10 seconds.\nA transcript has been saved.",
+            inline=False
+        )
+        embed.set_footer(text=f"Ticket ID: {ticket_id} | Closed via ?close command")
+        embed.timestamp = datetime.now(timezone.utc)
+        
+        await ctx.send(embed=embed)
+        
+        # Archive and lock thread after delay
+        await asyncio.sleep(10)
+        try:
+            await thread.edit(archived=True, locked=True)
+            print(f"[Thread] Closed ticket thread '{thread.name}' (ID: {thread.id}, Ticket: #{ticket_id}) by {ctx.author}")
+        except Exception as e:
+            print(f"[Thread] Error closing ticket thread {thread.id}: {e}")
+
     @commands.command(name="close", aliases=["close_thread", "archive"], help="Close (archive) a thread.")
     async def close_thread(self, ctx: commands.Context, thread_id: Optional[int] = None):
-        """Close (archive) a thread by ID or in current thread. Only mods and original poster can close."""
+        """Close (archive) a thread by ID or in current thread. Works for both regular threads and tickets."""
         thread = await self._resolve_thread(ctx, thread_id)
         if thread is None:
             return
         
+        # Check if this is a ticket thread
+        is_ticket, ticket_info = await self._is_ticket_thread(thread)
+        
+        if is_ticket and ticket_info:
+            # Handle ticket closure with proper permissions and database updates
+            await self._close_ticket_thread(ctx, thread, ticket_info)
+            return
+        
+        # Handle regular thread closure
         # Check permissions: only mods (manage_threads) or original poster can close
         is_mod = False
         if isinstance(ctx.author, discord.Member):

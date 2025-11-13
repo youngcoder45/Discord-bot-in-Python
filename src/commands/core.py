@@ -368,7 +368,13 @@ class HelpDropdown(discord.ui.Select):
                 emoji="⭐"
             ),
             discord.SelectOption(
-                label="🎨 Embed Tools",
+                label="� Ticket System",
+                description="Support tickets with specialized role routing",
+                value="tickets",
+                emoji="🎫"
+            ),
+            discord.SelectOption(
+                label="�🎨 Embed Tools",
                 description="Create and edit server announcements",
                 value="embeds",
                 emoji="🎨"
@@ -414,6 +420,7 @@ class HelpDropdown(discord.ui.Select):
             "moderation": self.get_moderation_embed(),
             "advanced_moderation": self.get_advanced_moderation_embed(),
             "staff": self.get_staff_embed(),
+            "tickets": self.get_tickets_embed(),
             "embeds": self.get_embeds_embed(),
             "threads": self.get_threads_embed(),
             "data": self.get_data_embed(),
@@ -580,6 +587,75 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.set_footer(text="Staff systems include automatic recognition and logging")
+        return embed
+    
+    def get_tickets_embed(self):
+        """Ticket system embed"""
+        embed = discord.Embed(
+            title="🎫 Support Ticket System",
+            description="Professional thread-based ticket system with specialized role routing",
+            color=0x5865F2
+        )
+        
+        embed.add_field(
+            name="👥 User Commands",
+            value=(
+                "**`/ticketpanel [#channel]`** - Create ticket panel with button *(Admin)*\n"
+                "**`🎫 Create Ticket`** - Button to create new tickets\n"
+                "**`?close`** - Close ticket thread (auto-detects tickets)\n"
+                "**`🔒 Close`** - Close button in ticket threads"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="⚙️ Setup Commands",
+            value=(
+                "**`/ticketsupport [@role]`** - Set general support team *(Admin)*\n"
+                "**`/ticketreport [@role]`** - Set report team for report tickets *(Admin)*\n"
+                "**`/ticketpartner [@role]`** - Set partner team for partnership tickets *(Admin)*\n"
+                "**`/ticketlog [#channel]`** - Set ticket logging channel *(Admin)*"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🔧 Management Commands",
+            value=(
+                "**`/ticketsupport-disable`** - Remove support role setting *(Admin)*\n"
+                "**`/ticketreport-disable`** - Remove report role setting *(Admin)*\n"
+                "**`/ticketpartner-disable`** - Remove partner role setting *(Admin)*\n"
+                "**`/forceclose <thread_id> [reason]`** - Force close any ticket *(Admin)*"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="✨ Key Features",
+            value=(
+                "• **Information Preview** - Users see detailed guidelines before creating tickets\n"
+                "• **Specialized Routing** - Different roles for report/partnership tickets\n"
+                "• **Thread-Based** - Each ticket is a private thread\n"
+                "• **Auto-Logging** - Complete ticket action logging\n"
+                "• **Smart Closure** - Intelligent ticket detection and closure\n"
+                "• **Role Integration** - Automatic staff team addition to tickets"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="📋 Ticket Categories",
+            value=(
+                "🐛 **Bug Reports** → General support team\n"
+                "❓ **General Support** → General support team\n"
+                "👤 **Partnerships** → Partner team (or fallback to support)\n"
+                "🚨 **Reports** → Report team (or fallback to support)\n"
+                "💡 **Suggestions** → General support team"
+            ),
+            inline=False
+        )
+        
+        embed.set_footer(text="Ticket system supports both prefix and slash commands • Complete logging included")
         return embed
     
     def get_embeds_embed(self):

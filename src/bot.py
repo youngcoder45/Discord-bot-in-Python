@@ -21,6 +21,30 @@ GUILD_ID = int(os.getenv('GUILD_ID', 0))
 INSTANCE_ID = os.getenv('INSTANCE_ID', f"pid-{os.getpid()}")
 LOCK_FILE = os.getenv('BOT_LOCK_FILE', '.bot_instance.lock')
 
+# Authorized servers - Bot will only work in these servers
+AUTHORIZED_SERVERS = [
+    1410939321812258928,  # Server 1
+    1263067254153805905   # Server 2 (Original guild ID)
+]
+
+# Command restriction decorator
+def authorized_servers_only():
+    """Decorator to restrict commands to authorized servers only"""
+    def decorator(func):
+        async def wrapper(interaction, *args, **kwargs):
+            if interaction.guild and interaction.guild.id not in AUTHORIZED_SERVERS:
+                embed = discord.Embed(
+                    title="🚫 Unauthorized Server",
+                    description="This bot can only be used in authorized servers.",
+                    color=discord.Color.red()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                logger.warning(f"Command {func.__name__} blocked in unauthorized server: {interaction.guild.name} (ID: {interaction.guild.id})")
+                return
+            return await func(interaction, *args, **kwargs)
+        return wrapper
+    return decorator
+
 intents = discord.Intents.default()
 intents.message_content = True  # Needed for legacy text commands
 intents.members = True
@@ -36,7 +60,7 @@ COGS_TO_LOAD = [
     
     # Logging System (Essential - LOAD FIRST)
     'commands.logging',       # Centralized logging system for all events
-    
+    'commands.tickets',
     # Moderation & Protection (Essential)
     'commands.modcog',        # Combined moderation commands with warnings system
     'commands.advanced_moderation',  # Advanced moderation with automod, tempban, mute, safety features
@@ -71,6 +95,36 @@ class CodeVerseBot(commands.Bot):
         super().__init__(command_prefix='?', intents=intents, help_command=None)
         self.start_time = datetime.now(timezone.utc)
         self.instance_id = INSTANCE_ID
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Global check for all interactions - restrict to authorized servers only"""
+        if interaction.guild and interaction.guild.id not in AUTHORIZED_SERVERS:
+            embed = discord.Embed(
+                title="🚫 Unauthorized Server",
+                description="This bot can only be used in authorized servers.",
+                color=discord.Color.red()
+            )
+            try:
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            except discord.InteractionResponded:
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            
+            logger.warning(f"Interaction blocked in unauthorized server: {interaction.guild.name} (ID: {interaction.guild.id})")
+            return False
+        return True
+
+    async def check_prefix_commands(self, message):
+        """Check for prefix commands in authorized servers only"""
+        if message.guild and message.guild.id not in AUTHORIZED_SERVERS:
+            return None
+        return await super().get_prefix(message)
+
+    async def get_context(self, message, *, cls=commands.Context):
+        """Override to check server authorization for prefix commands"""
+        if message.guild and message.guild.id not in AUTHORIZED_SERVERS:
+            # Return invalid context for unauthorized servers
+            return await super().get_context(message, cls=cls)
+        return await super().get_context(message, cls=cls)
 
     async def setup_hook(self):
         """Async setup tasks (load cogs, etc.)."""
@@ -129,27 +183,39 @@ async def on_ready():
         logger.info(f"Bot logged in [Instance: {INSTANCE_ID}]")
     
     # Security check: Ensure bot is only in authorized servers
-    if GUILD_ID:
-        unauthorized_servers = []
-        for guild in bot.guilds:
-            if guild.id != GUILD_ID:
-                unauthorized_servers.append(guild)
+    unauthorized_servers = []
+    for guild in bot.guilds:
+        if guild.id not in AUTHORIZED_SERVERS:
+            unauthorized_servers.append(guild)
+    
+    # Leave any unauthorized servers
+    for guild in unauthorized_servers:
+        logger.warning(f"🚫 Found bot in unauthorized server: {guild.name} (ID: {guild.id})")
+        try:
+            # Try to send a message to the owner if possible
+            if guild.owner:
+                embed = discord.Embed(
+                    title="🚫 Unauthorized Server Access",
+                    description=f"This bot is exclusive to specific servers and cannot be used here.\n\n"
+                               f"Server: {guild.name}\n"
+                               f"Server ID: {guild.id}\n\n"
+                               f"The bot will now leave this server automatically.",
+                    color=discord.Color.red()
+                )
+                await guild.owner.send(embed=embed)
+        except Exception as e:
+            logger.warning(f"Could not notify server owner of {guild.name}: {e}")
         
-        # Leave any unauthorized servers
-        for guild in unauthorized_servers:
-            logger.warning(f"🚫 Found bot in unauthorized server: {guild.name} (ID: {guild.id})")
-            try:
-                await guild.leave()
-                logger.info(f"✅ Left unauthorized server: {guild.name}")
-            except Exception as e:
-                logger.error(f"❌ Failed to leave server {guild.name}: {e}")
-        
-        # Check if bot is in the correct server
-        authorized_guild = bot.get_guild(GUILD_ID)
-        if authorized_guild:
-            logger.info(f"✅ Bot is operating in authorized server: {authorized_guild.name}")
-        else:
-            logger.warning(f"⚠️ Bot is not in the configured server (ID: {GUILD_ID})")
+        try:
+            await guild.leave()
+            logger.info(f"✅ Left unauthorized server: {guild.name}")
+        except Exception as e:
+            logger.error(f"❌ Failed to leave server {guild.name}: {e}")
+    
+    # Log authorized servers the bot is in
+    for guild in bot.guilds:
+        if guild.id in AUTHORIZED_SERVERS:
+            logger.info(f"✅ Bot is operating in authorized server: {guild.name} (ID: {guild.id})")
     
     # Start periodic backup task (every 6 hours)
     try:
@@ -165,11 +231,14 @@ async def on_ready():
         synced = await bot.tree.sync()
         logger.info(f"Synced {len(synced)} slash commands globally")
         
-        # If we have a guild ID, also sync to guild for faster updates
-        if GUILD_ID:
-            guild = discord.Object(id=GUILD_ID)
-            guild_synced = await bot.tree.sync(guild=guild)
-            logger.info(f"Synced {len(guild_synced)} commands to guild {GUILD_ID}")
+        # Also sync to authorized guilds for faster updates
+        for guild_id in AUTHORIZED_SERVERS:
+            try:
+                guild = discord.Object(id=guild_id)
+                guild_synced = await bot.tree.sync(guild=guild)
+                logger.info(f"Synced {len(guild_synced)} commands to guild {guild_id}")
+            except Exception as e:
+                logger.warning(f"Failed to sync commands to guild {guild_id}: {e}")
     except Exception as e:
         logger.error(f"Failed to sync slash commands: {e}")
     
@@ -178,11 +247,7 @@ async def on_ready():
 @bot.event
 async def on_guild_join(guild):
     """Security: Auto-leave any unauthorized servers"""
-    # The allowed server ID is loaded from GUILD_ID in .env file
-    # Currently set to: 1263067254153805905 (your server)
-    ALLOWED_SERVER_ID = GUILD_ID
-    
-    if guild.id != ALLOWED_SERVER_ID:
+    if guild.id not in AUTHORIZED_SERVERS:
         logger.warning(f"🚫 Bot was added to unauthorized server: {guild.name} (ID: {guild.id})")
         
         # Try to send a message to the owner if possible
@@ -190,7 +255,7 @@ async def on_guild_join(guild):
             if guild.owner:
                 embed = discord.Embed(
                     title="🚫 Unauthorized Server Access",
-                    description=f"This bot is exclusive to a specific server and cannot be used here.\n\n"
+                    description=f"This bot is exclusive to specific servers and cannot be used here.\n\n"
                                f"Server: {guild.name}\n"
                                f"Server ID: {guild.id}\n\n"
                                f"The bot will now leave this server automatically.",
@@ -201,10 +266,38 @@ async def on_guild_join(guild):
             logger.warning(f"Could not notify server owner: {e}")
         
         # Leave the unauthorized server
-        await guild.leave()
-        logger.info(f"✅ Successfully left unauthorized server: {guild.name}")
+        try:
+            await guild.leave()
+            logger.info(f"✅ Successfully left unauthorized server: {guild.name}")
+        except Exception as e:
+            logger.error(f"❌ Failed to leave unauthorized server {guild.name}: {e}")
     else:
-        logger.info(f"✅ Bot joined authorized server: {guild.name}")
+        logger.info(f"✅ Bot joined authorized server: {guild.name} (ID: {guild.id})")
+
+@bot.event
+async def on_message(message):
+    """Process messages and check for prefix commands in authorized servers only"""
+    if message.author.bot:
+        return
+    
+    # Block prefix commands in unauthorized servers
+    if message.guild and message.guild.id not in AUTHORIZED_SERVERS:
+        # Check if this looks like a command attempt
+        if message.content.startswith('?'):
+            embed = discord.Embed(
+                title="🚫 Unauthorized Server",
+                description="This bot can only be used in authorized servers.",
+                color=discord.Color.red()
+            )
+            try:
+                await message.channel.send(embed=embed, delete_after=10)
+            except:
+                pass  # Ignore if we can't send messages
+            logger.warning(f"Prefix command blocked in unauthorized server: {message.guild.name} (ID: {message.guild.id})")
+        return
+    
+    # Process commands normally in authorized servers
+    await bot.process_commands(message)
 
 def cleanup():
     """Run cleanup tasks before the bot process exits."""
