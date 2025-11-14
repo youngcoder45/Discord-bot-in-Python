@@ -15,31 +15,118 @@ from utils.database import DATABASE_NAME, init_db
 from utils.embeds import create_error_embed, create_success_embed, create_info_embed
 
 
-class ConfirmAppealView(discord.ui.View):
-    """Confirmation view for appeal submissions - stays open until punishment expires."""
+class AppealModal(discord.ui.Modal):
+    """Modal for collecting appeal information"""
     
-    def __init__(self, cog, user_id, appeal_content, punishment_type, guild_name, punishment_guild):
-        super().__init__(timeout=None)  # No timeout - window persists until punishment expires
+    def __init__(self, cog, guild: discord.Guild, punishment_type: str, reason: str):
+        super().__init__(title="Submit Your Appeal", timeout=300)
         self.cog = cog
-        self.user_id = user_id
-        self.appeal_content = appeal_content
+        self.guild = guild
         self.punishment_type = punishment_type
-        self.guild_name = guild_name
-        self.punishment_guild = punishment_guild
-        self.confirmed = False
+        self.reason = reason
+        
+        # Question 1: What are you appealing?
+        self.punishment_input = discord.ui.TextInput(
+            label="What punishment are you appealing?",
+            placeholder=f"e.g., {punishment_type} from {guild.name}",
+            default=f"{punishment_type.title()} from {guild.name}",
+            max_length=100,
+            required=True
+        )
+        self.add_item(self.punishment_input)
+        
+        # Question 2: Why did you get punished?
+        self.reason_input = discord.ui.TextInput(
+            label="Why did you get this punishment?",
+            placeholder="Brief explanation of what happened...",
+            style=discord.TextStyle.paragraph,
+            max_length=500,
+            required=True
+        )
+        self.add_item(self.reason_input)
+        
+        # Question 3: Your appeal message
+        self.appeal_input = discord.ui.TextInput(
+            label="Your appeal message",
+            placeholder="Explain why this punishment should be removed, what you've learned, or what you'll do differently...",
+            style=discord.TextStyle.paragraph,
+            max_length=1500,
+            required=True
+        )
+        self.add_item(self.appeal_input)
     
-    async def _check_punishment_active(self) -> bool:
-        """Check if user still has active punishment."""
+    async def on_submit(self, interaction: discord.Interaction):
+        """Handle appeal submission"""
+        try:
+            # Check if user still has punishment
+            is_punished = await self._check_punishment_active(interaction.user)
+            if not is_punished:
+                await interaction.response.send_message(
+                    embed=create_error_embed(
+                        "Punishment Expired",
+                        "Your punishment appears to have been lifted. No appeal is needed."
+                    ),
+                    ephemeral=True
+                )
+                return
+            
+            # Create full appeal content
+            appeal_content = (
+                f"**Punishment Being Appealed:** {self.punishment_input.value}\n\n"
+                f"**Why I think I was punished:** {self.reason_input.value}\n\n"
+                f"**My Appeal:** {self.appeal_input.value}"
+            )
+            
+            # Submit to database
+            conn = sqlite3.connect(DATABASE_NAME)
+            cur = conn.cursor()
+            cur.execute('INSERT INTO unban_requests (user_id, reason) VALUES (?, ?)', 
+                       (interaction.user.id, appeal_content))
+            conn.commit()
+            appeal_id = cur.lastrowid
+            conn.close()
+            
+            print(f"[Appeals] ✅ Appeal #{appeal_id} submitted by {interaction.user} ({interaction.user.id}) - {self.punishment_type} in {self.guild.name}")
+            
+            # Send confirmation to user
+            success_embed = discord.Embed(
+                title="✅ Appeal Submitted Successfully",
+                description="Your appeal has been submitted to our moderation team.",
+                color=0x2ecc71
+            )
+            success_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
+            success_embed.add_field(name="📊 Status", value="Pending Review", inline=True)
+            success_embed.add_field(name="⏱️ Review Time", value="24-48 hours", inline=True)
+            success_embed.set_footer(text=f"{self.guild.name} • Professional Moderation")
+            
+            await interaction.response.send_message(embed=success_embed, ephemeral=False)
+            
+            # Send to staff channel
+            if appeal_id:
+                await self._send_staff_notification(appeal_id, interaction.user, appeal_content)
+            
+        except Exception as e:
+            print(f"[Appeals] ❌ Error submitting appeal: {e}")
+            await interaction.response.send_message(
+                embed=create_error_embed(
+                    "Submission Error",
+                    "There was an error submitting your appeal. Please try again later."
+                ),
+                ephemeral=True
+            )
+    
+    async def _check_punishment_active(self, user: discord.Member | discord.User) -> bool:
+        """Check if user still has active punishment"""
         try:
             # Check if banned
             try:
-                await self.punishment_guild.fetch_ban(discord.Object(id=self.user_id))
+                await self.guild.fetch_ban(discord.Object(id=user.id))
                 return True
             except discord.NotFound:
                 pass
             
             # Check if timed out
-            member = self.punishment_guild.get_member(self.user_id)
+            member = self.guild.get_member(user.id)
             if member and getattr(member, 'timed_out_until', None):
                 timeout_until = member.timed_out_until
                 if timeout_until and timeout_until > datetime.now(timezone.utc):
@@ -49,68 +136,8 @@ class ConfirmAppealView(discord.ui.View):
         except Exception:
             return True  # Assume still punished on error
     
-    async def _disable_buttons(self):
-        """Disable buttons in the view."""
-        for item in self.children:
-            if isinstance(item, discord.ui.Button):
-                item.disabled = True
-    
-    @discord.ui.button(label="✅ Yes, Submit My Appeal", style=discord.ButtonStyle.green)
-    async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """User confirmed - submit the appeal."""
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("❌ This button is not for you.", ephemeral=True)
-            return
-        
-        # Check if punishment still active
-        if not await self._check_punishment_active():
-            await interaction.response.defer()
-            await interaction.followup.send(
-                embed=discord.Embed(
-                    title="❌ Punishment Expired",
-                    description="Your punishment appears to have been lifted. No appeal is needed.",
-                    color=0xe74c3c
-                ),
-                ephemeral=True
-            )
-            await self._disable_buttons()
-            return
-        
-        # Create the appeal in the database
-        conn = sqlite3.connect(DATABASE_NAME)
-        cur = conn.cursor()
-        cur.execute('INSERT INTO unban_requests (user_id, reason) VALUES (?, ?)', (self.user_id, self.appeal_content))
-        conn.commit()
-        appeal_id = cur.lastrowid
-        conn.close()
-        
-        # Remove draft
-        if self.user_id in self.cog._appeal_drafts:
-            del self.cog._appeal_drafts[self.user_id]
-        
-        print(f"[Appeals] ✅ Appeal #{appeal_id} submitted by {interaction.user} ({self.user_id}) - {self.punishment_type} in {self.guild_name}")
-        
-        # Confirm to user
-        await interaction.response.defer()
-        
-        user_embed = discord.Embed(
-            title="✅ Appeal Submitted",
-            description="Your appeal has been submitted successfully. Staff will review it within 24-48 hours.",
-            color=0x2ecc71
-        )
-        user_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
-        user_embed.add_field(name="📊 Status", value="Pending Review", inline=True)
-        user_embed.add_field(name="📝 Your Appeal", value=self.appeal_content[:500] + ("..." if len(self.appeal_content) > 500 else ""), inline=False)
-        user_embed.set_footer(text=f"{self.guild_name} • Professional Moderation")
-        
-        await interaction.followup.send(embed=user_embed)
-        
-        # Disable buttons
-        await self._disable_buttons()
-        if interaction.message:
-            await interaction.message.edit(view=self)
-        
-        # Staff notification
+    async def _send_staff_notification(self, appeal_id: int, user: discord.Member | discord.User, content: str):
+        """Send appeal notification to staff channel"""
         staff_channel = None
         for cid in (1423642446616592385, 1399746928585085068):
             ch = self.cog.bot.get_channel(cid)
@@ -121,65 +148,414 @@ class ConfirmAppealView(discord.ui.View):
         if staff_channel:
             staff_embed = discord.Embed(
                 title="📨 New Appeal Submitted",
-                description=f"Appeal #{appeal_id} from {interaction.user}",
+                description=f"Appeal #{appeal_id} from {user}",
                 color=0x3498db
             )
-            trimmed = self.appeal_content[:800] + ("..." if len(self.appeal_content) > 800 else "")
-            staff_embed.add_field(name="👤 User", value=f"{interaction.user} ({self.user_id})", inline=True)
-            staff_embed.add_field(name="⚠️ Punishment", value=f"{self.punishment_type.title()} in {self.guild_name}", inline=True)
+            trimmed = content[:800] + ("..." if len(content) > 800 else "")
+            staff_embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
+            staff_embed.add_field(name="⚠️ Punishment", value=f"{self.punishment_type.title()} in {self.guild.name}", inline=True)
             staff_embed.add_field(name="📝 Appeal Content", value=f"```{trimmed}```", inline=False)
-            staff_embed.add_field(name="🔧 Review Commands", value="Use: `/appeals` • `/approve <id>` • `/deny <id> <reason>`", inline=False)
+            staff_embed.add_field(name="🔧 Review", value="Use the buttons below to approve or deny this appeal", inline=False)
+            
+            # Create view with approve/deny buttons
+            view = AppealReviewView(self.cog, appeal_id, user.id, content, self.punishment_type, self.guild.name)
             staff_embed.timestamp = datetime.now(timezone.utc)
             
             try:
-                await staff_channel.send(embed=staff_embed)
+                await staff_channel.send(embed=staff_embed, view=view)
             except Exception as e:
                 print(f"[Appeals] ❌ Failed to send staff notification: {e}")
+
+
+class AppealApproveModal(discord.ui.Modal):
+    """Modal for staff to provide approval reason"""
     
-    @discord.ui.button(label="❌ No, I Want to Revise", style=discord.ButtonStyle.red)
-    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """User wants to revise - remove draft and prompt for new appeal."""
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("❌ This button is not for you.", ephemeral=True)
+    def __init__(self, cog, appeal_id: int, user_id: int, punishment_type: str, guild_name: str):
+        super().__init__(title=f"Approve Appeal #{appeal_id}", timeout=300)
+        self.cog = cog
+        self.appeal_id = appeal_id
+        self.user_id = user_id
+        self.punishment_type = punishment_type
+        self.guild_name = guild_name
+        
+        self.reason_input = discord.ui.TextInput(
+            label="Approval Reason",
+            placeholder="Brief note explaining why this appeal was approved...",
+            style=discord.TextStyle.paragraph,
+            max_length=1000,
+            default="Appeal approved",
+            required=True
+        )
+        self.add_item(self.reason_input)
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        """Process appeal approval"""
+        try:
+            await interaction.response.defer()
+            
+            # Check role permission
+            if not isinstance(interaction.user, discord.Member) or not any(role.id == 1403059755001577543 for role in interaction.user.roles):
+                await interaction.followup.send(
+                    embed=create_error_embed("Permission Denied", "You don't have permission to approve appeals."),
+                    ephemeral=True
+                )
+                return
+            
+            reason = self.reason_input.value
+            
+            # Process the approval (similar logic to old approve command)
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute('SELECT user_id FROM unban_requests WHERE id = ? AND status = "pending"', (self.appeal_id,))
+            result = cursor.fetchone()
+            
+            if not result:
+                await interaction.followup.send(
+                    embed=create_error_embed("Appeal Not Found", "Appeal not found or already processed."),
+                    ephemeral=True
+                )
+                conn.close()
+                return
+            
+            # Update appeal status
+            cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (self.appeal_id,))
+            conn.commit()
+            conn.close()
+            
+            # Process punishment removal
+            await self._process_appeal_approval(interaction, reason)
+            
+        except Exception as e:
+            print(f"[Appeals] ❌ Error in approval modal: {e}")
+            await interaction.followup.send(
+                embed=create_error_embed("Processing Error", "There was an error processing the approval."),
+                ephemeral=True
+            )
+    
+    async def _process_appeal_approval(self, interaction: discord.Interaction, reason: str):
+        """Handle the actual appeal approval process"""
+        guild = interaction.guild
+        member = guild.get_member(self.user_id) if guild else None
+        user = None
+        try:
+            user = await self.cog.bot.fetch_user(self.user_id)
+        except Exception:
+            pass
+
+        action_taken = None
+        error_message = None
+
+        if member:
+            # User is in server - clear timeout if active
+            try:
+                if getattr(member, 'timed_out_until', None):
+                    await member.timeout(None, reason=f"Appeal #{self.appeal_id} approved by {interaction.user}")
+                    action_taken = "Timeout Cleared"
+                else:
+                    action_taken = "No Punishment Active"
+            except discord.Forbidden:
+                error_message = "I lack permission to modify this member's timeout."
+            except Exception as e:
+                error_message = f"Failed clearing timeout: {e}"
+        else:
+            # User not in guild - attempt unban
+            try:
+                if user is None or not guild:
+                    raise ValueError("User fetch failed or guild not found; cannot unban")
+                await guild.unban(user, reason=f'Appeal #{self.appeal_id} approved by {interaction.user}')
+                action_taken = "User Unbanned"
+            except discord.NotFound:
+                error_message = "User not found or already unbanned."
+            except discord.Forbidden:
+                error_message = "I don't have permission to unban this user."
+            except Exception as e:
+                error_message = f"Error processing unban: {e}"
+
+        # Clear points if punishment was lifted
+        if action_taken in ("Timeout Cleared", "User Unbanned"):
+            try:
+                from utils.database import clear_user_points
+                clear_user_points(self.user_id)
+            except Exception:
+                pass
+
+        if error_message:
+            await interaction.followup.send(
+                embed=create_error_embed("Action Failed", error_message),
+                ephemeral=True
+            )
+        else:
+            # Send success message
+            display_target = member or user or f"User {self.user_id}"
+            embed = discord.Embed(title='✅ Appeal Approved', color=0x2ecc71)
+            embed.add_field(name='Appeal ID', value=f"#{self.appeal_id}", inline=True)
+            embed.add_field(name='User', value=f'{display_target} ({self.user_id})', inline=True)
+            embed.add_field(name='Action', value=action_taken or 'Completed', inline=True)
+            embed.add_field(name='Approved By', value=interaction.user.mention, inline=True)
+            embed.add_field(name='Reason', value=reason, inline=False)
+            await interaction.followup.send(embed=embed)
+            
+            # DM user
+            if user:
+                try:
+                    dm = discord.Embed(
+                        title="✅ Appeal Approved",
+                        description=f"## Your appeal has been reviewed and **approved**\n\nWelcome back to **{guild.name if guild else 'the server'}**! We're glad to have you return.",
+                        color=0x2ecc71
+                    )
+                    dm.add_field(name="📋 Appeal ID", value=f"`#{self.appeal_id}`", inline=True)
+                    dm.add_field(name="📊 Result", value=f"**{action_taken or 'Processed'}**", inline=True)
+                    dm.add_field(name="📝 Staff Response", value=f"```{reason}```", inline=False)
+                    dm.add_field(
+                        name="🚀 Moving Forward",
+                        value="Please review our community guidelines and ensure compliance with all server rules. We appreciate your cooperation.",
+                        inline=False
+                    )
+                    dm.set_footer(
+                        text=f"{guild.name if guild else 'Server'} • Professional Moderation Team",
+                        icon_url=guild.icon.url if guild and guild.icon else None
+                    )
+                    dm.set_thumbnail(url=guild.icon.url if guild and guild.icon else None)
+                    await user.send(embed=dm)
+                except Exception:
+                    pass
+
+
+class AppealDenyModal(discord.ui.Modal):
+    """Modal for staff to provide denial reason"""
+    
+    def __init__(self, cog, appeal_id: int, user_id: int, punishment_type: str, guild_name: str):
+        super().__init__(title=f"Deny Appeal #{appeal_id}", timeout=300)
+        self.cog = cog
+        self.appeal_id = appeal_id
+        self.user_id = user_id
+        self.punishment_type = punishment_type
+        self.guild_name = guild_name
+        
+        self.reason_input = discord.ui.TextInput(
+            label="Denial Reason",
+            placeholder="Explain why this appeal was denied and what the user needs to improve...",
+            style=discord.TextStyle.paragraph,
+            max_length=1000,
+            default="Appeal denied - please review our community guidelines and submit a new appeal demonstrating understanding of the issue.",
+            required=True
+        )
+        self.add_item(self.reason_input)
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        """Process appeal denial"""
+        try:
+            await interaction.response.defer()
+            
+            # Check role permission
+            if not isinstance(interaction.user, discord.Member) or not any(role.id == 1403059755001577543 for role in interaction.user.roles):
+                await interaction.followup.send(
+                    embed=create_error_embed("Permission Denied", "You don't have permission to deny appeals."),
+                    ephemeral=True
+                )
+                return
+            
+            reason = self.reason_input.value
+            
+            # Update database
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute('SELECT user_id FROM unban_requests WHERE id = ? AND status = "pending"', (self.appeal_id,))
+            result = cursor.fetchone()
+            
+            if not result:
+                await interaction.followup.send(
+                    embed=create_error_embed("Appeal Not Found", "Appeal not found or already processed."),
+                    ephemeral=True
+                )
+                conn.close()
+                return
+            
+            cursor.execute('UPDATE unban_requests SET status = "denied" WHERE id = ?', (self.appeal_id,))
+            conn.commit()
+            conn.close()
+            
+            # Send response
+            embed = discord.Embed(title='❌ Appeal Denied', color=0xe74c3c)
+            embed.add_field(name='Appeal ID', value=f"#{self.appeal_id}", inline=True)
+            embed.add_field(name='User ID', value=str(self.user_id), inline=True)
+            embed.add_field(name='Denied By', value=interaction.user.mention, inline=True)
+            embed.add_field(name='Reason', value=reason, inline=False)
+            await interaction.followup.send(embed=embed)
+            
+            # DM user
+            try:
+                user = await self.cog.bot.fetch_user(self.user_id)
+                embed_dm = discord.Embed(
+                    title="❌ Appeal Denied",
+                    description=f"## Your appeal has been reviewed\n\nAfter careful consideration, your appeal for **{interaction.guild.name if interaction.guild else 'the server'}** has been denied.",
+                    color=0xe74c3c
+                )
+                embed_dm.add_field(name="📋 Appeal ID", value=f"`#{self.appeal_id}`", inline=True)
+                embed_dm.add_field(name="👮 Reviewed By", value=str(interaction.user), inline=True)
+                embed_dm.add_field(name="📝 Staff Response", value=f"```{reason}```", inline=False)
+                embed_dm.add_field(
+                    name="🔄 Submit Another Appeal",
+                    value="You may submit a new appeal after reflecting on the feedback provided. Click the button below to submit another appeal.",
+                    inline=False
+                )
+                embed_dm.set_footer(
+                    text=f"{interaction.guild.name if interaction.guild else 'Server'} • Professional Moderation Team",
+                    icon_url=interaction.guild.icon.url if interaction.guild and interaction.guild.icon else None
+                )
+                embed_dm.set_thumbnail(url=interaction.guild.icon.url if interaction.guild and interaction.guild.icon else None)
+                
+                # Create new appeal button for denied appeal
+                if interaction.guild:
+                    view = AppealButtonView(self.cog, interaction.guild, self.punishment_type, reason, self.user_id)
+                    await user.send(embed=embed_dm, view=view)
+                else:
+                    await user.send(embed=embed_dm)
+            except Exception:
+                pass
+                
+        except Exception as e:
+            print(f"[Appeals] ❌ Error in denial modal: {e}")
+            await interaction.followup.send(
+                embed=create_error_embed("Processing Error", "There was an error processing the denial."),
+                ephemeral=True
+            )
+
+
+class AppealReviewView(discord.ui.View):
+    """View with approve/deny buttons for staff"""
+    
+    def __init__(self, cog, appeal_id: int, user_id: int, appeal_content: str, punishment_type: str, guild_name: str):
+        super().__init__(timeout=None)  # Persistent view
+        self.cog = cog
+        self.appeal_id = appeal_id
+        self.user_id = user_id
+        self.appeal_content = appeal_content
+        self.punishment_type = punishment_type
+        self.guild_name = guild_name
+    
+    @discord.ui.button(label="Approve", style=discord.ButtonStyle.green, emoji="✅")
+    async def approve_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Open approval modal"""
+        # Check role permission
+        if not isinstance(interaction.user, discord.Member) or not any(role.id == 1403059755001577543 for role in interaction.user.roles):
+            await interaction.response.send_message(
+                embed=create_error_embed("Permission Denied", "You don't have permission to approve appeals."),
+                ephemeral=True
+            )
             return
         
-        # Check if punishment still active
-        if not await self._check_punishment_active():
-            await interaction.response.defer()
-            await interaction.followup.send(
-                embed=discord.Embed(
-                    title="❌ Punishment Expired",
-                    description="Your punishment appears to have been lifted. No appeal is needed.",
-                    color=0xe74c3c
+        # Check if appeal is still pending before opening modal
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        cursor.execute('SELECT status FROM unban_requests WHERE id = ?', (self.appeal_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if not result:
+            await interaction.response.send_message(
+                embed=create_error_embed("Appeal Not Found", f"Appeal #{self.appeal_id} not found in database."),
+                ephemeral=True
+            )
+            return
+        
+        status = result[0]
+        if status != "pending":
+            await interaction.response.send_message(
+                embed=create_error_embed(
+                    "Appeal Already Processed", 
+                    f"Appeal #{self.appeal_id} has already been **{status}**. No further action needed."
                 ),
                 ephemeral=True
             )
-            await self._disable_buttons()
             return
         
-        # Remove draft
-        if self.user_id in self.cog._appeal_drafts:
-            del self.cog._appeal_drafts[self.user_id]
+        modal = AppealApproveModal(self.cog, self.appeal_id, self.user_id, self.punishment_type, self.guild_name)
+        await interaction.response.send_modal(modal)
+    
+    @discord.ui.button(label="Deny", style=discord.ButtonStyle.red, emoji="❌")
+    async def deny_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Open denial modal"""
+        # Check role permission
+        if not isinstance(interaction.user, discord.Member) or not any(role.id == 1403059755001577543 for role in interaction.user.roles):
+            await interaction.response.send_message(
+                embed=create_error_embed("Permission Denied", "You don't have permission to deny appeals."),
+                ephemeral=True
+            )
+            return
         
-        revision_embed = discord.Embed(
-            title="📝 Draft Cancelled",
-            description="Your draft has been removed. You can now send a new appeal message whenever you're ready.",
-            color=0xf39c12
-        )
-        revision_embed.add_field(
-            name="💡 Tip",
-            value="Take your time to craft a thoughtful appeal that addresses the issue. Include:\n• What happened from your perspective\n• Why you believe the action was unwarranted\n• What you'll do differently moving forward",
-            inline=False
-        )
+        # Check if appeal is still pending before opening modal
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        cursor.execute('SELECT status FROM unban_requests WHERE id = ?', (self.appeal_id,))
+        result = cursor.fetchone()
+        conn.close()
         
-        await interaction.response.send_message(embed=revision_embed, ephemeral=False)
+        if not result:
+            await interaction.response.send_message(
+                embed=create_error_embed("Appeal Not Found", f"Appeal #{self.appeal_id} not found in database."),
+                ephemeral=True
+            )
+            return
         
-        # Disable buttons
-        await self._disable_buttons()
-        if interaction.message:
-            await interaction.message.edit(view=self)
+        status = result[0]
+        if status != "pending":
+            await interaction.response.send_message(
+                embed=create_error_embed(
+                    "Appeal Already Processed", 
+                    f"Appeal #{self.appeal_id} has already been **{status}**. No further action needed."
+                ),
+                ephemeral=True
+            )
+            return
         
-        print(f"[Appeals] 📝 Appeal draft cancelled by {interaction.user} ({self.user_id})")
+        modal = AppealDenyModal(self.cog, self.appeal_id, self.user_id, self.punishment_type, self.guild_name)
+        await interaction.response.send_modal(modal)
+
+
+class AppealButtonView(discord.ui.View):
+    """View with Send Appeal button"""
+    
+    def __init__(self, cog, guild: discord.Guild, punishment_type: str, reason: str, user_id: int):
+        super().__init__(timeout=None)  # Persistent view
+        self.cog = cog
+        self.guild = guild
+        self.punishment_type = punishment_type
+        self.reason = reason
+        self.user_id = user_id
+    
+    @discord.ui.button(label="Send Appeal", style=discord.ButtonStyle.primary, emoji="📝")
+    async def send_appeal_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Open appeal modal"""
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message(
+                "❌ This button is not for you.", ephemeral=True
+            )
+            return
+        
+        # Check if user already has a pending appeal
+        conn = sqlite3.connect(DATABASE_NAME)
+        cur = conn.cursor()
+        cur.execute('SELECT id FROM unban_requests WHERE user_id = ? AND status = "pending"', 
+                   (interaction.user.id,))
+        existing = cur.fetchone()
+        conn.close()
+        
+        if existing:
+            appeal_id = existing[0]
+            await interaction.response.send_message(
+                embed=create_error_embed(
+                    "Appeal Already Submitted",
+                    f"You already have a pending appeal (#{appeal_id}). Please wait for staff review."
+                ),
+                ephemeral=True
+            )
+            return
+        
+        # Open modal
+        modal = AppealModal(self.cog, self.guild, self.punishment_type, self.reason)
+        await interaction.response.send_modal(modal)
+
 
 
 class Appeals(commands.Cog):
@@ -192,7 +568,6 @@ class Appeals(commands.Cog):
         self._appeal_cleanup_task = None
         self._setup_appeal_cleanup_task()
         self._ban_event_handled = set()  # Track recently handled ban events to prevent duplicates
-        self._appeal_drafts = {}  # {user_id: (content, punishment_type, guild_name, punishment_guild)} - pending confirmation
         
     def _setup_appeal_cleanup_task(self):
         """Start background task to clean up expired appeals"""
@@ -291,7 +666,7 @@ class Appeals(commands.Cog):
 
     # ---------------- Internal Helper ----------------
     async def _send_appeal_form(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str | None = None):
-        """Send appeal form to user with improved deduplication"""
+        """Send appeal form with modal button to user"""
         dm_success = False
         dm_error = None
         
@@ -318,7 +693,7 @@ class Appeals(commands.Cog):
                 for key, _ in oldest:
                     del self._timeout_dedupe_cache[key]
             
-            # Modern, professional appeal form
+            # Modern appeal form with button
             embed = discord.Embed(
                 title="⚖️ Moderation Appeal System",
                 description=f"## You have been **{action_type}** from {guild.name}\n\nWe understand mistakes happen. You have the right to appeal this decision.",
@@ -335,10 +710,11 @@ class Appeals(commands.Cog):
             embed.add_field(
                 name="📝 How to Submit Your Appeal",
                 value=(
-                    "**Simply reply to this DM** with your appeal. Include:\n"
-                    "• What happened from your perspective\n"
-                    "• Why you believe this action was unwarranted\n"
-                    "• What you'll do differently moving forward"
+                    "**Click the button below** to open the appeal form.\n\n"
+                    "The form will ask you to:\n"
+                    "• Confirm what punishment you're appealing\n"
+                    "• Explain why you think you were punished\n"
+                    "• Provide your appeal message with what you've learned"
                 ),
                 inline=False
             )
@@ -361,9 +737,12 @@ class Appeals(commands.Cog):
             )
             embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
             
-            await user.send(embed=embed)
+            # Create view with appeal button
+            view = AppealButtonView(self, guild, action_type, reason or "No reason provided", user.id)
+            
+            await user.send(embed=embed, view=view)
             dm_success = True
-            print(f"[Appeals] ✅ Sent appeal form to {user} ({user.id}) for {action_type} in {guild.name}")
+            print(f"[Appeals] ✅ Sent appeal form with button to {user} ({user.id}) for {action_type} in {guild.name}")
             
             # Log success to appeals channel
             await self._log_dm_success(user, guild, action_type, reason or "No reason provided")
@@ -538,164 +917,6 @@ class Appeals(commands.Cog):
                     pass
             conn.close()
 
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        """Accept DMs as appeals - improved to allow new appeals after punishment re-applied"""
-        if not isinstance(message.channel, discord.DMChannel) or message.author.bot:
-            return
-        content = message.content.strip()
-        if not content:
-            print(f"[Appeals] Empty DM ignored from {message.author.id}")
-            return
-        
-        # Check if user is actually banned or timed out in ANY mutual guild
-        is_punished = False
-        punishment_type = "unknown"
-        guild_name = "the server"
-        punishment_guild = None
-        
-        for guild in self.bot.guilds:
-            # Check if banned
-            try:
-                await guild.fetch_ban(discord.Object(id=message.author.id))
-                is_punished = True
-                punishment_type = "banned"
-                guild_name = guild.name
-                punishment_guild = guild
-                break
-            except discord.NotFound:
-                pass
-            except Exception:
-                pass
-            
-            # Check if timed out (must be a member)
-            member = guild.get_member(message.author.id)
-            if member and getattr(member, 'timed_out_until', None):
-                timeout_until = member.timed_out_until
-                # Check if timeout is actually still active
-                if timeout_until and timeout_until > datetime.now(timezone.utc):
-                    is_punished = True
-                    punishment_type = "timed out"
-                    guild_name = guild.name
-                    punishment_guild = guild
-                    break
-        
-        # If not punished, auto-approve pending appeals and reject new appeal
-        if not is_punished:
-            conn = sqlite3.connect(DATABASE_NAME)
-            cursor = conn.cursor()
-            cursor.execute('SELECT id FROM unban_requests WHERE user_id = ? AND status = "pending"', (message.author.id,))
-            appeals = cursor.fetchall()
-            
-            if appeals:
-                for (appeal_id,) in appeals:
-                    cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
-                    print(f"[Appeals] ✅ Auto-approved appeal #{appeal_id} - punishment expired for {message.author.id}")
-                
-                conn.commit()
-                
-                try:
-                    embed = discord.Embed(
-                        title="✅ Your Appeal Status",
-                        description="Your punishment appears to have expired or been removed, so your pending appeal has been automatically approved.",
-                        color=0x2ecc71
-                    )
-                    embed.add_field(
-                        name="📋 Note",
-                        value="No further action is required. You can now participate in our servers normally.",
-                        inline=False
-                    )
-                    await message.author.send(embed=embed)
-                except Exception:
-                    pass
-            else:
-                try:
-                    embed = discord.Embed(
-                        title="❌ No Active Punishment",
-                        description="You don't currently have any active punishments (ban or timeout) in our servers.",
-                        color=0xe74c3c
-                    )
-                    embed.add_field(
-                        name="📋 Note",
-                        value="Appeals can only be submitted if you have an active punishment. If your punishment was already lifted, no appeal is needed.",
-                        inline=False
-                    )
-                    await message.author.send(embed=embed)
-                except Exception:
-                    pass
-            
-            conn.close()
-            print(f"[Appeals] ❌ DM rejected from {message.author.id} - no active punishment found")
-            return
-        
-        conn = sqlite3.connect(DATABASE_NAME)
-        cur = conn.cursor()
-        
-        # Check for pending appeals only - allows new appeal if re-punished after previous approval/denial
-        cur.execute('SELECT id, status FROM unban_requests WHERE user_id = ? AND status = "pending"', (message.author.id,))
-        existing = cur.fetchone()
-        
-        if existing:
-            appeal_id, appeal_status = existing
-            conn.close()
-            try:
-                embed = discord.Embed(
-                    title="⏳ Appeal Already Submitted",
-                    description="You already have a **pending** appeal. Please wait for staff review.",
-                    color=0xf39c12
-                )
-                embed.add_field(name="📋 Appeal ID", value=f"`#{appeal_id}`", inline=True)
-                embed.add_field(name="📌 Note", value="Any additional messages sent here will **NOT** be added to your appeal. Staff will review your original submission.", inline=False)
-                await message.author.send(embed=embed)
-            except Exception:
-                pass
-            print(f"[Appeals] ⏳ DM blocked for user {message.author.id} - existing pending appeal #{appeal_id}")
-            return
-        
-        conn.close()
-        
-        # Store draft and show confirmation embed instead of directly creating appeal
-        self._appeal_drafts[message.author.id] = (content, punishment_type, guild_name, punishment_guild)
-        
-        # Show confirmation embed with Yes/No buttons
-        confirm_embed = discord.Embed(
-            title="📋 Confirm Your Appeal",
-            description="Please review your appeal below and confirm you want to submit it.",
-            color=0x3498db
-        )
-        confirm_embed.add_field(
-            name="⚠️ Your Appeal",
-            value=f"```{content[:500]}{'...' if len(content) > 500 else ''}```",
-            inline=False
-        )
-        confirm_embed.add_field(
-            name="📌 Punishment",
-            value=f"**{punishment_type.title()}** in {guild_name}",
-            inline=False
-        )
-        confirm_embed.add_field(
-            name="📝 Next Steps",
-            value="Click **Yes** to submit your appeal for staff review, or **No** if you want to revise it.",
-            inline=False
-        )
-        confirm_embed.set_footer(text="This window will remain open until your punishment is lifted.")
-        
-        view = ConfirmAppealView(self, message.author.id, content, punishment_type, guild_name, punishment_guild)
-        
-        try:
-            await message.author.send(embed=confirm_embed, view=view)
-        except Exception as e:
-            print(f"[Appeals] ❌ Failed to send confirmation embed: {e}")
-            # Fallback: create appeal directly if confirmation fails
-            cur = conn.cursor()
-            cur.execute('INSERT INTO unban_requests (user_id, reason) VALUES (?, ?)', (message.author.id, content))
-            conn.commit()
-            appeal_id = cur.lastrowid
-            conn.close()
-            print(f"[Appeals] ⚠️ Fallback: Created appeal #{appeal_id} directly (confirmation failed)")
-        
-        print(f"[Appeals] 📋 Confirmation embed sent to {message.author} ({message.author.id}) for {punishment_type} appeal")
-
     @commands.hybrid_command(name="appeals")
     @commands.has_permissions(administrator=True)
     @app_commands.describe(status="Filter appeals by status: pending, approved, denied, or all")
@@ -741,257 +962,12 @@ class Appeals(commands.Cog):
                 inline=False
             )
         
-        embed.set_footer(text=f"Use /approve <id> or /deny <id> <reason> to process appeals")
+        embed.set_footer(text=f"Appeals are processed using interactive buttons in staff notifications")
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="approve")
-    @commands.has_permissions(administrator=True)
-    @app_commands.describe(
-        appeal_id="The ID of the appeal to approve",
-        reason="Reason for approving the appeal"
-    )
-    async def approve(self, ctx, appeal_id: int, *, reason: str = "Appeal approved"):
-        """Approve an unban appeal"""
-        conn = sqlite3.connect(DATABASE_NAME)
-        cursor = conn.cursor()
-        cursor.execute('SELECT user_id FROM unban_requests WHERE id = ? AND status = "pending"', (appeal_id,))
-        result = cursor.fetchone()
-        
-        if not result:
-            embed = create_error_embed("Appeal Not Found", "Appeal not found or already processed.")
-            await ctx.send(embed=embed)
-            conn.close()
-            return
-        
-        user_id = result[0]
-        
-        # Check if user is still punished BEFORE approving
-        guild = ctx.guild
-        member = guild.get_member(user_id) if guild else None
-        user = None
-        try:
-            user = await self.bot.fetch_user(user_id)
-        except Exception:
-            pass
 
-        is_still_punished = False
-        punishment_type = None
-        
-        # Check for timeout
-        if member and getattr(member, 'timed_out_until', None):
-            timeout_until = member.timed_out_until
-            if timeout_until and timeout_until > datetime.now(timezone.utc):
-                is_still_punished = True
-                punishment_type = "timeout"
-        
-        # Check for ban
-        if not is_still_punished:
-            try:
-                await guild.fetch_ban(discord.Object(id=user_id))
-                is_still_punished = True
-                punishment_type = "ban"
-            except discord.NotFound:
-                pass
-            except Exception:
-                pass
-        
-        # If punishment already expired, inform the moderator
-        if not is_still_punished:
-            # Log to appeals channel that punishment expired
-            for cid in (1423642446616592385, 1399746928585085068):
-                ch = self.bot.get_channel(cid)
-                if ch:
-                    expired_embed = discord.Embed(
-                        title="⚠️ Punishment Already Expired",
-                        description=f"Appeal **#{appeal_id}** cannot be processed - punishment has already expired.",
-                        color=0xf39c12
-                    )
-                    expired_embed.add_field(name="👤 User", value=f"<@{user_id}> ({user_id})", inline=True)
-                    expired_embed.add_field(name="👮 Moderator", value=ctx.author.mention, inline=True)
-                    expired_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
-                    expired_embed.add_field(
-                        name="ℹ️ Status", 
-                        value="The user's punishment (ban/timeout) has already expired or been removed. No action needed.",
-                        inline=False
-                    )
-                    expired_embed.timestamp = datetime.now(timezone.utc)
-                    expired_embed.set_footer(text=f"Attempted by {ctx.author}")
-                    try:
-                        await ch.send(embed=expired_embed)
-                    except Exception as e:
-                        print(f"[Appeals] Failed to send expiry log to channel {cid}: {e}")
-                    break
-            
-            # Auto-approve the appeal since punishment is gone
-            cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
-            conn.commit()
-            conn.close()
-            
-            # Inform the moderator
-            expired_mod_embed = discord.Embed(
-                title="⚠️ Punishment Already Expired",
-                description=f"The punishment for this appeal has already expired or been removed.\n\nAppeal **#{appeal_id}** has been automatically approved.",
-                color=0xf39c12
-            )
-            expired_mod_embed.add_field(name="👤 User", value=f"<@{user_id}> ({user_id})", inline=True)
-            expired_mod_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
-            expired_mod_embed.add_field(
-                name="💡 Info",
-                value="No moderation action was taken since the user's timeout/ban was already lifted.",
-                inline=False
-            )
-            await ctx.send(embed=expired_mod_embed)
-            
-            # Try to DM the user
-            if user:
-                try:
-                    dm = discord.Embed(
-                        title="✅ Appeal Automatically Approved",
-                        description=f"## Your appeal has been automatically approved\n\nYour punishment in **{ctx.guild.name}** had already expired.",
-                        color=0x2ecc71
-                    )
-                    dm.add_field(name="📋 Appeal ID", value=f"`#{appeal_id}`", inline=True)
-                    dm.add_field(name="📊 Result", value="**Auto-approved (expired)**", inline=True)
-                    dm.set_footer(text=f"{ctx.guild.name} • Moderation System")
-                    await user.send(embed=dm)
-                except Exception:
-                    pass
-            
-            return
-        
-        # Punishment still active, proceed with approval
-        cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
-        conn.commit()
-        conn.close()
 
-        action_taken = None
-        error_embed = None
 
-        if member:
-            # User is still in server (likely timeout appeal). Clear timeout if active.
-            try:
-                if getattr(member, 'timed_out_until', None):
-                    await member.timeout(None, reason=f"Appeal #{appeal_id} approved by {ctx.author}")
-                    action_taken = "Timeout Cleared"
-                else:
-                    action_taken = "No Punishment Active"
-            except discord.Forbidden:
-                error_embed = create_error_embed("Permission Error", "I lack permission to modify this member's timeout.")
-            except Exception as e:
-                error_embed = create_error_embed("Error", f"Failed clearing timeout: {e}")
-        else:
-            # User not in guild; attempt unban (ban appeal)
-            try:
-                if user is None:
-                    raise ValueError("User fetch failed; cannot unban")
-                await guild.unban(user, reason=f'Appeal #{appeal_id} approved by {ctx.author}')
-                action_taken = "User Unbanned"
-            except discord.NotFound:
-                error_embed = create_error_embed("User Not Found", "User not found or already unbanned.")
-            except discord.Forbidden:
-                error_embed = create_error_embed("Permission Error", "I don't have permission to unban this user.")
-            except Exception as e:
-                error_embed = create_error_embed("Error", f"Error processing unban: {e}")
-
-        # Clear points only if we actually lifted a punishment
-        if action_taken in ("Timeout Cleared", "User Unbanned"):
-            try:
-                from utils.database import clear_user_points
-                clear_user_points(user_id)
-            except Exception:
-                pass
-
-        if error_embed:
-            await ctx.send(embed=error_embed)
-        else:
-            display_target = member or user or f"User {user_id}"
-            embed = discord.Embed(title='Appeal Approved', color=0x2ecc71)
-            embed.add_field(name='Appeal ID', value=f"#{appeal_id}", inline=True)
-            embed.add_field(name='User', value=f'{display_target} ({user_id})', inline=True)
-            embed.add_field(name='Action', value=action_taken or 'Completed', inline=True)
-            embed.add_field(name='Approved By', value=ctx.author.mention, inline=True)
-            embed.add_field(name='Reason', value=reason, inline=False)
-            await ctx.send(embed=embed)
-            # DM user if possible
-            if user:
-                try:
-                    dm = discord.Embed(
-                        title=" Appeal Approved",
-                        description=f"## Your appeal has been reviewed and **approved**\n\nWelcome back to **{ctx.guild.name}**! We're glad to have you return.",
-                        color=0x2ecc71
-                    )
-                    dm.add_field(name=" Appeal ID", value=f"`#{appeal_id}`", inline=True)
-                    dm.add_field(name=" Result", value=f"**{action_taken or 'Processed'}**", inline=True)
-                    dm.add_field(name=" Staff Response", value=f"```{reason}```", inline=False)
-                    dm.add_field(
-                        name=" Moving Forward",
-                        value="Please review our community guidelines and ensure compliance with all server rules. We appreciate your cooperation.",
-                        inline=False
-                    )
-                    dm.set_footer(
-                        text=f"{ctx.guild.name} • Professional Moderation Team",
-                        icon_url=ctx.guild.icon.url if ctx.guild.icon else None
-                    )
-                    dm.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
-                    await user.send(embed=dm)
-                except Exception:
-                    pass
-
-    @commands.hybrid_command(name="deny")
-    @commands.has_permissions(administrator=True)
-    @app_commands.describe(
-        appeal_id="The ID of the appeal to deny",
-        reason="Reason for denying the appeal"
-    )
-    async def deny(self, ctx, appeal_id: int, *, reason: str = "Appeal denied"):
-        """Deny an unban appeal"""
-        conn = sqlite3.connect(DATABASE_NAME)
-        cursor = conn.cursor()
-        cursor.execute('SELECT user_id FROM unban_requests WHERE id = ? AND status = "pending"', (appeal_id,))
-        result = cursor.fetchone()
-        
-        if not result:
-            embed = create_error_embed("Appeal Not Found", "Appeal not found or already processed.")
-            await ctx.send(embed=embed)
-            conn.close()
-            return
-        
-        user_id = result[0]
-        cursor.execute('UPDATE unban_requests SET status = "denied" WHERE id = ?', (appeal_id,))
-        conn.commit()
-        conn.close()
-        
-        embed = discord.Embed(title='Appeal Denied', color=0xe74c3c)
-        embed.add_field(name='Appeal ID', value=f"#{appeal_id}", inline=True)
-        embed.add_field(name='User ID', value=str(user_id), inline=True)
-        embed.add_field(name='Denied By', value=ctx.author.mention, inline=True)
-        embed.add_field(name='Reason', value=reason, inline=False)
-        await ctx.send(embed=embed)
-        
-        # Send DM to user
-        try:
-            user = await self.bot.fetch_user(user_id)
-            embed_dm = discord.Embed(
-                title=" Appeal Denied",
-                description=f"## Your appeal has been reviewed\n\nAfter careful consideration, your appeal for **{ctx.guild.name}** has been denied.",
-                color=0xe74c3c
-            )
-            embed_dm.add_field(name=" Appeal ID", value=f"`#{appeal_id}`", inline=True)
-            embed_dm.add_field(name=" Reviewed By", value=str(ctx.author), inline=True)
-            embed_dm.add_field(name=" Staff Response", value=f"```{reason}```", inline=False)
-            embed_dm.add_field(
-                name=" Future Appeals",
-                value="You may submit another appeal after taking time to reflect on the feedback provided. Please ensure any future appeals demonstrate understanding of our guidelines.",
-                inline=False
-            )
-            embed_dm.set_footer(
-                text=f"{ctx.guild.name} • Professional Moderation Team",
-                icon_url=ctx.guild.icon.url if ctx.guild.icon else None
-            )
-            embed_dm.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
-            await user.send(embed=embed_dm)
-        except:
-            pass
 
     @commands.hybrid_command(name="appealinfo")
     @commands.has_permissions(administrator=True)
@@ -1030,47 +1006,7 @@ class Appeals(commands.Cog):
         
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="test_appeal")
-    @commands.has_permissions(administrator=True)
-    @app_commands.describe(user="User to send a test appeal DM to", action="Type of moderation action (timeout, kick, ban)")
-    async def test_appeal(self, ctx, user: discord.Member, action: str = "timeout"):
-        """Test the appeal DM system by manually sending an appeal form"""
-        valid_actions = ["timeout", "kick", "ban", "timed out", "kicked", "banned"]
-        
-        if action not in valid_actions:
-            embed = create_error_embed("Invalid Action", f"Valid actions: {', '.join(valid_actions)}")
-            await ctx.send(embed=embed)
-            return
-        
-        # Normalize action names
-        action_map = {
-            "timeout": "timed out",
-            "kick": "kicked", 
-            "ban": "banned"
-        }
-        action_type = action_map.get(action, action)
-        
-        try:
-            # Send test appeal form to user
-            embed_dm = discord.Embed(
-                title=f"You have been {action_type}",
-                description=f"You have been {action_type} from **{ctx.guild.name}**.",
-                color=0xe74c3c
-            )
-            embed_dm.add_field(name="Reason", value=f"Test {action_type} action from {ctx.author.mention}", inline=False)
-            embed_dm.add_field(name="Appeal", value="If you believe this action was unjust, you can submit an appeal by sending a DM to this bot with your reasoning.", inline=False)
-            embed_dm.set_footer(text="Professional Moderation System")
-            await user.send(embed=embed_dm)
-            
-            embed = create_success_embed(
-                "Test Appeal Sent",
-                f"Successfully sent test appeal DM to {user.mention} for '{action_type}' action."
-            )
-            await ctx.send(embed=embed)
-            
-        except Exception as e:
-            embed = create_error_embed("Failed to Send Appeal", f"Error: {str(e)}")
-            await ctx.send(embed=embed)
+
     
     @commands.hybrid_command(name="appealcancel")
     @app_commands.describe()
@@ -1123,10 +1059,6 @@ class Appeals(commands.Cog):
                 cursor.execute('DELETE FROM unban_requests WHERE id = ?', (self.appeal_id_val,))
                 conn.commit()
                 conn.close()
-                
-                # Remove from draft storage if present
-                if self.author_id in self.cog_ref._appeal_drafts:
-                    del self.cog_ref._appeal_drafts[self.author_id]
                 
                 result_embed = discord.Embed(
                     title="✅ Appeal Cancelled",
