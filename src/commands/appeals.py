@@ -295,6 +295,9 @@ class AppealApproveModal(discord.ui.Modal):
             embed.add_field(name='Reason', value=reason, inline=False)
             await interaction.followup.send(embed=embed)
             
+            # Disable the buttons in the original message
+            await self._disable_appeal_buttons(interaction)
+            
             # DM user
             if user:
                 try:
@@ -319,6 +322,33 @@ class AppealApproveModal(discord.ui.Modal):
                     await user.send(embed=dm)
                 except Exception:
                     pass
+    
+    async def _disable_appeal_buttons(self, interaction: discord.Interaction):
+        """Disable the appeal review buttons in the original message"""
+        try:
+            # Find the original message with the buttons by looking for the appeal ID in the embed
+            channel = interaction.channel
+            # Only iterate history on channel types that support it
+            if channel and isinstance(channel, (discord.TextChannel, discord.Thread, discord.DMChannel)):
+                async for message in channel.history(limit=50):
+                    if (message.author.id == self.cog.bot.user.id and 
+                        message.embeds and 
+                        f"Appeal #{self.appeal_id}" in str(message.embeds[0].to_dict())):
+                        
+                        # Create disabled view
+                        disabled_view = AppealReviewView(self.cog, self.appeal_id, self.user_id, 
+                                                       "", self.punishment_type, self.guild_name)
+                        
+                        # Disable all buttons
+                        for item in disabled_view.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
+                        
+                        # Update the message with disabled buttons
+                        await message.edit(view=disabled_view)
+                        break
+        except Exception as e:
+            print(f"[Appeals] Failed to disable buttons: {e}")
 
 
 class AppealDenyModal(discord.ui.Modal):
@@ -383,6 +413,9 @@ class AppealDenyModal(discord.ui.Modal):
             embed.add_field(name='Reason', value=reason, inline=False)
             await interaction.followup.send(embed=embed)
             
+            # Disable the buttons in the original message
+            await self._disable_appeal_buttons(interaction)
+            
             # DM user
             try:
                 user = await self.cog.bot.fetch_user(self.user_id)
@@ -413,13 +446,38 @@ class AppealDenyModal(discord.ui.Modal):
                     await user.send(embed=embed_dm)
             except Exception:
                 pass
-                
+
         except Exception as e:
             print(f"[Appeals] ❌ Error in denial modal: {e}")
             await interaction.followup.send(
                 embed=create_error_embed("Processing Error", "There was an error processing the denial."),
                 ephemeral=True
             )
+    
+    async def _disable_appeal_buttons(self, interaction: discord.Interaction):
+        """Disable the buttons in the original appeal message"""
+        try:
+            channel = interaction.channel
+            if channel and isinstance(channel, (discord.TextChannel, discord.Thread, discord.DMChannel)):
+                async for message in channel.history(limit=50):
+                    if (message.author.id == self.cog.bot.user.id and 
+                        message.embeds and 
+                        f"Appeal #{self.appeal_id}" in str(message.embeds[0].to_dict())):
+                        
+                        # Create disabled view
+                        disabled_view = AppealReviewView(self.cog, self.appeal_id, self.user_id, 
+                                                       "", self.punishment_type, self.guild_name)
+                        
+                        # Disable all buttons
+                        for item in disabled_view.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
+                        
+                        # Update the message with disabled buttons
+                        await message.edit(view=disabled_view)
+                        break
+        except Exception as e:
+            print(f"[Appeals] Failed to disable buttons: {e}")
 
 
 class AppealReviewView(discord.ui.View):
@@ -445,31 +503,6 @@ class AppealReviewView(discord.ui.View):
             )
             return
         
-        # Check if appeal is still pending before opening modal
-        conn = sqlite3.connect(DATABASE_NAME)
-        cursor = conn.cursor()
-        cursor.execute('SELECT status FROM unban_requests WHERE id = ?', (self.appeal_id,))
-        result = cursor.fetchone()
-        conn.close()
-        
-        if not result:
-            await interaction.response.send_message(
-                embed=create_error_embed("Appeal Not Found", f"Appeal #{self.appeal_id} not found in database."),
-                ephemeral=True
-            )
-            return
-        
-        status = result[0]
-        if status != "pending":
-            await interaction.response.send_message(
-                embed=create_error_embed(
-                    "Appeal Already Processed", 
-                    f"Appeal #{self.appeal_id} has already been **{status}**. No further action needed."
-                ),
-                ephemeral=True
-            )
-            return
-        
         modal = AppealApproveModal(self.cog, self.appeal_id, self.user_id, self.punishment_type, self.guild_name)
         await interaction.response.send_modal(modal)
     
@@ -480,31 +513,6 @@ class AppealReviewView(discord.ui.View):
         if not isinstance(interaction.user, discord.Member) or not any(role.id == 1403059755001577543 for role in interaction.user.roles):
             await interaction.response.send_message(
                 embed=create_error_embed("Permission Denied", "You don't have permission to deny appeals."),
-                ephemeral=True
-            )
-            return
-        
-        # Check if appeal is still pending before opening modal
-        conn = sqlite3.connect(DATABASE_NAME)
-        cursor = conn.cursor()
-        cursor.execute('SELECT status FROM unban_requests WHERE id = ?', (self.appeal_id,))
-        result = cursor.fetchone()
-        conn.close()
-        
-        if not result:
-            await interaction.response.send_message(
-                embed=create_error_embed("Appeal Not Found", f"Appeal #{self.appeal_id} not found in database."),
-                ephemeral=True
-            )
-            return
-        
-        status = result[0]
-        if status != "pending":
-            await interaction.response.send_message(
-                embed=create_error_embed(
-                    "Appeal Already Processed", 
-                    f"Appeal #{self.appeal_id} has already been **{status}**. No further action needed."
-                ),
                 ephemeral=True
             )
             return

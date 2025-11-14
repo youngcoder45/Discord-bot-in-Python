@@ -598,10 +598,11 @@ class StaffShifts(commands.Cog):
             else:
                 await ctx.send("Configured staff roles are no longer valid. Please reconfigure with `/shift settings addrole @Role`.")
 
-    @commands.hybrid_group(
+    @commands.group(
         name="shift",
         usage="shift <start | end> [reason/note]",
         description="Allows you to log your on-duty time.",
+        invoke_without_command=True
     )
     @commands.guild_only()
     @commands.has_permissions()
