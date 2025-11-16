@@ -67,7 +67,8 @@ COGS_TO_LOAD = [
     'commands.protection',    # Protection features (anti-spam, anti-raid, anti-nuke)
     'commands.appeals',       # Appeal system for bans and mutes
     'commands.spam_catch',    # Spam detection and catching
-    
+    'commands.sticky_message', # Sticky message feature for important announcements
+    'commands.reaction_roles', # Reaction role system for automatic role assignment
     # Staff Management (Essential)
     'commands.staff_shifts',  # Staff shift tracking and logging system
     'commands.staff_points',  # Staff aura system with leaderboard
