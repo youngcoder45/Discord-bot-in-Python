@@ -12,13 +12,13 @@
 
 ## Features Overview
 
-### ✨ Recent Updates (November 2025)
-- **🎫 Professional Support Ticket System** - Enterprise thread-based ticket system with specialized role routing, information preview, and partnership guidelines
-- **🔒 Thread Lock with Emoji Prefix** - `/lock` command now automatically renames threads with 🔒 prefix for visibility
-- **📋 Appeal Confirmation System** - Appeals now show confirmation embed with Yes/No buttons before submission; window persists until punishment expires; new `/appealcancel` command for canceling pending appeals
-- **🔐 Dual-Window Anti-Nuke Protection** - Max 5 bans/kicks per minute OR 12 per 20 minutes; automatic action reversal and actor blocking on violation; detailed staff alerts
-- **📌 Enhanced Thread Close** - `/close` command now sends professional embed notification before archiving (prevents message from reopening); restricted to mods and thread creator only
-- **🎨 Lock/Unlock Emoji Management** - `/lock` adds emoji prefix, `/unlock` removes it to restore original thread name
+### Recent Updates (November 2025)
+- ** Professional Support Ticket System** - Enterprise thread-based ticket system with specialized role routing, information preview, and partnership guidelines
+- ** Thread Lock with Emoji Prefix** - `/lock` command now automatically renames threads with prefix for visibility
+- ** Appeal Confirmation System** - Appeals now show confirmation embed with Yes/No buttons before submission; window persists until punishment expires; new `/appealcancel` command for canceling pending appeals
+- ** Dual-Window Anti-Nuke Protection** - Max 5 bans/kicks per minute OR 12 per 20 minutes; automatic action reversal and actor blocking on violation; detailed staff alerts
+- ** Enhanced Thread Close** - `/close` command now sends professional embed notification before archiving (prevents message from reopening); restricted to mods and thread creator only
+- ** Lock/Unlock Emoji Management** - `/lock` adds emoji prefix, `/unlock` removes it to restore original thread name
 
 ### Core Commands
 - **`?ping`** / **`/ping`** - Check bot latency and responsiveness
@@ -54,13 +54,32 @@
 |---------|-------------|-------------------|
 | `?lockdown [#channel] [reason]` / `/lockdown [#channel] [reason]` | Lock channel (prevent normal users from speaking) | Manage Channels |
 | `?unlock [#channel] [reason]` / `/unlock [#channel] [reason]` | Unlock previously locked channel | Manage Channels |
+| `?hide [#channel]` | Hide channel from @everyone (channel visibility) | Manage Channels |
+| `?unhide [#channel]` | Unhide channel for @everyone (restore visibility) | Manage Channels |
 | `?nuke [#channel] [reason]` / `/nuke [#channel] [reason]` | Delete and recreate channel (clears all messages) | Manage Channels |
 | `?massban <user_ids> [days] [reason]` / `/massban <user_ids> [days] [reason]` | Ban multiple users by ID (max 20) | Ban Members |
 | `?listbans` / `/listbans` | List all banned users in server | Ban Members |
 | `?addrole <@user> <role> [reason]` / `/addrole <@user> <role> [reason]` | Add role to user | Manage Roles |
 | `?removerole <@user> <role> [reason]` / `/removerole <@user> <role> [reason]` | Remove role from user | Manage Roles |
 
-#### 🔐 Anti-Nuke Protection System
+### 🎭 Reaction Role System
+**Automated role assignment through emoji reactions**
+
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `/rr <title> <#channel> <description> <emoji1> <role1> [emoji2] [role2]...` | Create reaction role message (up to 10 roles) | Manage Roles |
+| `/rrlist` | List all active reaction role messages in server | Manage Roles |
+| `/rrremove <message_id>` | Remove reaction role tracking for a message | Manage Roles |
+
+**Features:**
+- ✅ **Up to 10 Roles** - Support for multiple emoji-role pairs per message
+- ✅ **Automatic Assignment** - Instantly adds/removes roles on reaction
+- ✅ **Data Persistence** - Survives bot restarts with JSON storage
+- ✅ **Permission Validation** - Checks role hierarchy and bot permissions
+- ✅ **Embed Integration** - Works with `/editembed` for easy editing
+- ✅ **Real-time Tracking** - Live reaction monitoring and role management
+
+#### Anti-Nuke Protection System
 **Dual-window rate limiting with automatic action reversal and actor blocking**
 
 **Protection Thresholds:**
@@ -69,12 +88,12 @@
 - **Violation Response:** Automatic ban reversal, 5-minute actor block, staff alerts
 
 **Features:**
-- ✅ **Dual-Window Tracking** - Sophisticated sliding window detection
-- ✅ **Actor Attribution** - Identifies who performed illegal actions via audit logs
-- ✅ **Auto-Unban** - Bans are automatically reversed when limits exceeded
-- ✅ **Actor Blocking** - Violators blocked for 5 minutes from taking moderation actions
-- ✅ **Staff Alerts** - Professional embed notifications with detailed information
-- ✅ **Real-Time Status** - `/antinuke status` shows current protection metrics
+- **Dual-Window Tracking** - Sophisticated sliding window detection
+- **Actor Attribution** - Identifies who performed illegal actions via audit logs
+- **Auto-Unban** - Bans are automatically reversed when limits exceeded
+- **Actor Blocking** - Violators blocked for 5 minutes from taking moderation actions
+- **Staff Alerts** - Professional embed notifications with detailed information
+- **Real-Time Status** - `/antinuke status` shows current protection metrics
 
 **Commands:**
 - **`/antinuke status`** - View current anti-nuke protection status and real-time metrics
@@ -119,7 +138,7 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 **Appeal Workflow:**
 1. User gets kicked/banned/timed out
 2. Bot sends DM with appeal form
-3. ✅ **NEW:** Shows confirmation embed with preview
+3. **NEW:** Shows confirmation embed with preview
 4. User clicks Yes/No or ignores
 5. If Yes: Appeal submitted to staff for review
 6. If No: User can revise and submit again
@@ -131,11 +150,11 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **User guidance** - Clear instructions for appeal process and requirements
 - **Status tracking** - Pending, approved, denied status with timestamps
 
-### 🎫 Professional Support Ticket System
+### Professional Support Ticket System
 **Enterprise-grade thread-based ticket system** with specialized role routing and information preview
 - **`/ticketpanel [#channel] [@support] [@report] [@partner]`** - Create ticket panel with specialized roles (Admin)
 - **`?close`** - Intelligent ticket closure (auto-detects ticket threads)
-- **`🎫 Create Ticket`** - Interactive button with category selection and information preview
+- **` Create Ticket`** - Interactive button with category selection and information preview
 
 #### Setup & Configuration Commands
 | Command | Description | Permission Required |
@@ -152,22 +171,22 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
 | `/forceclose <thread_id> [reason]` | Force close any ticket with reason | Administrator |
-| `🔒 Close` | Close button within ticket threads | Staff/Thread Creator |
-| `📌 Claim` | Claim ticket button (Staff only) | Staff |
+| ` Close` | Close button within ticket threads | Staff/Thread Creator |
+| ` Claim` | Claim ticket button (Staff only) | Staff |
 
 #### Key Features
-- **🔍 Information Preview** - Users see detailed guidelines and examples before creating tickets
-- **🎯 Specialized Routing** - Different teams handle different ticket types:
-  - 🐛 **Bug Reports** → General support team
-  - ❓ **General Support** → General support team  
-  - 👤 **Partnerships** → Partner team (with server requirements and terms)
-  - 🚨 **Reports** → Report team (with evidence guidelines)
-  - 💡 **Suggestions** → General support team
-- **🧵 Thread-Based** - Each ticket creates a private thread with automatic staff assignment
-- **📊 Complete Logging** - All ticket actions logged with timestamps and details
-- **🔒 Smart Closure** - Intelligent detection between regular threads and ticket threads
-- **👥 Role Integration** - Automatic addition of relevant team members to ticket threads
-- **⚡ Fallback System** - Specialized roles fall back to general support if not configured
+- ** Information Preview** - Users see detailed guidelines and examples before creating tickets
+- ** Specialized Routing** - Different teams handle different ticket types:
+  - **Bug Reports** → General support team
+  - **General Support** → General support team  
+  - **Partnerships** → Partner team (with server requirements and terms)
+  - **Reports** → Report team (with evidence guidelines)
+  - **Suggestions** → General support team
+- ** Thread-Based** - Each ticket creates a private thread with automatic staff assignment
+- ** Complete Logging** - All ticket actions logged with timestamps and details
+- ** Smart Closure** - Intelligent detection between regular threads and ticket threads
+- ** Role Integration** - Automatic addition of relevant team members to ticket threads
+- ** Fallback System** - Specialized roles fall back to general support if not configured
 
 #### Partnership Requirements *(Built-in Guidelines)*
 - **Server Requirements:** 100+ members, 1/9 activity ratio, 500+ daily messages, SFW content
@@ -177,7 +196,7 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **Terms & Conditions:** Clear partnership removal conditions and guidelines
 
 #### Ticket Workflow
-1. User clicks **🎫 Create Ticket** button
+1. User clicks ** Create Ticket** button
 2. Selects category from dropdown menu
 3. Views detailed information and guidelines for selected category
 4. Clicks **Create This Ticket** button to confirm
@@ -263,7 +282,7 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **JSON import/export** for embed templates
 - **Message editing capabilities** for dynamic content
 
-### 🧵 Thread Management System
+### Thread Management System
 **Professional thread and post management tools with enhanced visibility and safety**
 
 #### Thread Control Commands
@@ -272,12 +291,12 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
   - Only moderators and thread creator can execute
   - Creates audit trail for compliance
   
-- **`?lock [thread_id]`** / **`/lock [thread_id]`** - Lock thread and add 🔒 emoji prefix *(Manage Threads)*
-  - Example: `"discussion about linux"` → `"🔒 discussion about linux"`
+- **`?lock [thread_id]`** / **`/lock [thread_id]`** - Lock thread and add emoji prefix *(Manage Threads)*
+  - Example: `"discussion about linux"` → `" discussion about linux"`
   - Prevents accidental reopening by members
   - Clear visual indicator for locked threads
   
-- **`?unlock [thread_id]`** / **`/unlock [thread_id]`** - Unlock thread and remove 🔒 emoji *(Manage Threads)*
+- **`?unlock [thread_id]`** / **`/unlock [thread_id]`** - Unlock thread and remove emoji *(Manage Threads)*
   - Restores original thread name automatically
   - Allows members to participate again
 
@@ -287,10 +306,10 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **`?purge <amount>`** / **`/purge <amount>`** - Delete 1-100 messages *(Manage Messages)*
 
 #### Features
-- ✅ Works in channels and threads
-- ✅ Reply feature for pinning specific messages
-- ✅ Automatic permission validation
-- ✅ Requires `manage_messages` or `manage_threads` permissions
+- Works in channels and threads
+- Reply feature for pinning specific messages
+- Automatic permission validation
+- Requires `manage_messages` or `manage_threads` permissions
 
 ### AFK System
 **Away From Keyboard status management with auto-responses**
@@ -480,7 +499,7 @@ python bot_diagnostics.py
 python quick_test.py
 ```
 
-## 🌐 Deployment
+## Deployment
 
 ### Railway
 1. Connect your GitHub repository
@@ -606,31 +625,31 @@ python main.py
 
 This bot follows **enterprise-grade design principles** for scalability and maintainability:
 
-### 🎯 Core Design Principles
-- ✅ **Hybrid command support** - Both prefix (`?`) and slash (`/`) commands for maximum compatibility
-- ✅ **Modular cog architecture** - Each feature set is a separate, maintainable module
-- ✅ **Comprehensive data persistence** - Zero data loss with automated backup systems
-- ✅ **Type-safe implementation** - Full type hints for reliability and maintainability
-- ✅ **Professional error handling** - Graceful degradation and informative error messages
-- ✅ **Permission-based security** - Role and permission checks for all sensitive operations
-- ✅ **Scalable database design** - SQLite for local efficiency, cloud backup for reliability
+### Core Design Principles
+- **Hybrid command support** - Both prefix (`?`) and slash (`/`) commands for maximum compatibility
+- **Modular cog architecture** - Each feature set is a separate, maintainable module
+- **Comprehensive data persistence** - Zero data loss with automated backup systems
+- **Type-safe implementation** - Full type hints for reliability and maintainability
+- **Professional error handling** - Graceful degradation and informative error messages
+- **Permission-based security** - Role and permission checks for all sensitive operations
+- **Scalable database design** - SQLite for local efficiency, cloud backup for reliability
 
-### 🏢 Enterprise Features
-- 🔐 **Advanced staff management** - Comprehensive shift tracking and aura systems
-- 📊 **Data analytics and reporting** - Detailed statistics and performance metrics
-- 🔄 **Automatic data backup & restore** - GitHub-based cloud storage with local fallbacks
-- 🗳️ **Democratic processes** - Built-in election system for community governance
-- 🛡️ **Advanced moderation tools** - Professional-grade server management capabilities
-- 📈 **Monitoring and diagnostics** - Real-time health checks and performance monitoring
+### Enterprise Features
+- **Advanced staff management** - Comprehensive shift tracking and aura systems
+- **Data analytics and reporting** - Detailed statistics and performance metrics
+- **Automatic data backup & restore** - GitHub-based cloud storage with local fallbacks
+- **Democratic processes** - Built-in election system for community governance
+- **Advanced moderation tools** - Professional-grade server management capabilities
+- **Monitoring and diagnostics** - Real-time health checks and performance monitoring
 
-### 🚀 Performance & Reliability
-- ⚡ **Fast startup times** - Optimized initialization and cog loading
-- 🔧 **Zero-downtime deployment** - Data persistence across restarts and updates
-- 📱 **Multi-platform support** - Works on Windows, Linux, and macOS
-- 🌐 **Hosting platform agnostic** - Supports Railway, Heroku, VPS, and local hosting
-- 🔍 **Comprehensive logging** - Detailed logging for debugging and monitoring
+### Performance & Reliability
+- **Fast startup times** - Optimized initialization and cog loading
+- **Zero-downtime deployment** - Data persistence across restarts and updates
+- **Multi-platform support** - Works on Windows, Linux, and macOS
+- **Hosting platform agnostic** - Supports Railway, Heroku, VPS, and local hosting
+- **Comprehensive logging** - Detailed logging for debugging and monitoring
 
-### ✨ What Makes This Bot Special
+### What Makes This Bot Special
 
 #### Fully-Featured Staff Management
 Unlike basic bots, this includes professional staff shift tracking, aura/points systems, and comprehensive admin controls that rival commercial solutions.
@@ -655,7 +674,7 @@ Clean, modular code with full type hints, comprehensive documentation, and easy 
 - **Architecture**: Cog-based modular design with dependency injection
 - **Type Safety**: Full type annotations and runtime validation
 
-## 👤 Author & Credits
+## Author & Credits
 | Role | Person |
 |------|--------|
 | Original Creator | @Youngcoder45 |
@@ -664,7 +683,7 @@ Clean, modular code with full type hints, comprehensive documentation, and easy 
 
 Community contributions welcome—submit PRs or issues.
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -672,12 +691,12 @@ Community contributions welcome—submit PRs or issues.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## Support
 
-- 🐛 **Issues**: Report bugs via GitHub Issues
-- 💬 **Discord**: https://discord.gg/3xKFvKhuGR
-- 📧 **Email**: youngcoder45@gmail.com
+- **Issues**: Report bugs via GitHub Issues
+- **Discord**: https://discord.gg/3xKFvKhuGR
+- **Email**: youngcoder45@gmail.com
