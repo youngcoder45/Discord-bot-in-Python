@@ -266,7 +266,7 @@ class HelpView(discord.ui.View):
     async def get_main_embed(self):
         """Get the main help embed"""
         embed = discord.Embed(
-            title="📚 CodeVerse Bot - Help Center",
+            title="CodeVerse Bot - Help Center",
             description=(
                 "**Welcome to CodeVerse Bot!**\n\n"
                 "🔹 **Prefix Commands:** Use `?` before command names (e.g., `?ping`)\n"
@@ -431,7 +431,7 @@ class HelpDropdown(discord.ui.Select):
     def get_core_embed(self):
         """Core commands embed"""
         embed = discord.Embed(
-            title="🏠 Core Commands",
+            title="Core Commands",
             description="Essential bot functionality and information",
             color=0x2ECC71
         )
@@ -452,7 +452,7 @@ class HelpDropdown(discord.ui.Select):
     def get_afk_embed(self):
         """AFK system commands embed"""
         embed = discord.Embed(
-            title="😴 AFK System",
+            title="AFK System",
             description="Away from keyboard status management with automatic responses",
             color=0xF39C12
         )
@@ -493,13 +493,13 @@ class HelpDropdown(discord.ui.Select):
     def get_moderation_embed(self):
         """Moderation commands embed"""
         embed = discord.Embed(
-            title="🛡️ ModCog - Combined Moderation System",
+            title="ModCog - Combined Moderation System",
             description="Unified moderation system with integrated warnings",
             color=0xE74C3C
         )
         
         embed.add_field(
-            name="🔨 Basic Moderation",
+            name="Basic Moderation",
             value=(
                 "**`/purge <amount>`** - Delete messages *(Manage Messages)*\n"
                 "**`/kick <member> [reason]`** - Kick member *(Kick Members)*\n"
@@ -558,13 +558,13 @@ class HelpDropdown(discord.ui.Select):
     def get_staff_embed(self):
         """Staff systems embed"""
         embed = discord.Embed(
-            title="⭐ Staff Management Systems",
+            title="Staff Management Systems",
             description="Comprehensive staff tools and recognition systems",
             color=0xF1C40F
         )
         
         embed.add_field(
-            name="🏆 Aura (Points) System",
+            name="Aura (Points) System",
             value=(
                 "**`/aura check [@user]`** - Check aura balance\n"
                 "**`/aura leaderboard`** - View staff rankings\n"
@@ -592,13 +592,13 @@ class HelpDropdown(discord.ui.Select):
     def get_tickets_embed(self):
         """Ticket system embed"""
         embed = discord.Embed(
-            title="🎫 Support Ticket System",
+            title="Support Ticket System",
             description="Professional thread-based ticket system with specialized role routing",
             color=0x5865F2
         )
         
         embed.add_field(
-            name="👥 User Commands",
+            name="User Commands",
             value=(
                 "**`/ticketpanel [#channel]`** - Create ticket panel with button *(Admin)*\n"
                 "**`🎫 Create Ticket`** - Button to create new tickets\n"
@@ -661,7 +661,7 @@ class HelpDropdown(discord.ui.Select):
     def get_embeds_embed(self):
         """Embed tools embed"""
         embed = discord.Embed(
-            title="🎨 Embed Creation Tools",
+            title="Embed Creation Tools",
             description="Professional embed creation for server announcements",
             color=0x17A2B8
         )
@@ -694,13 +694,13 @@ class HelpDropdown(discord.ui.Select):
     def get_threads_embed(self):
         """Thread management commands embed"""
         embed = discord.Embed(
-            title="🧵 Thread Management",
+            title="Thread Management",
             description="Manage threads and posts in Discord servers",
             color=0x3498DB
         )
         
         embed.add_field(
-            name="📌 Thread Controls",
+            name="Thread Controls",
             value=(
                 "**`/close [thread_id]`** - Archive (close) a thread with embed notification *(Mod / Creator)*\n"
                 "  ➜ *Sends embed before archiving to prevent reopening*\n"
@@ -752,7 +752,7 @@ class HelpDropdown(discord.ui.Select):
     def get_data_embed(self):
         """Data management embed"""
         embed = discord.Embed(
-            title="📊 Data Management",
+            title="Data Management",
             description="Backup, restore, and data operation commands",
             color=0x6C757D
         )
@@ -785,13 +785,13 @@ class HelpDropdown(discord.ui.Select):
     def get_advanced_moderation_embed(self):
         """Advanced moderation commands embed"""
         embed = discord.Embed(
-            title="🔒 Advanced Moderation & Protection",
+            title="Advanced Moderation & Protection",
             description="Extended moderation and protection tools",
             color=0x9B59B6
         )
         
         embed.add_field(
-            name="🚨 Anti-Nuke Protection",
+            name="Anti-Nuke Protection",
             value=(
                 "**`/antinuke [action] [value]`** - Configure anti-nuke settings *(Admin)*\n"
                 "**`/antinuke status`** - View current protection status\n\n"
@@ -833,6 +833,9 @@ class HelpDropdown(discord.ui.Select):
             value=(
                 "**`/lockdown [#channel]`** - Lock channel to prevent messages *(Admin)*\n"
                 "**`/unlockdown [#channel]`** - Unlock channel *(Admin)*\n"
+                "**`?hide [#channel]`** - Hide channel from @everyone *(Manage Channels)*\n"
+                "**`?unhide [#channel]`** - Unhide channel for @everyone *(Manage Channels)*\n"
+                "**`/rr <title> <#channel> <description> <emoji1> <role1>...`** - Create reaction roles *(Manage Roles)*\n"
                 "**`/slowmode <seconds> [#channel]`** - Set channel slowmode *(Manage Channels)*\n"
                 "**`/massban <user_ids> [reason]`** - Ban multiple users *(Ban Members)*\n"
                 "**`/nuke [#channel]`** - Clone and replace channel *(OWNER ONLY)*"
@@ -848,7 +851,7 @@ class HelpDropdown(discord.ui.Select):
     def get_diagnostics_embed(self):
         """Diagnostics embed"""
         embed = discord.Embed(
-            title="🔧 Diagnostics & Testing",
+            title="Diagnostics & Testing",
             description="Bot health monitoring and troubleshooting tools",
             color=0x28A745
         )
