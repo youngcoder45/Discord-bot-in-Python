@@ -270,7 +270,91 @@ class AdvancedModeration(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
-    # Note: slowmode command removed - it's already implemented in modcog.py
+    @commands.command(name="hide")
+    @commands.has_permissions(manage_channels=True)
+    async def hide_channel(self, ctx, channel: Optional[discord.TextChannel] = None):
+        """Hide a channel from @everyone"""
+        if channel is None:
+            channel = ctx.channel
+        
+        # Type guard to ensure channel is TextChannel
+        if not isinstance(channel, discord.TextChannel):
+            await ctx.send("❌ This command can only be used in text channels.", ephemeral=True)
+            return
+        
+        try:
+            overwrite = channel.overwrites_for(ctx.guild.default_role)
+            overwrite.view_channel = False
+            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite, 
+                                        reason=f"Channel hidden by {ctx.author}")
+            
+            embed = discord.Embed(
+                title="👁️‍🗨️ Channel Hidden",
+                description=f"**{channel.name}** has been hidden from @everyone",
+                color=0x95a5a6
+            )
+            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+            await ctx.send(embed=embed)
+            
+            # Log to designated channel
+            log_embed = discord.Embed(
+                title="👁️‍🗨️ Channel Hidden",
+                description=f"**#{channel.name}** was hidden from @everyone",
+                color=0x95a5a6
+            )
+            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
+            log_embed.add_field(name="Channel", value=f"#{channel.name} ({channel.id})", inline=True)
+            log_embed.timestamp = datetime.now()
+            await self._log_action(ctx.guild, log_embed)
+            
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to manage this channel", ephemeral=True)
+        except Exception as e:
+            await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
+
+    @commands.command(name="unhide")
+    @commands.has_permissions(manage_channels=True)
+    async def unhide_channel(self, ctx, channel: Optional[discord.TextChannel] = None):
+        """Unhide a channel for @everyone"""
+        if channel is None:
+            channel = ctx.channel
+        
+        # Type guard to ensure channel is TextChannel
+        if not isinstance(channel, discord.TextChannel):
+            await ctx.send("❌ This command can only be used in text channels.", ephemeral=True)
+            return
+        
+        try:
+            overwrite = channel.overwrites_for(ctx.guild.default_role)
+            overwrite.view_channel = True
+            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite, 
+                                        reason=f"Channel unhidden by {ctx.author}")
+            
+            embed = discord.Embed(
+                title="👁️ Channel Unhidden",
+                description=f"**{channel.name}** is now visible to @everyone",
+                color=0x2ecc71
+            )
+            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+            await ctx.send(embed=embed)
+            
+            # Log to designated channel
+            log_embed = discord.Embed(
+                title="👁️ Channel Unhidden",
+                description=f"**#{channel.name}** is now visible to @everyone",
+                color=0x2ecc71
+            )
+            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
+            log_embed.add_field(name="Channel", value=f"#{channel.name} ({channel.id})", inline=True)
+            log_embed.timestamp = datetime.now()
+            await self._log_action(ctx.guild, log_embed)
+            
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to manage this channel", ephemeral=True)
+        except Exception as e:
+            await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
+
+    # Note: slowmode command already exists in modcog.py, so not implementing here to avoid conflicts
 
     @commands.hybrid_command(name="advmodstats")
     @commands.has_permissions(manage_messages=True)
