@@ -21,11 +21,11 @@ class TicketCategoryView(discord.ui.View):
     @discord.ui.select(
         placeholder="Choose a category...",
         options=[
-            discord.SelectOption(label="Bug Report", emoji="🐛", value="bug"),
-            discord.SelectOption(label="Feature Request", emoji="✨", value="feature"),
+            discord.SelectOption(label="Partnership", emoji="🤝", value="partnership"),
             discord.SelectOption(label="General Support", emoji="❓", value="support"),
-            discord.SelectOption(label="Partnership", emoji="👤", value="partnership"),
-            discord.SelectOption(label="Report A User/Staff", emoji="🚨", value="report"),
+            discord.SelectOption(label="Role Issues", emoji="🎭", value="role_issue"),
+            discord.SelectOption(label="Reports", emoji="🚨", value="report"),
+            discord.SelectOption(label="Warn Appeals", emoji="⚖️", value="warn_appeal"),
             discord.SelectOption(label="Other Issues", emoji="📝", value="other"),
         ]
     )
@@ -59,11 +59,11 @@ class TicketConfirmationView(discord.ui.View):
         embed.add_field(
             name="📋 Available Categories",
             value=(
-                "🐛 **Bug Report** - Report bugs or technical issues\n"
-                "✨ **Feature Request** - Suggest new features or improvements\n"
+                "🤝 **Partnership** - Business partnerships and collaborations\n"
                 "❓ **General Support** - Get help with using our services\n"
-                "👤 **Partnership** - Business partnerships and collaborations\n"
-                "🚨 **Report A User/Staff** - Report inappropriate behavior\n"
+                "🎭 **Role Issues** - Issues related to roles and permissions\n"
+                "🚨 **Reports** - Report inappropriate behavior\n"
+                "⚖️ **Warn Appeals** - Appeal warnings or moderation actions\n"
                 "📝 **Other Issues** - Anything else that needs attention"
             ),
             inline=False
@@ -116,12 +116,12 @@ class TicketCreateButton(discord.ui.Button):
         embed.add_field(
             name="__Available Categories__",
             value=(
-                "- **Bug Report** - Report bugs or technical issues\n"
-                "- **Feature Request** - Suggest new features\n"
-                "- **General Support** - Get help with the bot\n"
-                "- **Account Issues** - Account-related problems\n"
-                "- **Report User** - Report rule violations\n"
-                "- **Other** - Other inquiries"
+                "- **Partnership** - Business partnerships and collaborations\n"
+                "- **General Support** - Get help with using our services\n"
+                "- **Role Issues** - Issues related to roles and permissions\n"
+                "- **Reports** - Report inappropriate behavior\n"
+                "- **Warn Appeals** - Appeal warnings or moderation actions\n"
+                "- **Other Issues** - Anything else that needs attention"
             ),
             inline=False
         )
@@ -252,6 +252,12 @@ class Tickets(commands.Cog):
     
     def _get_ticket_log_channel(self, guild: discord.Guild) -> Optional[discord.TextChannel]:
         """Get the ticketlog channel for the guild if it exists"""
+        # Check for hardcoded ticket log channel
+        TICKET_LOGS_CHANNEL = 1438487366305190018
+        channel = guild.get_channel(TICKET_LOGS_CHANNEL)
+        if channel and isinstance(channel, discord.TextChannel):
+            return channel
+
         # First check if a custom channel is set in database
         try:
             conn = sqlite3.connect(DATABASE_NAME)
@@ -365,47 +371,8 @@ class Tickets(commands.Cog):
         """Show information about the selected ticket type"""
         # Category information with detailed descriptions
         category_info = {
-            "bug": {
-                "name": "🐛 Bug Report",
-                "description": "Report technical issues, bugs, or problems you've encountered",
-                "guidelines": (
-                    "• **Describe the issue** - What went wrong?\n"
-                    "• **Steps to reproduce** - How can we recreate the problem?\n"
-                    "• **Expected vs actual behavior** - What should have happened?\n"
-                    "• **Screenshots/logs** - Visual proof helps us understand\n"
-                    "• **Device/browser info** - Technical details matter"
-                ),
-                "examples": "Bot commands not working, website errors, account access issues, Role issues, Permissions mismatch",
-                "color": 0xe74c3c
-            },
-            "feature": {
-                "name": "✨ Feature Request", 
-                "description": "Suggest new features, improvements, or enhancements",
-                "guidelines": (
-                    "• **Clear feature description** - What do you want added?\n"
-                    "• **Use case explanation** - Why would this be useful?\n"
-                    "• **Target audience** - Who would benefit from this?\n"
-                    "• **Implementation ideas** - Any suggestions on how it could work?\n"
-                    "• **Similar examples** - Reference other implementations if possible"
-                ),
-                "examples": "New bot commands, website improvements, quality of life features, server improvement",
-                "color": 0x9b59b6
-            },
-            "support": {
-                "name": "❓ General Support",
-                "description": "Get help with using our services, platforms, or community features",
-                "guidelines": (
-                    "• **Be specific about your question** - What do you need help with?\n"
-                    "• **Mention what you've tried** - What steps have you already taken?\n"
-                    "• **Provide context** - What are you trying to accomplish?\n"
-                    "• **Include relevant details** - Account info, error messages, etc.\n"
-                    "• **Be patient** - Our team will help you as soon as possible"
-                ),
-                "examples": "How to use features, account questions, general guidance",
-                "color": 0x3498db
-            },
             "partnership": {
-                "name": "👤 Partnership",
+                "name": "🤝 Partnership",
                 "description": "We value building a strong, engaging community and have established clear criteria for our partnership program",
                 "guidelines": (
                     "**📋 Server Requirements:**\n"
@@ -425,8 +392,33 @@ class Tickets(commands.Cog):
                 "examples": "Discord server partnerships, tech community collaborations, educational alliances",
                 "color": 0xf39c12
             },
+            "support": {
+                "name": "❓ General Support",
+                "description": "Get help with using our services, platforms, or community features",
+                "guidelines": (
+                    "• **Be specific about your question** - What do you need help with?\n"
+                    "• **Mention what you've tried** - What steps have you already taken?\n"
+                    "• **Provide context** - What are you trying to accomplish?\n"
+                    "• **Include relevant details** - Account info, error messages, etc.\n"
+                    "• **Be patient** - Our team will help you as soon as possible"
+                ),
+                "examples": "How to use features, account questions, general guidance",
+                "color": 0x3498db
+            },
+            "role_issue": {
+                "name": "🎭 Role Issues",
+                "description": "Report issues related to roles, permissions, or access",
+                "guidelines": (
+                    "• **Missing roles** - Which roles are you missing?\n"
+                    "• **Permission errors** - What are you trying to do?\n"
+                    "• **Role color/icon** - Issues with role appearance\n"
+                    "• **Self-assignable roles** - Problems with reaction roles or commands"
+                ),
+                "examples": "Didn't get level up role, can't access channel, role color wrong",
+                "color": 0x9b59b6
+            },
             "report": {
-                "name": "🚨 Report A User/Staff",
+                "name": "🚨 Reports",
                 "description": "Report inappropriate behavior, rule violations, or misconduct",
                 "guidelines": (
                     "• **User information** - Who are you reporting? (ID, username)\n"
@@ -437,6 +429,18 @@ class Tickets(commands.Cog):
                 ),
                 "examples": "Harassment, spam, rule breaking, inappropriate content",
                 "color": 0xe67e22
+            },
+            "warn_appeal": {
+                "name": "⚖️ Warn Appeals",
+                "description": "Appeal a warning or moderation action taken against you",
+                "guidelines": (
+                    "• **Case ID** - The ID of the warning (if known)\n"
+                    "• **Reason for appeal** - Why do you think the warning was unjust?\n"
+                    "• **Evidence** - Any proof to support your claim\n"
+                    "• **Honesty** - Be honest about the situation"
+                ),
+                "examples": "Unjust warning, misunderstanding, incorrect punishment",
+                "color": 0xe74c3c
             },
             "other": {
                 "name": "📝 Other Issues",
@@ -502,11 +506,11 @@ class Tickets(commands.Cog):
         
         # Category emojis and names
         category_info = {
-            "bug": ("🐛", "Bug Report"),
-            "feature": ("✨", "Feature Request"),
+            "partnership": ("🤝", "Partnership"),
             "support": ("❓", "General Support"),
-            "partnership": ("👤", "Partnership"),
-            "report": ("🚨", "Report A User/Staff"),
+            "role_issue": ("🎭", "Role Issues"),
+            "report": ("🚨", "Reports"),
+            "warn_appeal": ("⚖️", "Warn Appeals"),
             "other": ("📝", "Other Issues")
         }
         
@@ -548,20 +552,15 @@ class Tickets(commands.Cog):
             
             # Add staff role members based on ticket category
             staff_role = None
-            if category == "report":
+            if category == "report" or category == "warn_appeal":
                 staff_role = self._get_report_team_role(guild)
             elif category == "partnership":
                 staff_role = self._get_partner_team_role(guild)
             else:
                 staff_role = self._get_support_team_role(guild)
             
-            if staff_role:
-                staff_members = list(staff_role.members)[:10]  # Get first 10 staff members
-                for member in staff_members:
-                    try:
-                        await thread.add_user(member)
-                    except:
-                        pass
+            # Note: We no longer add all staff members to the thread automatically.
+            # They will be pinged in the welcome message instead.
             
         except Exception as e:
             await interaction.followup.send(

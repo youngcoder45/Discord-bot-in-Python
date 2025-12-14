@@ -59,7 +59,7 @@ COGS_TO_LOAD = [
     'commands.diagnostics',   # Diagnostics (?diag, /diag)
     
     # Logging System (Essential - LOAD FIRST)
-    'commands.logging',       # Centralized logging system for all events
+    'commands.logging_cog',       # Centralized logging system for all events
     'commands.tickets',
     # Moderation & Protection (Essential)
     'commands.modcog',        # Combined moderation commands with warnings system
@@ -228,14 +228,11 @@ async def on_ready():
     
     # Sync slash commands
     try:
-        # Try global sync first
-        synced = await bot.tree.sync()
-        logger.info(f"Synced {len(synced)} slash commands globally")
-        
-        # Also sync to authorized guilds for faster updates
+        # Sync to authorized guilds for faster updates
         for guild_id in AUTHORIZED_SERVERS:
             try:
                 guild = discord.Object(id=guild_id)
+                bot.tree.copy_global_to(guild=guild)
                 guild_synced = await bot.tree.sync(guild=guild)
                 logger.info(f"Synced {len(guild_synced)} commands to guild {guild_id}")
             except Exception as e:

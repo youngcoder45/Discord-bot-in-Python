@@ -22,7 +22,8 @@ logger = logging.getLogger("codeverse.logging")
 
 # Channel IDs for different log types
 MEMBER_LOGS_CHANNEL = 1263434413581008956  # member updates (join/leave/role update)
-MOD_LOGS_CHANNEL = 1399746928585085068     # moderation logs (ban/kick/warn/timeout)
+MOD_LOGS_CHANNEL = 1444013659134361703     # moderation logs (ban/kick/warn/timeout)
+TICKET_LOGS_CHANNEL = 1438487366305190018  # ticket logs
 
 class LoggingCog(commands.Cog):
     """Centralized logging system for all bot events"""
@@ -33,6 +34,7 @@ class LoggingCog(commands.Cog):
         self.is_ready = False
         self.member_log_channel = None
         self.mod_log_channel = None
+        self.ticket_log_channel = None
         
         # Start log processing task
         self.log_task = asyncio.create_task(self.process_logs())
@@ -81,12 +83,16 @@ class LoggingCog(commands.Cog):
             # Get log channels
             self.member_log_channel = self.bot.get_channel(MEMBER_LOGS_CHANNEL)
             self.mod_log_channel = self.bot.get_channel(MOD_LOGS_CHANNEL)
+            self.ticket_log_channel = self.bot.get_channel(TICKET_LOGS_CHANNEL)
             
             if not self.member_log_channel:
                 logger.warning(f"Member log channel {MEMBER_LOGS_CHANNEL} not found")
             
             if not self.mod_log_channel:
                 logger.warning(f"Moderation log channel {MOD_LOGS_CHANNEL} not found")
+
+            if not self.ticket_log_channel:
+                logger.warning(f"Ticket log channel {TICKET_LOGS_CHANNEL} not found")
             
             while True:
                 # Get log item from queue
@@ -119,8 +125,14 @@ class LoggingCog(commands.Cog):
         # Determine which channel to send to
         is_mod_log = event_type.startswith(("BAN", "KICK", "WARN", "TIMEOUT", "MUTE", "UNMUTE", 
                                            "UNBAN", "MOD_", "POINT_", "APPEAL_"))
+        is_ticket_log = event_type.startswith("TICKET_")
         
-        log_channel = self.mod_log_channel if is_mod_log else self.member_log_channel
+        if is_ticket_log:
+            log_channel = self.ticket_log_channel
+        elif is_mod_log:
+            log_channel = self.mod_log_channel
+        else:
+            log_channel = self.member_log_channel
         
         if not log_channel:
             return  # No channel to send to
@@ -173,7 +185,7 @@ class LoggingCog(commands.Cog):
         if event_type.startswith("MEMBER_JOIN"):
             embed.title = "📥 Member Joined"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} joined the server"
-            embed.color = discord.Color.green()
+            embed.color = discord.Color(0x00ff00)
             
             # Add account creation date if available
             if isinstance(user, discord.User):
@@ -188,7 +200,7 @@ class LoggingCog(commands.Cog):
         elif event_type.startswith("MEMBER_LEAVE"):
             embed.title = "📤 Member Left"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} left the server"
-            embed.color = discord.Color.gold()
+            embed.color = discord.Color(0xff0000)
             
             # Set thumbnail if available
             if isinstance(user, discord.User) and user.avatar:
@@ -197,7 +209,7 @@ class LoggingCog(commands.Cog):
         elif event_type.startswith("BAN"):
             embed.title = "🔨 Member Banned"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was banned"
-            embed.color = discord.Color.red()
+            embed.color = discord.Color(0xff0000)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -212,7 +224,7 @@ class LoggingCog(commands.Cog):
         elif event_type.startswith("UNBAN"):
             embed.title = "🔓 Member Unbanned"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was unbanned"
-            embed.color = discord.Color.green()
+            embed.color = discord.Color(0x00ff00)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -227,7 +239,7 @@ class LoggingCog(commands.Cog):
         elif event_type.startswith("KICK"):
             embed.title = "👢 Member Kicked"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was kicked"
-            embed.color = discord.Color.orange()
+            embed.color = discord.Color(0xff0000)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -242,7 +254,7 @@ class LoggingCog(commands.Cog):
         elif event_type.startswith("TIMEOUT") or event_type.startswith("MUTE"):
             embed.title = "🔇 Member Timed Out"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was timed out"
-            embed.color = discord.Color.dark_orange()
+            embed.color = discord.Color(0xff0000)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -255,6 +267,21 @@ class LoggingCog(commands.Cog):
                 expires = log_item.get("expires")
                 if expires:
                     embed.add_field(name="Expires", value=f"<t:{int(expires.timestamp())}:R>", inline=True)
+            
+            if details:
+                embed.add_field(name="Reason", value=details, inline=False)
+                
+            # Set thumbnail if available
+            if isinstance(user, discord.User) and user.avatar:
+                embed.set_thumbnail(url=user.avatar.url)
+        
+        elif event_type.startswith("UNMUTE"):
+            embed.title = "🔊 Member Unmuted"
+            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was unmuted"
+            embed.color = discord.Color(0x00ff00)
+            
+            if moderator:
+                embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
             
             if details:
                 embed.add_field(name="Reason", value=details, inline=False)

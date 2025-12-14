@@ -3,12 +3,36 @@ import os
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime, timezone
+from utils.json_store import get_warnings
+
+REPORT_CHANNEL_ID = 1418492683277570109
 
 class Core(commands.Cog):
     """Core hybrid commands: ping, info, help menu."""
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.start_time = getattr(bot, 'start_time', datetime.now(timezone.utc))
+        
+        # Register Context Menu
+        self.ctx_menu = app_commands.ContextMenu(
+            name='Report Message',
+            callback=self.report_message_ctx,
+        )
+        self.bot.tree.add_command(self.ctx_menu)
+
+    async def cog_unload(self):
+        self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
+
+    @commands.command(name="sync", hidden=True)
+    @commands.is_owner()
+    async def sync(self, ctx: commands.Context):
+        """Syncs the command tree."""
+        msg = await ctx.reply("Syncing...", mention_author=False)
+        try:
+            synced = await self.bot.tree.sync()
+            await msg.edit(content=f"Synced {len(synced)} commands globally.")
+        except Exception as e:
+            await msg.edit(content=f"Sync failed: {e}")
 
     @commands.hybrid_command(name="ping", help="Check if the bot is responsive")
     async def ping(self, ctx: commands.Context):
@@ -21,23 +45,137 @@ class Core(commands.Cog):
         )
         await ctx.reply(embed=embed, mention_author=False)
 
-    @commands.hybrid_command(name="info", help="Get bot information")
-    async def info(self, ctx: commands.Context):
-        uptime = datetime.now(timezone.utc) - self.start_time
-        embed = discord.Embed(
-            title="CodeVerse Bot Information", 
-            description="A professional Discord bot for programming communities",
-            color=0x3498DB,
-            timestamp=datetime.now(timezone.utc)
-        )
-        embed.add_field(name="Uptime", value=str(uptime).split('.')[0], inline=True)
-        embed.add_field(name="Command Prefix", value=str(self.bot.command_prefix), inline=True)
-        instance_id = os.getenv('INSTANCE_ID', 'production')
-        embed.add_field(name="Instance ID", value=instance_id, inline=True)
-        embed.set_footer(text=f"Instance: {instance_id}")
+    @commands.hybrid_command(name="info", aliases=["whois", "info-user"], help="Get user information")
+    @app_commands.describe(user="The user to get information about")
+    async def info(self, ctx: commands.Context, user: discord.Member = None):
+        """Get detailed information about a user."""
+        user = user or ctx.author
+        
+        # Fetch warnings
+        warnings = await get_warnings(user.id)
+        warn_count = len(warnings)
+        
+        # Embed setup
+        embed = discord.Embed(color=user.color)
+        
+        # General Information
+        created_at = f"<t:{int(user.created_at.timestamp())}:R>"
+        joined_at = f"<t:{int(user.joined_at.timestamp())}:R>" if user.joined_at else "Unknown"
+        
+        embed.add_field(name="General Informations:", value=f"**Name:** {user.name}\n**ID:** {user.id}\n**Creation:** {created_at}\n**Join:** {joined_at}\n**Color:** {str(user.color)}", inline=False)
+
+        # Bot sus Informations
+        is_sus = "Yes" if warn_count > 0 else "No"
+        
+        embed.add_field(name="Bot sus Informations:", value=f"**Suspicious?** {is_sus}\n**Warn Points:** {warn_count}\n**Active Strikes:** {warn_count}\n**Current Heat:** 0%", inline=False)
+
+        # Whitelisted Status
+        is_staff = user.guild_permissions.manage_messages
+        status = "Yes" if is_staff else "No"
+        
+        embed.add_field(name="Whitelisted User:", value=f"**Whitelisted?** {status}\n» **Spam:** {status}\n» **Ping:** {status}\n» **Advertising:** {status}\n» **Quarantine:** {status}\n» **Public Roles:** {status}", inline=False)
+
+        # Dangerous User
+        dangerous_text = "No special status."
+        if user.id == ctx.guild.owner_id:
+            dangerous_text = "**This user is the owner.**"
+        elif user.guild_permissions.administrator:
+            dangerous_text = "**This user is an administrator.**"
+            
+        embed.add_field(name="Dangerous User:", value=dangerous_text, inline=False)
+        
+        # BOT Permissions
+        perms = []
+        if user.guild_permissions.administrator: perms.append("Administrator")
+        if user.guild_permissions.ban_members: perms.append("Ban Members")
+        if user.guild_permissions.kick_members: perms.append("Kick Members")
+        if user.guild_permissions.manage_messages: perms.append("Manage Messages")
+        if user.guild_permissions.manage_roles: perms.append("Manage Roles")
+        
+        perms_str = " | ".join(perms) if perms else "None"
+        has_perms = "Yes" if perms else "No"
+        
+        embed.add_field(name="BOT Permissions:", value=f"**Has Permissions:** {has_perms}\n» **Permissions:** {perms_str}", inline=False)
+
+        # Account Accessories
+        roles = [r.mention for r in user.roles if r != ctx.guild.default_role]
+        roles.reverse()
+        roles_str = ", ".join(roles[:10])
+        if len(roles) > 10:
+            roles_str += f" +{len(roles)-10}"
+        if not roles_str: roles_str = "None"
+            
+        embed.add_field(name="Account Accessories:", value=f"**Roles:** {roles_str}\n**Webhooks:** No", inline=False)
+
+        if user.avatar:
+            embed.set_thumbnail(url=user.avatar.url)
+            
         await ctx.reply(embed=embed, mention_author=False)
 
+    async def _send_report(self, reporter, message, interaction_or_ctx):
+        """Helper to send report embed"""
+        report_channel = self.bot.get_channel(REPORT_CHANNEL_ID)
+        if not report_channel:
+            try:
+                report_channel = await self.bot.fetch_channel(REPORT_CHANNEL_ID)
+            except:
+                msg = "Report channel not found. Please contact an admin."
+                if isinstance(interaction_or_ctx, commands.Context):
+                    await interaction_or_ctx.reply(msg, ephemeral=True)
+                else:
+                    await interaction_or_ctx.response.send_message(msg, ephemeral=True)
+                return
 
+        embed = discord.Embed(title="🚨 User Report", color=discord.Color.red(), timestamp=datetime.now(timezone.utc))
+        embed.add_field(name="Reporter", value=f"{reporter.mention} ({reporter.id})", inline=False)
+        embed.add_field(name="Reported User", value=f"{message.author.mention} ({message.author.id})", inline=False)
+        embed.add_field(name="Channel", value=f"{message.channel.mention}", inline=True)
+        embed.add_field(name="Message Link", value=f"[Jump to Message]({message.jump_url})", inline=True)
+        embed.add_field(name="Content", value=message.content[:1024] or "[No Content/Attachment]", inline=False)
+        
+        if message.attachments:
+            embed.set_image(url=message.attachments[0].url)
+
+        await report_channel.send(embed=embed)
+        
+        success_msg = "✅ Report sent to moderators."
+        if isinstance(interaction_or_ctx, commands.Context):
+            await interaction_or_ctx.reply(success_msg, ephemeral=True)
+        else:
+            await interaction_or_ctx.response.send_message(success_msg, ephemeral=True)
+
+    @commands.hybrid_command(name="report", help="Report a message to the moderators")
+    @app_commands.describe(message_reference="The Message ID or Link of the message to report")
+    async def report(self, ctx: commands.Context, message_reference: str):
+        """Report a message to the moderators."""
+        message = None
+        
+        # Try parsing as link
+        if "discord.com/channels/" in message_reference:
+            try:
+                parts = message_reference.split("/")
+                channel_id = int(parts[-2])
+                message_id = int(parts[-1])
+                channel = self.bot.get_channel(channel_id) or await self.bot.fetch_channel(channel_id)
+                message = await channel.fetch_message(message_id)
+            except:
+                pass
+        
+        # Try parsing as ID in current channel
+        if not message and message_reference.isdigit():
+            try:
+                message = await ctx.channel.fetch_message(int(message_reference))
+            except:
+                pass
+                
+        if not message:
+            await ctx.reply("❌ Could not find the message. Please provide a valid Message Link or ID from this channel.", ephemeral=True)
+            return
+            
+        await self._send_report(ctx.author, message, ctx)
+
+    async def report_message_ctx(self, interaction: discord.Interaction, message: discord.Message):
+        await self._send_report(interaction.user, message, interaction)
 
     @commands.hybrid_command(name="help", help="Open the interactive dropdown help center")
     @app_commands.describe(command="Optional command name to get detailed help about")
@@ -307,9 +445,10 @@ class HelpView(discord.ui.View):
         embed.add_field(
             name="🔗 Quick Links",
             value=(
-                "• [Bot Features](https://github.com/youngcoder45/Discord-bot-in-Python)\n"
-                "• [Support Server](https://discord.gg/codeverse)\n"
-                "• [Documentation](https://github.com/youngcoder45/Discord-bot-in-Python/blob/master/README.md)"
+                "• [Bot Features](https://github.com/TheCodeVerseHub/CodeVerse-Bot)\n"
+                "• [Support Server](https://discord.gg/3xKFvKhuGR)\n"
+                "• [Documentation](https://github.com/TheCodeVerseHub/CodeVerse-Bot/tree/master/docs)\n"
+                "• [Open an Issue](https://github.com/TheCodeVerseHub/CodeVerse-Bot)"
             ),
             inline=False
         )

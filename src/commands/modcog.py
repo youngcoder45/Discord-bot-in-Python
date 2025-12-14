@@ -257,16 +257,12 @@ class ModCog(commands.Cog):
             await ctx.send(f"❌ Failed to clean messages: {str(e)}")
 
     @commands.hybrid_command(name="role", help="Toggle a role for a user")
-    @app_commands.describe(user="Member to toggle role for", role_name="Name of the role to toggle")
+    @app_commands.describe(user="Member to toggle role for", role="The role to toggle")
     @commands.has_permissions(manage_roles=True)
     @commands.guild_only()
-    async def role(self, ctx: commands.Context, user: discord.Member, *, role_name: str):
+    async def role(self, ctx: commands.Context, user: discord.Member, *, role: discord.Role):
         """Add or remove a role from a user"""
         assert ctx.guild is not None
-        role = discord.utils.find(lambda r: r.name.lower() == role_name.lower(), ctx.guild.roles)
-        
-        if not role:
-            return await ctx.send(f"❌ Role '{role_name}' not found.")
         
         try:
             if role in user.roles:
@@ -292,6 +288,40 @@ class ModCog(commands.Cog):
             await ctx.send("❌ I don't have permission to modify that role.")
         except Exception as e:
             await ctx.send(f"❌ Failed to toggle role: {str(e)}")
+
+    @commands.hybrid_command(name="addmod", help="Add the moderator role to a user")
+    @app_commands.describe(user="Member to promote to moderator")
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def addmod(self, ctx: commands.Context, user: discord.Member):
+        """Promote a user to moderator"""
+        MOD_ROLE_ID = 1403059755001577543
+        role = ctx.guild.get_role(MOD_ROLE_ID)
+        
+        if not role:
+            await ctx.send(f"❌ Moderator role (ID: {MOD_ROLE_ID}) not found in this server.")
+            return
+            
+        if role in user.roles:
+            await ctx.send(f"⚠️ {user.mention} is already a moderator.")
+            return
+            
+        try:
+            await user.add_roles(role, reason=f"Promoted to Moderator by {ctx.author}")
+            
+            embed = discord.Embed(
+                title="🛡️ Staff Promotion",
+                description=f"Successfully promoted {user.mention} to Moderator!",
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="Role Added", value=role.mention)
+            embed.set_footer(text=f"Promoted by {ctx.author}")
+            
+            await ctx.send(embed=embed)
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to assign the moderator role.")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to promote user: {str(e)}")
 
     @commands.hybrid_command(name="timeout", help="Timeout a member for a specified duration")
     @app_commands.describe(

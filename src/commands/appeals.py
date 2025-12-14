@@ -139,7 +139,7 @@ class AppealModal(discord.ui.Modal):
     async def _send_staff_notification(self, appeal_id: int, user: discord.Member | discord.User, content: str):
         """Send appeal notification to staff channel"""
         staff_channel = None
-        for cid in (1423642446616592385, 1399746928585085068):
+        for cid in (1423642446616592385, 1444013659134361703):
             ch = self.cog.bot.get_channel(cid)
             if ch:
                 staff_channel = ch
@@ -664,132 +664,9 @@ class Appeals(commands.Cog):
         self.bot = bot
         init_db()
         self._timeout_dedupe_cache = {}  # {(user_id, guild_id, action): timestamp} - prevents double DM
-        self._appeal_cleanup_task = None
-        self._setup_appeal_cleanup_task()
         self._ban_event_handled = set()  # Track recently handled ban events to prevent duplicates
         
-    def _setup_appeal_cleanup_task(self):
-        """Start background task to clean up expired appeals"""
-        if self._appeal_cleanup_task is None or self._appeal_cleanup_task.done():
-            self._appeal_cleanup_task = asyncio.create_task(self._cleanup_expired_appeals())
-            
-    async def _cleanup_expired_appeals(self):
-        """Background task that checks for appeals where punishment is expired and disables buttons"""
-        try:
-            print("[Appeals] Background cleanup task started - checking for expired punishments every 1500 seconds (debug mode)")
-            while not self.bot.is_closed():
-                # Run every 1500 seconds (25 minutes) for testing (normally 5 minutes)
-                await asyncio.sleep(1500)
-                
-                print("[Appeals] Running background cleanup check for expired punishments...")
-                
-                # Get all pending appeals with their message info
-                conn = sqlite3.connect(DATABASE_NAME)
-                cursor = conn.cursor()
-                cursor.execute('SELECT id, user_id, reason FROM unban_requests WHERE status = "pending"')
-                pending_appeals = cursor.fetchall()
-                conn.close()
-                
-                if not pending_appeals:
-                    print("[Appeals] No pending appeals found for cleanup")
-                    continue
-                
-                print(f"[Appeals] Found {len(pending_appeals)} pending appeals to check")
-                resolved_appeals = []
-                
-                for appeal_id, user_id, reason in pending_appeals:
-                    # Check all guilds the bot is in
-                    for guild in self.bot.guilds:
-                        punishment_resolved = False
-                        status_message = ""
-                        
-                        try:
-                            print(f"[Appeals] Checking appeal #{appeal_id} for user {user_id} in guild {guild.name}")
-                            
-                            # Check if user is still banned
-                            try:
-                                await guild.fetch_ban(discord.Object(id=user_id))
-                                # User is still banned, appeal is valid
-                                print(f"[Appeals] User {user_id} is still banned in {guild.name}, appeal #{appeal_id} remains valid")
-                                continue
-                            except discord.NotFound:
-                                # User is not banned
-                                punishment_resolved = True
-                                status_message = "User is no longer banned"
-                                print(f"[Appeals] User {user_id} is no longer banned in {guild.name}, appeal #{appeal_id} should be resolved")
-                            except discord.Forbidden:
-                                # Can't check ban status, assume valid
-                                print(f"[Appeals] Cannot check ban status for user {user_id} in {guild.name}, assuming valid")
-                                continue
-                            
-                            # If not banned, check timeout status
-                            if not punishment_resolved:
-                                member = guild.get_member(user_id)
-                                if member:
-                                    timeout_until = getattr(member, 'timed_out_until', None)
-                                    current_time = datetime.now(timezone.utc)
-                                    
-                                    if not timeout_until:
-                                        # User has no timeout, could be manually removed or never had one
-                                        punishment_resolved = True
-                                        status_message = "User timeout has been removed or expired"
-                                        print(f"[Appeals] User {user_id} has no timeout in {guild.name}, appeal #{appeal_id} should be resolved")
-                                    elif timeout_until <= current_time:
-                                        # Timeout has naturally expired
-                                        punishment_resolved = True
-                                        status_message = f"User timeout naturally expired at <t:{int(timeout_until.timestamp())}:F>"
-                                        print(f"[Appeals] User {user_id} timeout expired naturally at {timeout_until} in {guild.name}, appeal #{appeal_id} should be resolved")
-                                    else:
-                                        print(f"[Appeals] User {user_id} is still timed out until {timeout_until} in {guild.name}, appeal #{appeal_id} remains valid")
-                                else:
-                                    # User not in server
-                                    punishment_resolved = True
-                                    status_message = "User is no longer in the server"
-                                    print(f"[Appeals] User {user_id} is not in {guild.name}, appeal #{appeal_id} should be resolved")
-                            
-                            if punishment_resolved:
-                                resolved_appeals.append((appeal_id, user_id, guild.id, status_message))
-                                print(f"[Appeals] Auto-resolved appeal #{appeal_id} - {status_message}")
-                                break  # Found the guild where punishment was resolved
-                        
-                        except Exception as e:
-                            print(f"[Appeals] Error checking appeal #{appeal_id} in guild {guild.id}: {e}")
-                            continue
-                
-                # Update database and disable buttons for resolved appeals
-                if resolved_appeals:
-                    print(f"[Appeals] Processing {len(resolved_appeals)} resolved appeals for database update and button disabling")
-                    conn = sqlite3.connect(DATABASE_NAME)
-                    cursor = conn.cursor()
-                    
-                    for appeal_id, user_id, guild_id, status_msg in resolved_appeals:
-                        print(f"[Appeals] Processing appeal #{appeal_id}: {status_msg}")
-                        
-                        # Mark as auto-resolved in database
-                        cursor.execute('UPDATE unban_requests SET status = "auto_resolved" WHERE id = ?', (appeal_id,))
-                        
-                        # Try to find and disable buttons in appeal messages
-                        print(f"[Appeals] Attempting to disable buttons for appeal #{appeal_id}")
-                        await self._disable_appeal_buttons_by_id(appeal_id, guild_id)
-                        
-                        # Log to appeals channel
-                        print(f"[Appeals] Attempting to log punishment expiry for appeal #{appeal_id}")
-                        await self._log_punishment_expiry(appeal_id, user_id, guild_id, status_msg)
-                    
-                    conn.commit()
-                    conn.close()
-                    
-                    print(f"[Appeals] Auto-resolved {len(resolved_appeals)} expired appeals and disabled their buttons")
-                else:
-                    print("[Appeals] No appeals needed resolution during this cleanup cycle")
-                
-        except asyncio.CancelledError:
-            print("[Appeals] Appeal cleanup task cancelled")
-        except Exception as e:
-            print(f"[Appeals] Error in appeal cleanup task: {e}")
-            # Restart the task after a delay
-            await asyncio.sleep(60)
-            self._setup_appeal_cleanup_task()
+
     
     async def _disable_appeal_buttons_by_id(self, appeal_id: int, guild_id: int):
         """Find and disable appeal buttons in messages for a specific appeal ID"""
@@ -1034,7 +911,7 @@ class Appeals(commands.Cog):
     
     async def _log_dm_failure(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str, error: str):
         """Log to appeals channel when DM fails"""
-        for cid in (1423642446616592385, 1399746928585085068):
+        for cid in (1423642446616592385, 1444013659134361703):
             ch = self.bot.get_channel(cid)
             if ch:
                 embed = discord.Embed(
@@ -1063,7 +940,7 @@ class Appeals(commands.Cog):
     
     async def _log_dm_success(self, user: discord.User | discord.Member, guild: discord.Guild, action_type: str, reason: str):
         """Log to appeals channel when DM is successfully sent"""
-        for cid in (1423642446616592385, 1399746928585085068):
+        for cid in (1423642446616592385, 1444013659134361703):
             ch = self.bot.get_channel(cid)
             if ch:
                 embed = discord.Embed(
@@ -1432,8 +1309,6 @@ class Appeals(commands.Cog):
     
     def cog_unload(self):
         """Cleanup when cog is unloaded"""
-        if self._appeal_cleanup_task and not self._appeal_cleanup_task.done():
-            self._appeal_cleanup_task.cancel()
         self._timeout_dedupe_cache.clear()
         self._ban_event_handled.clear()
     

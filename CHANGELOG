@@ -1,0 +1,35 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [Unreleased]
+
+## [2025-12-14]
+
+### Added
+- **Report System**:
+    - Added `/report` slash command to report messages by ID or Link.
+    - Added "Report Message" context menu (Right-click -> Apps -> Report Message).
+    - Reports are sent to a dedicated channel with an embed containing message details and attachments.
+- **Slash Command Sync**:
+    - Added automatic syncing of slash commands to authorized guilds on bot startup for faster updates.
+    - Added `?sync` command (Owner only) for manual global syncing.
+
+### Changed
+- **User Info Command (`/info`)**:
+    - Completely revamped to show detailed user information instead of bot stats.
+    - Displays: General Info, Bot Sus Info (Warn Points), Whitelisted Status, Dangerous User status, Bot Permissions, and Account Accessories.
+    - Removed "Badges" section and decorative emojis from values for a cleaner look.
+- **Ticket System**:
+    - Updated ticket categories to: Partnership, General Support, Role Issues, Reports, Warn Appeals, Other Issues.
+    - Removed "Bug Report" and "Feature Request" categories.
+    - Updated category descriptions, guidelines, and emojis.
+    - Routed "Warn Appeals" to the report team role.
+- **Logging System**:
+    - Updated log embed colors for better visual distinction:
+        - **Red (#ff0000)**: Ban, Kick, Timeout/Mute, Member Leave.
+        - **Green (#00ff00)**: Unban, Unmute, Member Join.
+    - Added specific handling for `UNMUTE` events.
+
+### Fixed
+- **Context Menu Registration**: Fixed `TypeError` when registering context menus inside a Cog by moving registration to `__init__`.

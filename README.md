@@ -12,6 +12,13 @@
 
 ## Features Overview
 
+### Recent Updates (December 2025)
+- **Enhanced Ticket System** - New categories: Partnership, Role Issues, Warn Appeals. Improved UI and guidelines.
+- **Revamped User Info** - `/info` now provides detailed user analytics, including warning history, whitelist status, and permissions.
+- **New Report System** - `/report` command and "Report Message" context menu for direct reporting to moderators.
+- **Visual Logging Improvements** - Color-coded log embeds (Red for negative actions, Green for positive) for better visibility.
+- **Slash Command Sync** - Automatic syncing of slash commands to authorized guilds on startup.
+
 ### Recent Updates (November 2025)
 - ** Professional Support Ticket System** - Enterprise thread-based ticket system with specialized role routing, information preview, and partnership guidelines
 - ** Thread Lock with Emoji Prefix** - `/lock` command now automatically renames threads with prefix for visibility
@@ -22,9 +29,21 @@
 
 ### Core Commands
 - **`?ping`** / **`/ping`** - Check bot latency and responsiveness
-- **`?info`** / **`/info`** - View bot information, uptime, and instance details
+- **`?info`** / **`/info`** - View detailed user information, warnings, and permissions
+- **`?report`** / **`/report`** - Report a message to moderators (supports ID or Link)
 - **`?diag`** / **`/diag`** - Comprehensive bot diagnostics and health status
 - **`?help`** / **`/help`** - Display all available commands with usage
+
+### Ticket System
+**Professional thread-based ticket system with specialized categories**
+
+**Categories:**
+- **🤝 Partnership** - Business partnerships and collaborations
+- **❓ General Support** - Get help with using our services
+- **🎭 Role Issues** - Issues related to roles and permissions
+- **🚨 Reports** - Report inappropriate behavior
+- **⚖️ Warn Appeals** - Appeal warnings or moderation actions
+- **📝 Other Issues** - Anything else that needs attention
 
 ### Advanced Moderation System
 

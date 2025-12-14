@@ -4,7 +4,7 @@ from discord import app_commands
 import asyncio
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import sqlite3
 from typing import Optional, List
 import re
@@ -25,7 +25,7 @@ class AdvancedModeration(commands.Cog):
             'auto_dehoist': False
         }
         # Logging channel ID
-        self.log_channel_id = 1399746928585085068
+        self.log_channel_id = 1444013659134361703
         
     def _check_rate_limit(self, user_id: int, command: str, max_uses: int = 5, window: int = 60) -> bool:
         """Check if user is rate limited for a command (safety mechanism)"""
@@ -202,7 +202,7 @@ class AdvancedModeration(commands.Cog):
             return
 
         try:
-            until = datetime.now() + timedelta(minutes=duration)
+            until = datetime.now(timezone.utc) + timedelta(minutes=duration)
             await member.timeout(until, reason=reason)
             
             embed = discord.Embed(
