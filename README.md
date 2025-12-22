@@ -45,7 +45,7 @@
 **Professional thread-based ticket system with specialized categories**
 
 **Setup Commands:**
-- `!ticket_panel [#channel] [support_role] [report_role] [partner_role]` - Create a persistent ticket panel
+- `?ticket_panel [#channel] [support_role] [report_role] [partner_role]` - Create a persistent ticket panel
 - Panel buttons remain functional after bot restarts and updates
 - Supports custom role assignments for different ticket types
 
@@ -739,7 +739,7 @@ Clean, modular code with full type hints, comprehensive documentation, and easy 
 | Role | Person |
 |------|--------|
 | Original Creator | @Youngcoder45 |
-| Maintainer | @youngcoder45 and @hyscript7|
+| Maintainer | [@youngcoder45](https://github.com/youngcoder45) and [@hyscript7](https://github.com/hyscript7)|
 | Library | discord.py |
 
 Community contributions welcome—submit PRs or issues.

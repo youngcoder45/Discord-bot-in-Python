@@ -785,18 +785,18 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name=Bug Reports → General support team\n"
-                "General Support → General support team\n"
-                "Partnerships → Partner team (or fallback to support)\n"
-                "Reports → Report team (or fallback to support)\n"
-                "Suggestions → General support team"
+            name="📋 Ticket Categories",
+            value=(
+                "Bug Reports - General support team\n"
+                "General Support - General support team\n"
+                "Partnerships - Partner team (or fallback to support)\n"
+                "Reports - Report team (or fallback to support)\n"
+                "Suggestions - General support team"
             ),
             inline=False
         )
         
-        embed.set_footer(text="Ticket panels persist across restart
-        
-        embed.set_footer(text="Ticket system supports both prefix and slash commands • Complete logging included")
+        embed.set_footer(text="Ticket panels persist across restarts • Complete logging included")
         return embed
     
     def get_embeds_embed(self):
