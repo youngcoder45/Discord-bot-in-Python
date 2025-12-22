@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 from collections import defaultdict, deque
 import time
@@ -409,6 +410,24 @@ class Protection(commands.Cog):
         else:
             embed = create_error_embed("Invalid Action", "Use `!antinuke status` to view current settings and activity.")
             await ctx.send(embed=embed)
+
+    @app_commands.command(name="getuserid", description="Get the user ID of a selected member")
+    @app_commands.describe(user="The member to get the ID of")
+    async def getuserid_slash(self, interaction: discord.Interaction, user: discord.Member):
+        """Slash command: /getuserid user: <member>"""
+        try:
+            await interaction.response.send_message(f"{user} — ID: {user.id}", ephemeral=True)
+        except Exception:
+            # Fallback for already-responded interactions
+            try:
+                await interaction.followup.send(f"{user} — ID: {user.id}", ephemeral=True)
+            except:
+                pass
+
+    @commands.command(name="getuserid")
+    async def getuserid(self, ctx, user: discord.Member):
+        """Fallback text command to get user id: ?getuserid @member"""
+        await ctx.send(f"{user} — ID: {user.id}")
 
 async def setup(bot):
     await bot.add_cog(Protection(bot))

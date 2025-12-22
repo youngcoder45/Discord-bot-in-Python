@@ -12,6 +12,13 @@
 
 ## Features Overview
 
+### Recent Updates (December 22, 2025)
+- **Guild-Specific Logging** - Fixed cross-guild logging issue. Each server now has its own log channels configured separately.
+- **Persistent Panels** - Ticket panels and sticky messages now survive bot restarts and updates without breaking.
+- **Redesigned Ticket System** - Clean, professional black theme without emojis for better aesthetics.
+- **New Utility Command** - Added `/getuserid` command to quickly get user IDs from mentions.
+- **Enhanced Stability** - Major improvements to button persistence and interaction handling.
+
 ### Recent Updates (December 2025)
 - **Enhanced Ticket System** - New categories: Partnership, Role Issues, Warn Appeals. Improved UI and guidelines.
 - **Revamped User Info** - `/info` now provides detailed user analytics, including warning history, whitelist status, and permissions.
@@ -37,13 +44,26 @@
 ### Ticket System
 **Professional thread-based ticket system with specialized categories**
 
+**Setup Commands:**
+- `!ticket_panel [#channel] [support_role] [report_role] [partner_role]` - Create a persistent ticket panel
+- Panel buttons remain functional after bot restarts and updates
+- Supports custom role assignments for different ticket types
+
 **Categories:**
-- **🤝 Partnership** - Business partnerships and collaborations
-- **❓ General Support** - Get help with using our services
-- **🎭 Role Issues** - Issues related to roles and permissions
-- **🚨 Reports** - Report inappropriate behavior
-- **⚖️ Warn Appeals** - Appeal warnings or moderation actions
-- **📝 Other Issues** - Anything else that needs attention
+- **Partnership** - Business partnerships and collaborations (with detailed requirements)
+- **General Support** - Get help with using services and features
+- **Role Issues** - Issues related to roles and permissions
+- **Reports** - Report inappropriate behavior or rule violations
+- **Warn Appeals** - Appeal warnings or moderation actions
+- **Other Issues** - Anything else that needs attention
+
+**Features:**
+- ✅ **Persistent Panels** - Ticket buttons work forever, even after bot restarts
+- ✅ **Clean Design** - Professional black theme without emojis
+- ✅ **Database-Backed** - All panels stored in database for reliability
+- ✅ **Auto-Restore** - Views automatically re-registered on bot startup
+- ✅ **Thread-Based** - Private threads for better organization
+- ✅ **Role Routing** - Different ticket types notify different staff roles
 
 ### Advanced Moderation System
 
@@ -67,6 +87,7 @@
 | `?warn <member> [reason]` / `/warn <member> [reason]` | Issue warning to member | Manage Messages |
 | `?slowmode <seconds> [#channel]` / `/slowmode <seconds> [#channel]` | Set channel slowmode (0-6hrs) | Manage Channels |
 | `?nick <member> [nickname]` / `/nick <member> [nickname]` | Change member nickname | Manage Nicknames |
+| `/getuserid <user>` | Get the Discord ID of a user | None |
 
 #### Advanced Moderation Commands
 | Command | Description | Permission Required |
@@ -273,6 +294,27 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **Local backup files** as fallback storage
 - **Complete data protection** for staff shifts, points, elections, and configurations
 - **Zero-downtime deployment** support with automatic data restoration
+
+### Logging System
+**Guild-specific logging with separate channels per server**
+
+**Configuration:**
+- **`!setlogchannels [#member-logs] [#mod-logs] [#ticket-logs]`** - Configure log channels for your server
+- Run without arguments to view current configuration
+- Each server has independent log channel settings
+- Logs never cross between different guilds
+
+**Log Categories:**
+- **Member Logs** - Join/leave events, role updates, nickname changes
+- **Moderation Logs** - Bans, kicks, warns, timeouts, unbans, appeals
+- **Ticket Logs** - Ticket creation, closure, claiming, transcripts
+
+**Features:**
+- ✅ **Guild-Specific** - Each server's logs go only to that server's channels
+- ✅ **Color-Coded** - Red for negative actions, green for positive
+- ✅ **Detailed Information** - User IDs, timestamps, reasons, moderators
+- ✅ **Database-Backed** - All logs stored in database for history
+- ✅ **Auto-Cleanup** - Failed logs handled gracefully
 
 ### Community & Engagement
 - **`?quote`** / **`/quote`** - Get inspirational programming quotes

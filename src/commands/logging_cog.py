@@ -20,11 +20,6 @@ import logging
 
 logger = logging.getLogger("codeverse.logging")
 
-# Channel IDs for different log types
-MEMBER_LOGS_CHANNEL = 1263434413581008956  # member updates (join/leave/role update)
-MOD_LOGS_CHANNEL = 1444013659134361703     # moderation logs (ban/kick/warn/timeout)
-TICKET_LOGS_CHANNEL = 1438487366305190018  # ticket logs
-
 class LoggingCog(commands.Cog):
     """Centralized logging system for all bot events"""
     
@@ -32,9 +27,6 @@ class LoggingCog(commands.Cog):
         self.bot = bot
         self.log_queue = asyncio.Queue()
         self.is_ready = False
-        self.member_log_channel = None
-        self.mod_log_channel = None
-        self.ticket_log_channel = None
         
         # Start log processing task
         self.log_task = asyncio.create_task(self.process_logs())
@@ -63,6 +55,18 @@ class LoggingCog(commands.Cog):
                 )
             ''')
             
+            # Create table for guild-specific log channel configuration
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS guild_log_channels (
+                    guild_id INTEGER PRIMARY KEY,
+                    member_log_channel_id INTEGER,
+                    mod_log_channel_id INTEGER,
+                    ticket_log_channel_id INTEGER,
+                    set_by INTEGER,
+                    set_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
             conn.commit()
             conn.close()
         except Exception as e:
@@ -79,20 +83,6 @@ class LoggingCog(commands.Cog):
             # Wait for bot to be ready before processing logs
             await self.bot.wait_until_ready()
             self.is_ready = True
-            
-            # Get log channels
-            self.member_log_channel = self.bot.get_channel(MEMBER_LOGS_CHANNEL)
-            self.mod_log_channel = self.bot.get_channel(MOD_LOGS_CHANNEL)
-            self.ticket_log_channel = self.bot.get_channel(TICKET_LOGS_CHANNEL)
-            
-            if not self.member_log_channel:
-                logger.warning(f"Member log channel {MEMBER_LOGS_CHANNEL} not found")
-            
-            if not self.mod_log_channel:
-                logger.warning(f"Moderation log channel {MOD_LOGS_CHANNEL} not found")
-
-            if not self.ticket_log_channel:
-                logger.warning(f"Ticket log channel {TICKET_LOGS_CHANNEL} not found")
             
             while True:
                 # Get log item from queue
@@ -122,17 +112,12 @@ class LoggingCog(commands.Cog):
         moderator_id = log_item.get("moderator_id")
         log_id = log_item.get("log_id")
         
-        # Determine which channel to send to
-        is_mod_log = event_type.startswith(("BAN", "KICK", "WARN", "TIMEOUT", "MUTE", "UNMUTE", 
-                                           "UNBAN", "MOD_", "POINT_", "APPEAL_"))
-        is_ticket_log = event_type.startswith("TICKET_")
+        # Skip if no guild_id
+        if not guild_id:
+            return
         
-        if is_ticket_log:
-            log_channel = self.ticket_log_channel
-        elif is_mod_log:
-            log_channel = self.mod_log_channel
-        else:
-            log_channel = self.member_log_channel
+        # Get guild-specific log channels
+        log_channel = await self._get_log_channel_for_event(guild_id, event_type)
         
         if not log_channel:
             return  # No channel to send to
@@ -152,6 +137,44 @@ class LoggingCog(commands.Cog):
                     conn.close()
             except Exception as e:
                 logger.error(f"Error sending log to channel: {e}")
+    
+    async def _get_log_channel_for_event(self, guild_id: int, event_type: str):
+        """Get the appropriate log channel for a guild and event type"""
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT member_log_channel_id, mod_log_channel_id, ticket_log_channel_id 
+                FROM guild_log_channels 
+                WHERE guild_id = ?
+            ''', (guild_id,))
+            
+            result = cursor.fetchone()
+            conn.close()
+            
+            if not result:
+                return None  # No log channels configured for this guild
+            
+            member_channel_id, mod_channel_id, ticket_channel_id = result
+            
+            # Determine which channel to use based on event type
+            is_mod_log = event_type.startswith(("BAN", "KICK", "WARN", "TIMEOUT", "MUTE", "UNMUTE", 
+                                               "UNBAN", "MOD_", "POINT_", "APPEAL_"))
+            is_ticket_log = event_type.startswith("TICKET_")
+            
+            if is_ticket_log and ticket_channel_id:
+                return self.bot.get_channel(ticket_channel_id)
+            elif is_mod_log and mod_channel_id:
+                return self.bot.get_channel(mod_channel_id)
+            elif member_channel_id:
+                return self.bot.get_channel(member_channel_id)
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting log channel for guild {guild_id}: {e}")
+            return None
     
     async def _create_log_embed(self, log_item):
         """Create an appropriate embed for the log item"""
@@ -725,6 +748,120 @@ class LoggingCog(commands.Cog):
             details=details,
             appeal_id=appeal_id
         )
+    
+    @commands.command(name="setlogchannels")
+    @commands.has_permissions(administrator=True)
+    async def set_log_channels(self, ctx, 
+                              member_channel: Optional[discord.TextChannel] = None,
+                              mod_channel: Optional[discord.TextChannel] = None,
+                              ticket_channel: Optional[discord.TextChannel] = None):
+        """Set log channels for this server
+        
+        Usage: !setlogchannels #member-logs #mod-logs #ticket-logs
+        You can set individual channels or all at once.
+        """
+        if not ctx.guild:
+            await ctx.send("This command can only be used in a server!")
+            return
+        
+        if not member_channel and not mod_channel and not ticket_channel:
+            # Show current configuration
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT member_log_channel_id, mod_log_channel_id, ticket_log_channel_id 
+                FROM guild_log_channels 
+                WHERE guild_id = ?
+            ''', (ctx.guild.id,))
+            
+            result = cursor.fetchone()
+            conn.close()
+            
+            embed = discord.Embed(
+                title="Current Log Channel Configuration",
+                color=0x2B2D31
+            )
+            
+            if result:
+                member_ch_id, mod_ch_id, ticket_ch_id = result
+                embed.add_field(
+                    name="Member Logs",
+                    value=f"<#{member_ch_id}>" if member_ch_id else "Not set",
+                    inline=False
+                )
+                embed.add_field(
+                    name="Moderation Logs",
+                    value=f"<#{mod_ch_id}>" if mod_ch_id else "Not set",
+                    inline=False
+                )
+                embed.add_field(
+                    name="Ticket Logs",
+                    value=f"<#{ticket_ch_id}>" if ticket_ch_id else "Not set",
+                    inline=False
+                )
+            else:
+                embed.description = "No log channels configured for this server."
+            
+            embed.set_footer(text="Use !setlogchannels #channel1 #channel2 #channel3 to configure")
+            await ctx.send(embed=embed)
+            return
+        
+        # Update configuration
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        
+        # Get current config
+        cursor.execute('''
+            SELECT member_log_channel_id, mod_log_channel_id, ticket_log_channel_id 
+            FROM guild_log_channels 
+            WHERE guild_id = ?
+        ''', (ctx.guild.id,))
+        
+        result = cursor.fetchone()
+        
+        if result:
+            # Update existing config
+            current_member, current_mod, current_ticket = result
+            new_member = member_channel.id if member_channel else current_member
+            new_mod = mod_channel.id if mod_channel else current_mod
+            new_ticket = ticket_channel.id if ticket_channel else current_ticket
+            
+            cursor.execute('''
+                UPDATE guild_log_channels 
+                SET member_log_channel_id = ?, mod_log_channel_id = ?, ticket_log_channel_id = ?, 
+                    set_by = ?, set_at = CURRENT_TIMESTAMP
+                WHERE guild_id = ?
+            ''', (new_member, new_mod, new_ticket, ctx.author.id, ctx.guild.id))
+        else:
+            # Insert new config
+            cursor.execute('''
+                INSERT INTO guild_log_channels 
+                (guild_id, member_log_channel_id, mod_log_channel_id, ticket_log_channel_id, set_by)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (ctx.guild.id, 
+                  member_channel.id if member_channel else None,
+                  mod_channel.id if mod_channel else None,
+                  ticket_channel.id if ticket_channel else None,
+                  ctx.author.id))
+        
+        conn.commit()
+        conn.close()
+        
+        embed = discord.Embed(
+            title="Log Channels Updated",
+            description="Server log channels have been configured successfully.",
+            color=0x00ff00
+        )
+        
+        if member_channel:
+            embed.add_field(name="Member Logs", value=member_channel.mention, inline=False)
+        if mod_channel:
+            embed.add_field(name="Moderation Logs", value=mod_channel.mention, inline=False)
+        if ticket_channel:
+            embed.add_field(name="Ticket Logs", value=ticket_channel.mention, inline=False)
+        
+        await ctx.send(embed=embed)
 
 async def setup(bot):
     """Add the cog to the bot"""

@@ -110,6 +110,37 @@ class StickyMessage(commands.Cog):
         init_sticky_db()
         self._message_cache = {}  # Cache to prevent spam
         self._cooldowns = {}  # Per-channel cooldowns
+        
+        # Load all sticky messages on startup
+        self.bot.loop.create_task(self._load_sticky_messages())
+    
+    async def _load_sticky_messages(self):
+        """Load all sticky messages from database into cache on bot startup"""
+        await self.bot.wait_until_ready()
+        
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT channel_id, message_content, message_id
+                FROM sticky_messages
+            ''')
+            
+            results = cursor.fetchall()
+            conn.close()
+            
+            for channel_id, content, message_id in results:
+                self._message_cache[channel_id] = {
+                    'content': content,
+                    'message_id': message_id,
+                    'last_repost': 0
+                }
+            
+            print(f"[StickyMessage] Loaded {len(results)} sticky messages into cache")
+            
+        except Exception as e:
+            print(f"[StickyMessage] Error loading sticky messages: {e}")
 
     @commands.hybrid_command(name="stickymessage")
     @commands.has_permissions(manage_messages=True)

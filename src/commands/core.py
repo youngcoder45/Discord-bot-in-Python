@@ -732,8 +732,8 @@ class HelpDropdown(discord.ui.Select):
         """Ticket system embed"""
         embed = discord.Embed(
             title="Support Ticket System",
-            description="Professional thread-based ticket system with specialized role routing",
-            color=0x5865F2
+            description="Professional thread-based ticket system with persistent panels and specialized role routing",
+            color=0x2B2D31  # Updated to match new black theme
         )
         
         embed.add_field(
@@ -772,6 +772,8 @@ class HelpDropdown(discord.ui.Select):
         embed.add_field(
             name="✨ Key Features",
             value=(
+                "• **Persistent Panels** - Ticket buttons survive bot restarts and updates\n"
+                "• **Black Theme Design** - Professional black color scheme (no emojis)\n"
                 "• **Information Preview** - Users see detailed guidelines before creating tickets\n"
                 "• **Specialized Routing** - Different roles for report/partnership tickets\n"
                 "• **Thread-Based** - Each ticket is a private thread\n"
@@ -783,16 +785,16 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="📋 Ticket Categories",
-            value=(
-                "🐛 **Bug Reports** → General support team\n"
-                "❓ **General Support** → General support team\n"
-                "👤 **Partnerships** → Partner team (or fallback to support)\n"
-                "🚨 **Reports** → Report team (or fallback to support)\n"
-                "💡 **Suggestions** → General support team"
+            name=Bug Reports → General support team\n"
+                "General Support → General support team\n"
+                "Partnerships → Partner team (or fallback to support)\n"
+                "Reports → Report team (or fallback to support)\n"
+                "Suggestions → General support team"
             ),
             inline=False
         )
+        
+        embed.set_footer(text="Ticket panels persist across restart
         
         embed.set_footer(text="Ticket system supports both prefix and slash commands • Complete logging included")
         return embed
@@ -957,12 +959,13 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="🔍 Information Commands",
+            name="🔍 Information & Utility Commands",
             value=(
                 "**`/serverinfo`** - Detailed server statistics\n"
                 "**`/userinfo [@user]`** - Member information and history\n"
                 "**`/roleinfo <role>`** - Detailed role information\n"
-                "**`/channelinfo [#channel]`** - Channel configuration details"
+                "**`/channelinfo [#channel]`** - Channel configuration details\n"
+                "**`/getuserid <@user>`** - Get Discord user ID (ephemeral)"
             ),
             inline=False
         )
@@ -978,6 +981,17 @@ class HelpDropdown(discord.ui.Select):
                 "**`/slowmode <seconds> [#channel]`** - Set channel slowmode *(Manage Channels)*\n"
                 "**`/massban <user_ids> [reason]`** - Ban multiple users *(Ban Members)*\n"
                 "**`/nuke [#channel]`** - Clone and replace channel *(OWNER ONLY)*"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="📋 Logging Configuration",
+            value=(
+                "**`!setlogchannels`** - Configure guild-specific log channels *(Admin)*\n"
+                "  ➜ *Set member logs, mod logs, and ticket logs per server*\n"
+                "  ➜ *Ensures logs from different servers don't mix*\n"
+                "  ➜ *Must be run in each server separately*"
             ),
             inline=False
         )

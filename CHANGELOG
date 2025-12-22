@@ -4,6 +4,58 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2025-12-22]
+
+### Added
+- **Guild-Specific Logging System**:
+    - Added `!setlogchannels` command to configure log channels per server.
+    - Each guild can now have separate log channels for member, moderation, and ticket logs.
+    - Added database table `guild_log_channels` to store per-guild configurations.
+    - Logs are now completely isolated between different servers.
+- **Persistent Views for Ticket Panels**:
+    - Added database table `ticket_panels` to track all ticket panel messages.
+    - Ticket panel buttons now use static custom_id `"persistent_ticket_create_button"`.
+    - Added `_restore_persistent_views()` method to re-register views on bot startup.
+    - Ticket panels now survive bot restarts, updates, and crashes.
+- **Persistent Sticky Messages**:
+    - Added `_load_sticky_messages()` method to pre-load all sticky messages on startup.
+    - Sticky messages now work immediately after bot restart without configuration loss.
+- **Utility Commands**:
+    - Added `/getuserid <user>` command to quickly get Discord IDs from user mentions.
+    - Response is ephemeral for privacy.
+
+### Changed
+- **Ticket Panel Design**:
+    - Updated embed color from blue to professional black (`0x2B2D31`).
+    - Removed all emojis from titles, descriptions, and bullet points.
+    - Changed button style from green to grey for cleaner appearance.
+    - Simplified text formatting for better readability.
+- **Ticket Category Embeds**:
+    - All category information panels now use black color scheme.
+    - Removed emoji prefixes from category names and field titles.
+    - Updated button labels to remove emojis ("Create This Ticket" instead of "🎫 Create This Ticket").
+- **Logging Architecture**:
+    - Removed hardcoded channel IDs for logs (`MEMBER_LOGS_CHANNEL`, `MOD_LOGS_CHANNEL`, `TICKET_LOGS_CHANNEL`).
+    - Added `_get_log_channel_for_event()` method for guild-aware log routing.
+    - Modified `_process_log_item()` to use guild-specific channels.
+
+### Fixed
+- **Cross-Guild Logging Issue**:
+    - Fixed bug where logs from all guilds were sent to the same hardcoded channels.
+    - Logs now correctly route to each guild's configured channels.
+- **Ticket Button Persistence**:
+    - Fixed "This interaction failed" errors after bot restarts.
+    - Buttons now remain functional indefinitely without memory state.
+- **Sticky Message Initialization**:
+    - Fixed sticky messages not working immediately after bot restart.
+    - All sticky configurations now loaded into cache on startup.
+
+### Technical
+- Added logging module to tickets.py for better error tracking.
+- Integrated ticket panel persistence with database on creation.
+- Improved view lifecycle management with `bot.add_view()` for message-specific views.
+- Auto-cleanup of deleted ticket panel messages from database.
+
 ## [2025-12-14]
 
 ### Added

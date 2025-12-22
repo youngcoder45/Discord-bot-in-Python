@@ -6,9 +6,12 @@ from datetime import datetime, timezone
 from typing import Optional
 import asyncio
 import io
+import logging
 
 from utils.database import DATABASE_NAME
 from utils.embeds import create_error_embed, create_success_embed, create_info_embed
+
+logger = logging.getLogger("codeverse.tickets")
 
 
 class TicketCategoryView(discord.ui.View):
@@ -21,12 +24,12 @@ class TicketCategoryView(discord.ui.View):
     @discord.ui.select(
         placeholder="Choose a category...",
         options=[
-            discord.SelectOption(label="Partnership", emoji="🤝", value="partnership"),
-            discord.SelectOption(label="General Support", emoji="❓", value="support"),
-            discord.SelectOption(label="Role Issues", emoji="🎭", value="role_issue"),
-            discord.SelectOption(label="Reports", emoji="🚨", value="report"),
-            discord.SelectOption(label="Warn Appeals", emoji="⚖️", value="warn_appeal"),
-            discord.SelectOption(label="Other Issues", emoji="📝", value="other"),
+            discord.SelectOption(label="Partnership", value="partnership"),
+            discord.SelectOption(label="General Support", value="support"),
+            discord.SelectOption(label="Role Issues", value="role_issue"),
+            discord.SelectOption(label="Reports", value="report"),
+            discord.SelectOption(label="Warn Appeals", value="warn_appeal"),
+            discord.SelectOption(label="Other Issues", value="other"),
         ]
     )
     async def category_select(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -42,29 +45,29 @@ class TicketConfirmationView(discord.ui.View):
         self.cog = cog
         self.category = category
         
-    @discord.ui.button(label="Create This Ticket", style=discord.ButtonStyle.green, emoji="🎫")
+    @discord.ui.button(label="Create This Ticket", style=discord.ButtonStyle.grey)
     async def create_ticket_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Create the actual ticket"""
         await self.cog.create_ticket(interaction, self.category)
         
-    @discord.ui.button(label="Back to Categories", style=discord.ButtonStyle.grey, emoji="⬅️")
+    @discord.ui.button(label="Back to Categories", style=discord.ButtonStyle.grey)
     async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Go back to category selection"""
         view = TicketCategoryView(self.cog)
         embed = discord.Embed(
-            title="🎫 Create a New Ticket",
+            title="Create a New Ticket",
             description="Please select the category that best describes your issue:",
-            color=0x5865F2
+            color=0x2B2D31
         )
         embed.add_field(
-            name="📋 Available Categories",
+            name="Available Categories",
             value=(
-                "🤝 **Partnership** - Business partnerships and collaborations\n"
-                "❓ **General Support** - Get help with using our services\n"
-                "🎭 **Role Issues** - Issues related to roles and permissions\n"
-                "🚨 **Reports** - Report inappropriate behavior\n"
-                "⚖️ **Warn Appeals** - Appeal warnings or moderation actions\n"
-                "📝 **Other Issues** - Anything else that needs attention"
+                "**Partnership** - Business partnerships and collaborations\n"
+                "**General Support** - Get help with using our services\n"
+                "**Role Issues** - Issues related to roles and permissions\n"
+                "**Reports** - Report inappropriate behavior\n"
+                "**Warn Appeals** - Appeal warnings or moderation actions\n"
+                "**Other Issues** - Anything else that needs attention"
             ),
             inline=False
         )
@@ -73,60 +76,61 @@ class TicketConfirmationView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=view)
 
 
-class TicketCreateButton(discord.ui.Button):
-    """Button to create a new ticket"""
-    
-    def __init__(self, cog):
-        super().__init__(
-            label="🎫 Create Ticket",
-            style=discord.ButtonStyle.green,
-            custom_id="ticket_create_button"
-        )
-        self.cog = cog
-    
-    async def callback(self, interaction: discord.Interaction):
-        """Handle ticket creation"""
-        # Check if user already has an open ticket
-        conn = sqlite3.connect(DATABASE_NAME)
-        cursor = conn.cursor()
-        cursor.execute(
-            'SELECT ticket_thread_id FROM tickets WHERE user_id = ? AND status = "open"',
-            (interaction.user.id,)
-        )
-        existing = cursor.fetchone()
-        conn.close()
-        
-        if existing:
-            await interaction.response.send_message(
-                embed=create_error_embed(
-                    "Ticket Already Open",
-                    f"You already have an open ticket: <#{existing[0]}>"
-                ),
-                ephemeral=True
-            )
-            return
-        
-        # Show ticket category selection
-        view = TicketCategoryView(self.cog)
-        embed = discord.Embed(
-            title="Select Ticket Category",
-            description="Please choose the category that best describes your issue:",
-            color=0x5865F2
-        )
-        embed.add_field(
-            name="__Available Categories__",
-            value=(
-                "- **Partnership** - Business partnerships and collaborations\n"
-                "- **General Support** - Get help with using our services\n"
-                "- **Role Issues** - Issues related to roles and permissions\n"
-                "- **Reports** - Report inappropriate behavior\n"
-                "- **Warn Appeals** - Appeal warnings or moderation actions\n"
-                "- **Other Issues** - Anything else that needs attention"
-            ),
-            inline=False
-        )
-        
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+# DEPRECATED: Old button class - now integrated into TicketPanelView
+# class TicketCreateButton(discord.ui.Button):
+#     """Button to create a new ticket"""
+#     
+#     def __init__(self, cog):
+#         super().__init__(
+#             label="Create Ticket",
+#             style=discord.ButtonStyle.grey,
+#             custom_id="ticket_create_button"
+#         )
+#         self.cog = cog
+#     
+#     async def callback(self, interaction: discord.Interaction):
+#         """Handle ticket creation"""
+#         # Check if user already has an open ticket
+#         conn = sqlite3.connect(DATABASE_NAME)
+#         cursor = conn.cursor()
+#         cursor.execute(
+#             'SELECT ticket_thread_id FROM tickets WHERE user_id = ? AND status = "open"',
+#             (interaction.user.id,)
+#         )
+#         existing = cursor.fetchone()
+#         conn.close()
+#         
+#         if existing:
+#             await interaction.response.send_message(
+#                 embed=create_error_embed(
+#                     "Ticket Already Open",
+#                     f"You already have an open ticket: <#{existing[0]}>"
+#                 ),
+#                 ephemeral=True
+#             )
+#             return
+#         
+#         # Show ticket category selection
+#         view = TicketCategoryView(self.cog)
+#         embed = discord.Embed(
+#             title="Select Ticket Category",
+#             description="Please choose the category that best describes your issue:",
+#             color=0x2B2D31
+#         )
+#         embed.add_field(
+#             name="Available Categories",
+#             value=(
+#                 "**Partnership** - Business partnerships and collaborations\n"
+#                 "**General Support** - Get help with using our services\n"
+#                 "**Role Issues** - Issues related to roles and permissions\n"
+#                 "**Reports** - Report inappropriate behavior\n"
+#                 "**Warn Appeals** - Appeal warnings or moderation actions\n"
+#                 "**Other Issues** - Anything else that needs attention"
+#             ),
+#             inline=False
+#         )
+#         
+#         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 class TicketControlView(discord.ui.View):
@@ -159,9 +163,57 @@ class TicketPanelView(discord.ui.View):
     """Persistent view for the ticket panel"""
     
     def __init__(self, cog):
-        super().__init__(timeout=None)
+        super().__init__(timeout=None)  # Persistent view
         self.cog = cog
-        self.add_item(TicketCreateButton(cog))
+        
+    @discord.ui.button(
+        label="Create Ticket",
+        style=discord.ButtonStyle.grey,
+        custom_id="persistent_ticket_create_button"  # Static custom_id
+    )
+    async def create_ticket_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Handle ticket creation button"""
+        # Check if user already has an open ticket
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT ticket_thread_id FROM tickets WHERE user_id = ? AND status = "open"',
+            (interaction.user.id,)
+        )
+        existing = cursor.fetchone()
+        conn.close()
+        
+        if existing:
+            await interaction.response.send_message(
+                embed=create_error_embed(
+                    "Ticket Already Open",
+                    f"You already have an open ticket: <#{existing[0]}>"
+                ),
+                ephemeral=True
+            )
+            return
+        
+        # Show ticket category selection
+        view = TicketCategoryView(self.cog)
+        embed = discord.Embed(
+            title="Select Ticket Category",
+            description="Please choose the category that best describes your issue:",
+            color=0x2B2D31
+        )
+        embed.add_field(
+            name="Available Categories",
+            value=(
+                "**Partnership** - Business partnerships and collaborations\n"
+                "**General Support** - Get help with using our services\n"
+                "**Role Issues** - Issues related to roles and permissions\n"
+                "**Reports** - Report inappropriate behavior\n"
+                "**Warn Appeals** - Appeal warnings or moderation actions\n"
+                "**Other Issues** - Anything else that needs attention"
+            ),
+            inline=False
+        )
+        
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 class Tickets(commands.Cog):
@@ -178,6 +230,60 @@ class Tickets(commands.Cog):
         
         # Ticket naming
         self.ticket_counter = self._get_ticket_counter()
+        
+        # Register persistent views on bot startup
+        self.bot.loop.create_task(self._restore_persistent_views())
+    
+    async def _restore_persistent_views(self):
+        """Restore persistent views for all ticket panels on bot startup"""
+        await self.bot.wait_until_ready()
+        
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            
+            # Get all ticket panels from database
+            cursor.execute('SELECT guild_id, channel_id, message_id FROM ticket_panels')
+            panels = cursor.fetchall()
+            conn.close()
+            
+            # Re-register the view for each panel
+            for guild_id, channel_id, message_id in panels:
+                try:
+                    guild = self.bot.get_guild(guild_id)
+                    if not guild:
+                        continue
+                    
+                    channel = guild.get_channel(channel_id)
+                    if not channel or not isinstance(channel, discord.TextChannel):
+                        continue
+                    
+                    # Fetch the message to ensure it exists
+                    try:
+                        message = await channel.fetch_message(message_id)
+                        # Create and attach the persistent view
+                        view = TicketPanelView(self)
+                        # The view is automatically registered due to persistent custom_id
+                        self.bot.add_view(view, message_id=message_id)
+                        logger.info(f"Restored ticket panel view for message {message_id} in guild {guild_id}")
+                    except discord.NotFound:
+                        # Message was deleted, remove from database
+                        conn = sqlite3.connect(DATABASE_NAME)
+                        cursor = conn.cursor()
+                        cursor.execute('DELETE FROM ticket_panels WHERE message_id = ?', (message_id,))
+                        conn.commit()
+                        conn.close()
+                        logger.warning(f"Ticket panel message {message_id} not found, removed from database")
+                    except Exception as e:
+                        logger.error(f"Error fetching ticket panel message {message_id}: {e}")
+                        
+                except Exception as e:
+                    logger.error(f"Error restoring ticket panel for guild {guild_id}: {e}")
+            
+            logger.info(f"Restored {len(panels)} ticket panel views")
+            
+        except Exception as e:
+            logger.error(f"Error restoring persistent ticket views: {e}")
     
     def _init_database(self):
         """Initialize tickets database table"""
@@ -195,6 +301,19 @@ class Tickets(commands.Cog):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 closed_at TIMESTAMP,
                 close_reason TEXT
+            )
+        ''')
+        
+        # Table for storing persistent ticket panels
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ticket_panels (
+                panel_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id INTEGER NOT NULL,
+                channel_id INTEGER NOT NULL,
+                message_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_by INTEGER NOT NULL,
+                UNIQUE(guild_id, channel_id, message_id)
             )
         ''')
         
@@ -372,88 +491,88 @@ class Tickets(commands.Cog):
         # Category information with detailed descriptions
         category_info = {
             "partnership": {
-                "name": "🤝 Partnership",
+                "name": "Partnership",
                 "description": "We value building a strong, engaging community and have established clear criteria for our partnership program",
                 "guidelines": (
-                    "**📋 Server Requirements:**\n"
-                    "• 100+ active members with 1/9 online during peak hours\n"
-                    "• 500+ daily messages in active channels\n"
-                    "• SFW content and family-friendly environment\n"
-                    "• Tech/IT focus but different from CodeVerse specialization\n"
-                    "• Active, reliable moderation team\n\n"
-                    "**🤝 Partnership Benefits:**\n"
-                    "• Custom advertisement channels\n"
-                    "• Cross-community engagement opportunities\n"
-                    "• Collaborative events and knowledge sharing\n\n"
-                    "**⚠️ Partnership Terms:**\n"
+                    "**Server Requirements:**\n"
+                    "100+ active members with 1/9 online during peak hours\n"
+                    "500+ daily messages in active channels\n"
+                    "SFW content and family-friendly environment\n"
+                    "Tech/IT focus but different from CodeVerse specialization\n"
+                    "Active, reliable moderation team\n\n"
+                    "**Partnership Benefits:**\n"
+                    "Custom advertisement channels\n"
+                    "Cross-community engagement opportunities\n"
+                    "Collaborative events and knowledge sharing\n\n"
+                    "**Partnership Terms:**\n"
                     "Partnership may be removed if requirements are no longer met, channels are deleted, or community guidelines are violated.\n\n"
                     "**Ready to apply?** Click 'Create This Ticket' to begin the partnership application process."
                 ),
                 "examples": "Discord server partnerships, tech community collaborations, educational alliances",
-                "color": 0xf39c12
+                "color": 0x2B2D31
             },
             "support": {
-                "name": "❓ General Support",
+                "name": "General Support",
                 "description": "Get help with using our services, platforms, or community features",
                 "guidelines": (
-                    "• **Be specific about your question** - What do you need help with?\n"
-                    "• **Mention what you've tried** - What steps have you already taken?\n"
-                    "• **Provide context** - What are you trying to accomplish?\n"
-                    "• **Include relevant details** - Account info, error messages, etc.\n"
-                    "• **Be patient** - Our team will help you as soon as possible"
+                    "**Be specific about your question** - What do you need help with?\n"
+                    "**Mention what you've tried** - What steps have you already taken?\n"
+                    "**Provide context** - What are you trying to accomplish?\n"
+                    "**Include relevant details** - Account info, error messages, etc.\n"
+                    "**Be patient** - Our team will help you as soon as possible"
                 ),
                 "examples": "How to use features, account questions, general guidance",
-                "color": 0x3498db
+                "color": 0x2B2D31
             },
             "role_issue": {
-                "name": "🎭 Role Issues",
+                "name": "Role Issues",
                 "description": "Report issues related to roles, permissions, or access",
                 "guidelines": (
-                    "• **Missing roles** - Which roles are you missing?\n"
-                    "• **Permission errors** - What are you trying to do?\n"
-                    "• **Role color/icon** - Issues with role appearance\n"
-                    "• **Self-assignable roles** - Problems with reaction roles or commands"
+                    "**Missing roles** - Which roles are you missing?\n"
+                    "**Permission errors** - What are you trying to do?\n"
+                    "**Role color/icon** - Issues with role appearance\n"
+                    "**Self-assignable roles** - Problems with reaction roles or commands"
                 ),
                 "examples": "Didn't get level up role, can't access channel, role color wrong",
-                "color": 0x9b59b6
+                "color": 0x2B2D31
             },
             "report": {
-                "name": "🚨 Reports",
+                "name": "Reports",
                 "description": "Report inappropriate behavior, rule violations, or misconduct",
                 "guidelines": (
-                    "• **User information** - Who are you reporting? (ID, username)\n"
-                    "• **Detailed description** - What did they do wrong?\n"
-                    "• **Evidence** - Screenshots, message links, timestamps\n"
-                    "• **Rule violations** - Which rules were broken? (optional)\n"
-                    "• **Your involvement** - Were you directly affected?"
+                    "**User information** - Who are you reporting? (ID, username)\n"
+                    "**Detailed description** - What did they do wrong?\n"
+                    "**Evidence** - Screenshots, message links, timestamps\n"
+                    "**Rule violations** - Which rules were broken? (optional)\n"
+                    "**Your involvement** - Were you directly affected?"
                 ),
                 "examples": "Harassment, spam, rule breaking, inappropriate content",
-                "color": 0xe67e22
+                "color": 0x2B2D31
             },
             "warn_appeal": {
-                "name": "⚖️ Warn Appeals",
+                "name": "Warn Appeals",
                 "description": "Appeal a warning or moderation action taken against you",
                 "guidelines": (
-                    "• **Case ID** - The ID of the warning (if known)\n"
-                    "• **Reason for appeal** - Why do you think the warning was unjust?\n"
-                    "• **Evidence** - Any proof to support your claim\n"
-                    "• **Honesty** - Be honest about the situation"
+                    "**Case ID** - The ID of the warning (if known)\n"
+                    "**Reason for appeal** - Why do you think the warning was unjust?\n"
+                    "**Evidence** - Any proof to support your claim\n"
+                    "**Honesty** - Be honest about the situation"
                 ),
                 "examples": "Unjust warning, misunderstanding, incorrect punishment",
-                "color": 0xe74c3c
+                "color": 0x2B2D31
             },
             "other": {
-                "name": "📝 Other Issues",
+                "name": "Other Issues",
                 "description": "Anything else that doesn't fit the above categories",
                 "guidelines": (
-                    "• **Clear subject line** - Summarize your issue in one sentence\n"
-                    "• **Detailed explanation** - Provide all relevant information\n"
-                    "• **Urgency level** - Is this time-sensitive?\n"
-                    "• **Preferred contact method** - How should we follow up?\n"
-                    "• **Additional context** - Any other details that might help"
+                    "**Clear subject line** - Summarize your issue in one sentence\n"
+                    "**Detailed explanation** - Provide all relevant information\n"
+                    "**Urgency level** - Is this time-sensitive?\n"
+                    "**Preferred contact method** - How should we follow up?\n"
+                    "**Additional context** - Any other details that might help"
                 ),
                 "examples": "Feedback, suggestions, questions not covered by other categories",
-                "color": 0x95a5a6
+                "color": 0x2B2D31
             }
         }
         
@@ -466,24 +585,24 @@ class Tickets(commands.Cog):
         )
         
         embed.add_field(
-            name="📋 Guidelines for this ticket type:",
+            name="Guidelines for this ticket type:",
             value=info["guidelines"],
             inline=False
         )
         
         embed.add_field(
-            name="💡 Examples:",
+            name="Examples:",
             value=info["examples"],
             inline=False
         )
         
         embed.add_field(
-            name="⚡ What happens next?",
+            name="What happens next?",
             value=(
-                "• Your ticket will be created as a private thread\n"
-                "• Our support team will be notified automatically\n" 
-                "• You'll receive help from qualified staff members\n"
-                "• The ticket will remain open until your issue is resolved"
+                "Your ticket will be created as a private thread\n"
+                "Our support team will be notified automatically\n" 
+                "You'll receive help from qualified staff members\n"
+                "The ticket will remain open until your issue is resolved"
             ),
             inline=False
         )
@@ -927,30 +1046,19 @@ class Tickets(commands.Cog):
         
         embed = discord.Embed(
             title="Support Ticket System",
-            description=(
-                "Need help? Create a support ticket!\n\n"
-                "Click the **🎫 Create Ticket** button below to open a private ticket thread with our staff team."
-            ),
-            color=0x5865F2
+            description="Need help? Create a support ticket!\n\nClick the **Create Ticket** button below to open a private ticket thread with our staff team.",
+            color=0x2B2D31
         )
         
         embed.add_field(
             name="What are tickets?",
-            value=(
-                "Tickets are private threads between you and the staff team. "
-                "Use them for support, reports, or any private inquiries."
-            ),
+            value="Tickets are private threads between you and the staff team. Use them for support, reports, or any private inquiries.",
             inline=False
         )
         
         embed.add_field(
             name="Features",
-            value=(
-                "• **Private** - Only you and staff can see your ticket\n"
-                "• **Fast** - Get quick responses from our team\n"
-                "• **Organized** - Categorized for better support\n"
-                "• **Tracked** - Full transcript saved"
-            ),
+            value="**Private** - Only you and staff can see your ticket\n**Fast** - Get quick responses from our team\n**Organized** - Categorized for better support\n**Tracked** - Full transcript saved",
             inline=False
         )
         
@@ -959,7 +1067,23 @@ class Tickets(commands.Cog):
             embed.set_thumbnail(url=ctx.guild.icon.url)
         
         view = TicketPanelView(self)
-        await target_channel.send(embed=embed, view=view)
+        panel_message = await target_channel.send(embed=embed, view=view)
+        
+        # Save panel to database for persistence
+        if ctx.guild:
+            try:
+                conn = sqlite3.connect(DATABASE_NAME)
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    INSERT OR IGNORE INTO ticket_panels (guild_id, channel_id, message_id, created_by)
+                    VALUES (?, ?, ?, ?)
+                ''', (ctx.guild.id, target_channel.id, panel_message.id, ctx.author.id))
+                
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                logger.error(f"Error saving ticket panel to database: {e}")
         
         # Set ticket channel to this channel
         self.ticket_channel_id = target_channel.id
