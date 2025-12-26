@@ -96,9 +96,12 @@ class ReactionRoles(commands.Cog):
     ):
         """Create a reaction role message"""
         try:
+            # Defer the response immediately to avoid timeout
+            await interaction.response.defer(ephemeral=True)
+            
             # Check if we're in a guild
             if not interaction.guild:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "❌ This command can only be used in a server!", 
                     ephemeral=True
                 )
@@ -107,21 +110,21 @@ class ReactionRoles(commands.Cog):
             # Check bot permissions
             bot_member = channel.guild.get_member(self.bot.user.id)
             if not bot_member:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "❌ I'm not a member of this server!", 
                     ephemeral=True
                 )
                 return
                 
             if not channel.permissions_for(bot_member).manage_roles:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "❌ I need `Manage Roles` permission to create reaction roles!", 
                     ephemeral=True
                 )
                 return
             
             if not channel.permissions_for(bot_member).add_reactions:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "❌ I need `Add Reactions` permission in that channel!", 
                     ephemeral=True
                 )
@@ -139,7 +142,7 @@ class ReactionRoles(commands.Cog):
                     
                     # Check if bot can assign this role
                     if roles[i].position >= bot_member.top_role.position:
-                        await interaction.response.send_message(
+                        await interaction.followup.send(
                             f"❌ I cannot assign the role {roles[i].mention} because it's higher than my highest role!", 
                             ephemeral=True
                         )
@@ -148,7 +151,7 @@ class ReactionRoles(commands.Cog):
                     role_pairs.append((emoji, roles[i]))
             
             if not role_pairs:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "❌ You must provide at least one emoji-role pair!", 
                     ephemeral=True
                 )
@@ -201,15 +204,15 @@ class ReactionRoles(commands.Cog):
                            "\n".join([f"{emoji} {role.mention}" for emoji, role in role_pairs]),
                 color=discord.Color.green()
             )
-            await interaction.response.send_message(embed=success_embed, ephemeral=True)
+            await interaction.followup.send(embed=success_embed, ephemeral=True)
             
         except discord.Forbidden:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ I don't have permission to send messages in that channel!", 
                 ephemeral=True
             )
         except Exception as e:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"❌ Error creating reaction role: {str(e)}", 
                 ephemeral=True
             )
