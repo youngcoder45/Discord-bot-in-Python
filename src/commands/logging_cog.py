@@ -836,14 +836,24 @@ class LoggingCog(commands.Cog):
                 except Exception as e:
                     logger.error(f"Error fetching audit log for role update: {e}")
                 
-                # Log the role change
-                await self.log_event(
-                    event_type="ROLE_UPDATE",
-                    user_id=after.id,
-                    guild_id=after.guild.id,
-                    moderator_id=moderator_id,
-                    details="\n".join(role_changes)
-                )
+                # Log each role change separately for proper routing
+                for role in added_roles:
+                    await self.log_event(
+                        event_type="ROLE_ADD",
+                        user_id=after.id,
+                        guild_id=after.guild.id,
+                        moderator_id=moderator_id,
+                        details=f"**Role Added:** {role.mention}"
+                    )
+                
+                for role in removed_roles:
+                    await self.log_event(
+                        event_type="ROLE_REMOVE",
+                        user_id=after.id,
+                        guild_id=after.guild.id,
+                        moderator_id=moderator_id,
+                        details=f"**Role Removed:** {role.mention}"
+                    )
         
         # Check for nickname changes
         if before.nick != after.nick:

@@ -34,6 +34,9 @@ class ReactionRoles(commands.Cog):
         except Exception as e:
             print(f"Error saving reaction roles: {e}")
     
+    # Default number emojis
+    DEFAULT_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+    
     @app_commands.command(
         name="rr",
         description="Create a reaction role message with up to 10 role assignments"
@@ -42,16 +45,26 @@ class ReactionRoles(commands.Cog):
         title="Title for the reaction role embed",
         channel="Channel to send the reaction role message to",
         description="Description for the reaction role embed",
-        emoji1="First emoji", role1="First role",
-        emoji2="Second emoji (optional)", role2="Second role (optional)",
-        emoji3="Third emoji (optional)", role3="Third role (optional)",
-        emoji4="Fourth emoji (optional)", role4="Fourth role (optional)",
-        emoji5="Fifth emoji (optional)", role5="Fifth role (optional)",
-        emoji6="Sixth emoji (optional)", role6="Sixth role (optional)",
-        emoji7="Seventh emoji (optional)", role7="Seventh role (optional)",
-        emoji8="Eighth emoji (optional)", role8="Eighth role (optional)",
-        emoji9="Ninth emoji (optional)", role9="Ninth role (optional)",
-        emoji10="Tenth emoji (optional)", role10="Tenth role (optional)"
+        role1="First role",
+        role2="Second role (optional)",
+        role3="Third role (optional)",
+        role4="Fourth role (optional)",
+        role5="Fifth role (optional)",
+        role6="Sixth role (optional)",
+        role7="Seventh role (optional)",
+        role8="Eighth role (optional)",
+        role9="Ninth role (optional)",
+        role10="Tenth role (optional)",
+        emoji1="Custom emoji for role 1 (optional, defaults to 1️⃣)",
+        emoji2="Custom emoji for role 2 (optional, defaults to 2️⃣)",
+        emoji3="Custom emoji for role 3 (optional, defaults to 3️⃣)",
+        emoji4="Custom emoji for role 4 (optional, defaults to 4️⃣)",
+        emoji5="Custom emoji for role 5 (optional, defaults to 5️⃣)",
+        emoji6="Custom emoji for role 6 (optional, defaults to 6️⃣)",
+        emoji7="Custom emoji for role 7 (optional, defaults to 7️⃣)",
+        emoji8="Custom emoji for role 8 (optional, defaults to 8️⃣)",
+        emoji9="Custom emoji for role 9 (optional, defaults to 9️⃣)",
+        emoji10="Custom emoji for role 10 (optional, defaults to 🔟)"
     )
     @app_commands.checks.has_permissions(manage_roles=True)
     async def create_reaction_role(
@@ -60,16 +73,26 @@ class ReactionRoles(commands.Cog):
         title: str,
         channel: discord.TextChannel,
         description: str,
-        emoji1: str, role1: discord.Role,
-        emoji2: Optional[str] = None, role2: Optional[discord.Role] = None,
-        emoji3: Optional[str] = None, role3: Optional[discord.Role] = None,
-        emoji4: Optional[str] = None, role4: Optional[discord.Role] = None,
-        emoji5: Optional[str] = None, role5: Optional[discord.Role] = None,
-        emoji6: Optional[str] = None, role6: Optional[discord.Role] = None,
-        emoji7: Optional[str] = None, role7: Optional[discord.Role] = None,
-        emoji8: Optional[str] = None, role8: Optional[discord.Role] = None,
-        emoji9: Optional[str] = None, role9: Optional[discord.Role] = None,
-        emoji10: Optional[str] = None, role10: Optional[discord.Role] = None
+        role1: discord.Role,
+        role2: Optional[discord.Role] = None,
+        role3: Optional[discord.Role] = None,
+        role4: Optional[discord.Role] = None,
+        role5: Optional[discord.Role] = None,
+        role6: Optional[discord.Role] = None,
+        role7: Optional[discord.Role] = None,
+        role8: Optional[discord.Role] = None,
+        role9: Optional[discord.Role] = None,
+        role10: Optional[discord.Role] = None,
+        emoji1: Optional[str] = None,
+        emoji2: Optional[str] = None,
+        emoji3: Optional[str] = None,
+        emoji4: Optional[str] = None,
+        emoji5: Optional[str] = None,
+        emoji6: Optional[str] = None,
+        emoji7: Optional[str] = None,
+        emoji8: Optional[str] = None,
+        emoji9: Optional[str] = None,
+        emoji10: Optional[str] = None
     ):
         """Create a reaction role message"""
         try:
@@ -106,11 +129,14 @@ class ReactionRoles(commands.Cog):
             
             # Collect emoji-role pairs
             role_pairs = []
-            emojis = [emoji1, emoji2, emoji3, emoji4, emoji5, emoji6, emoji7, emoji8, emoji9, emoji10]
             roles = [role1, role2, role3, role4, role5, role6, role7, role8, role9, role10]
+            custom_emojis = [emoji1, emoji2, emoji3, emoji4, emoji5, emoji6, emoji7, emoji8, emoji9, emoji10]
             
             for i in range(10):
-                if emojis[i] and roles[i]:
+                if roles[i]:
+                    # Use custom emoji if provided, otherwise use default number emoji
+                    emoji = custom_emojis[i] if custom_emojis[i] else self.DEFAULT_EMOJIS[i]
+                    
                     # Check if bot can assign this role
                     if roles[i].position >= bot_member.top_role.position:
                         await interaction.response.send_message(
@@ -119,7 +145,7 @@ class ReactionRoles(commands.Cog):
                         )
                         return
                     
-                    role_pairs.append((emojis[i], roles[i]))
+                    role_pairs.append((emoji, roles[i]))
             
             if not role_pairs:
                 await interaction.response.send_message(

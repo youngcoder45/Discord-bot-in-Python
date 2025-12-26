@@ -8,7 +8,7 @@ Your server log channels have been **automatically configured** with 6 separate 
 
 | # | Channel Type | Channel ID | What Gets Logged |
 |---|--------------|------------|------------------|
-| 1️⃣ | **Message Logs** | `1411766480302772435` | Message edits, deletions, bulk purges |
+| 1️⃣ | **Message Logs** | `1411766480302772435` | ❌ **DISABLED** (No longer logs messages) |
 | 2️⃣ | **Member Logs** | `1263434413581008956` | Joins, leaves, role changes, nickname updates |
 | 3️⃣ | **Server Logs** | `1411766078920458333` | Channel/role create/delete/update, server settings, emojis |
 | 4️⃣ | **Ticket Logs** | `1438487366305190018` | Ticket creation, closure, claims, assignments |
@@ -20,10 +20,7 @@ Your server log channels have been **automatically configured** with 6 separate 
 ## 📊 Event Routing Details
 
 ### 1️⃣ Message Logs Channel
-**Events:**
-- `MESSAGE_EDIT` - Message edits with before/after content
-- `MESSAGE_DELETE` - Message deletions with moderator info
-- `MESSAGE_BULK_DELETE` - Bulk purges/message cleanups
+**Status:** ❌ **DISABLED** - Message logging has been removed
 
 ### 2️⃣ Member Logs Channel
 **Events:**
@@ -67,11 +64,9 @@ Your server log channels have been **automatically configured** with 6 separate 
 
 ### 6️⃣ Other Logs Channel
 **Events:**
-- `VOICE_JOIN` - User joins voice channel
-- `VOICE_LEAVE` - User leaves voice channel
-- `VOICE_MOVE` - User moves between channels
-- `VOICE_MUTE` / `VOICE_UNMUTE` - Voice mute state
-- `VOICE_DEAFEN` / `VOICE_UNDEAFEN` - Voice deafen state
+- `VOICE_MUTE` / `VOICE_UNMUTE` - Moderator voice mute actions
+- `VOICE_DEAFEN` / `VOICE_UNDEAFEN` - Moderator voice deafen actions
+- `VOICE_DISCONNECT` - Moderator voice disconnect actions
 - `STAFF_SHIFT_START` / `STAFF_SHIFT_END` - Staff shift tracking
 - Any other misc events
 

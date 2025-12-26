@@ -242,60 +242,9 @@ Total Warnings: 2
 
 ---
 
-## Message Events
+## ~~Message Events~~ (DISABLED)
 
-### MESSAGE_EDIT
-**Triggered:** When a message is edited
-**Details Logged:**
-- User ID
-- Channel
-- Before content (first 500 chars)
-- After content (first 500 chars)
-- Message jump URL
-
-**Example Log:**
-```
-Message Edited
-User: @User#1234
-Channel: #general
-Before: "This is wrong information..."
-After: "This is correct information..."
-[Jump to Message]
-```
-
-### MESSAGE_DELETE
-**Triggered:** When a message is deleted
-**Details Logged:**
-- User ID (message author)
-- Moderator ID (who deleted it, if available)
-- Channel
-- Message content (first 500 chars)
-- Number of attachments
-
-**Example Log:**
-```
-Message Deleted
-Author: @User#5678
-Deleted By: @Moderator#0001
-Channel: #general
-Content: "Inappropriate message content..."
-Attachments: 2
-```
-
-### MESSAGE_BULK_DELETE
-**Triggered:** When messages are purged/bulk deleted
-**Details Logged:**
-- Moderator ID (who purged)
-- Channel
-- Number of messages deleted
-
-**Example Log:**
-```
-Messages Purged
-Channel: #spam
-Purged By: @Moderator#0001
-Messages Deleted: 50
-```
+**Note:** Message logging has been removed. The bot no longer logs MESSAGE_EDIT, MESSAGE_DELETE, or MESSAGE_BULK_DELETE events.
 
 ---
 
