@@ -496,7 +496,7 @@ class Tickets(commands.Cog):
                 "guidelines": (
                     "**Server Requirements:**\n"
                     "100+ active members with 1/9 online during peak hours\n"
-                    "500+ daily messages in active channels\n"
+                    "350+ daily messages in active channels\n"
                     "SFW content and family-friendly environment\n"
                     "Tech/IT focus but different from CodeVerse specialization\n"
                     "Active, reliable moderation team\n\n"
@@ -1045,26 +1045,19 @@ class Tickets(commands.Cog):
             return
         
         embed = discord.Embed(
-            title="Support Ticket System",
-            description="Need help? Create a support ticket!\n\nClick the **Create Ticket** button below to open a private ticket thread with our staff team.",
+            title="🎫 Support Tickets",
+            description=(
+                "Need help? Click Create Ticket below to get started!\n\n"
+                "**Available Categories:**\n"
+                "• General Support\n"
+                "• Role Issues\n"
+                "• Warn Appeals\n"
+                "• Partnership\n"
+                "• Reports\n"
+                "• Other Issues"
+            ),
             color=0x2B2D31
         )
-        
-        embed.add_field(
-            name="What are tickets?",
-            value="Tickets are private threads between you and the staff team. Use them for support, reports, or any private inquiries.",
-            inline=False
-        )
-        
-        embed.add_field(
-            name="Features",
-            value="**Private** - Only you and staff can see your ticket\n**Fast** - Get quick responses from our team\n**Organized** - Categorized for better support\n**Tracked** - Full transcript saved",
-            inline=False
-        )
-        
-        embed.set_footer(text="CodeVerse Support System • Click below to get started!")
-        if ctx.guild and ctx.guild.icon:
-            embed.set_thumbnail(url=ctx.guild.icon.url)
         
         view = TicketPanelView(self)
         panel_message = await target_channel.send(embed=embed, view=view)

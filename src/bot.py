@@ -183,6 +183,14 @@ async def on_ready():
     else:
         logger.info(f"Bot logged in [Instance: {INSTANCE_ID}]")
     
+    # Set bot status
+    try:
+        activity = discord.CustomActivity(name="I'll Ghost U 💀")
+        await bot.change_presence(activity=activity, status=discord.Status.online)
+        logger.info("✅ Bot status set successfully")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to set bot status: {e}")
+    
     # Security check: Ensure bot is only in authorized servers
     unauthorized_servers = []
     for guild in bot.guilds:

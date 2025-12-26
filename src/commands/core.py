@@ -34,6 +34,63 @@ class Core(commands.Cog):
         except Exception as e:
             await msg.edit(content=f"Sync failed: {e}")
 
+    @commands.command(name="load", hidden=True)
+    @commands.is_owner()
+    async def load_cog(self, ctx: commands.Context, cog_name: str):
+        """Load or reload a specific cog."""
+        msg = await ctx.reply(f"Reloading cog `{cog_name}`...", mention_author=False)
+        
+        # Map common names to actual cog paths
+        cog_mapping = {
+            "core": "commands.core",
+            "help": "commands.core",
+            "mod": "commands.modcog",
+            "modcog": "commands.modcog",
+            "moderation": "commands.modcog",
+            "advanced_mod": "commands.advanced_moderation",
+            "advanced_moderation": "commands.advanced_moderation",
+            "tickets": "commands.tickets",
+            "tickets2": "commands.tickets2",
+            "utility": "commands.utility",
+            "embeds": "commands.utility",
+            "thread": "commands.thread",
+            "threads": "commands.thread",
+            "appeals": "commands.appeals",
+            "logging": "commands.logging_cog",
+            "logging_cog": "commands.logging_cog",
+            "staff_points": "commands.staff_points",
+            "staff_shifts": "commands.staff_shifts",
+            "diagnostics": "commands.diagnostics",
+            "data": "commands.data_management",
+            "data_management": "commands.data_management",
+            "protection": "commands.protection",
+            "spam": "commands.spam_catch",
+            "spam_catch": "commands.spam_catch",
+            "roles": "commands.roles",
+            "reaction_roles": "commands.reaction_roles",
+            "sticky": "commands.sticky_message",
+            "sticky_message": "commands.sticky_message",
+        }
+        
+        # Get the actual cog path
+        cog_path = cog_mapping.get(cog_name.lower(), f"commands.{cog_name}")
+        
+        try:
+            # Try to reload if already loaded
+            try:
+                await self.bot.reload_extension(cog_path)
+                await msg.edit(content=f"Successfully reloaded cog `{cog_name}` ({cog_path})")
+            except commands.ExtensionNotLoaded:
+                # If not loaded, try to load it
+                await self.bot.load_extension(cog_path)
+                await msg.edit(content=f"Successfully loaded cog `{cog_name}` ({cog_path})")
+        except commands.ExtensionNotFound:
+            await msg.edit(content=f"Cog `{cog_name}` not found. Path tried: {cog_path}")
+        except commands.ExtensionFailed as e:
+            await msg.edit(content=f"Failed to load `{cog_name}`: {str(e)}")
+        except Exception as e:
+            await msg.edit(content=f"Error loading `{cog_name}`: {str(e)}")
+
     @commands.hybrid_command(name="ping", help="Check if the bot is responsive")
     async def ping(self, ctx: commands.Context):
         """Latency check."""
@@ -186,11 +243,11 @@ class Core(commands.Cog):
         if command:
             cmd = self.bot.get_command(command.lower())
             if not cmd or cmd.hidden:
-                await ctx.reply(f"❌ Command `{command}` not found.", mention_author=False)
+                await ctx.reply(f"Command `{command}` not found.", mention_author=False)
                 return
             embed = discord.Embed(
-                title=f"Help: {cmd.qualified_name}",
-                color=discord.Color.blurple()
+                title=f"{cmd.qualified_name}",
+                color=0x2B2D31
             )
             # Basic description
             desc = cmd.help or "No description provided."
@@ -201,22 +258,20 @@ class Core(commands.Cog):
             # Usage (build from signature if available)
             signature = getattr(cmd, 'signature', '')
             if signature:
-                embed.add_field(name="Usage", value=f"`?{cmd.qualified_name} {signature}`", inline=False)
+                usage = f"`?{cmd.qualified_name} {signature}`\n`/{cmd.qualified_name} {signature}`"
             else:
-                embed.add_field(name="Usage", value=f"`?{cmd.qualified_name}`", inline=False)
+                usage = f"`?{cmd.qualified_name}`\n`/{cmd.qualified_name}`"
+            embed.add_field(name="Usage", value=usage, inline=False)
 
-            # Cog / category
-            if cmd.cog_name:
+            # Category and Aliases
+            if cmd.cog_name and getattr(cmd, 'aliases', None):
                 embed.add_field(name="Category", value=cmd.cog_name, inline=True)
-
-            # Slash compatibility
-            embed.add_field(name="Slash", value=f"`/{cmd.qualified_name}`", inline=True)
-
-            # Aliases
-            if getattr(cmd, 'aliases', None):
+                embed.add_field(name="Aliases", value=", ".join(f"`{a}`" for a in cmd.aliases), inline=True)
+            elif cmd.cog_name:
+                embed.add_field(name="Category", value=cmd.cog_name, inline=False)
+            elif getattr(cmd, 'aliases', None):
                 embed.add_field(name="Aliases", value=", ".join(f"`{a}`" for a in cmd.aliases), inline=False)
         
-            embed.set_footer(text="Use ?help for the full interactive help menu")
             await ctx.reply(embed=embed, mention_author=False)
             return
             
@@ -407,50 +462,26 @@ class HelpView(discord.ui.View):
             title="CodeVerse Bot - Help Center",
             description=(
                 "**Welcome to CodeVerse Bot!**\n\n"
-                "🔹 **Prefix Commands:** Use `?` before command names (e.g., `?ping`)\n"
-                "🔹 **Slash Commands:** Use `/` before command names (e.g., `/ping`)\n"
-                "🔹 **Both work:** Every command supports both methods!\n\n"
-                "**Use the dropdown below to explore command categories**"
+                "The official bot for **The Codeverse Hub** server, providing professional moderation, "
+                "utilities, and server management tools.\n\n"
+                "**Prefix is `?`** -> (e.g., `?ping`)\n"
+                "**Slash Supported** -> (e.g., `/ping`)\n"
+                "Use the dropdown below to explore command categories"
             ),
-            color=0x5865F2
+            color=0x2B2D31
         )
         
         # Quick stats
         total_commands = len([cmd for cmd in self.bot.commands if not cmd.hidden])
         embed.add_field(
-            name="📊 Quick Stats",
+            name="**Quick Stats**",
             value=(
-                f"**Total Commands:** {total_commands}\n"
-                f"**Categories:** 6\n"
-                f"**Server Exclusive:** Professional moderation\n"
-                f"**Uptime:** {self.get_uptime()}"
+                f"- Total Commands: {total_commands}\n"
+                f"- Categories: 10\n"
+                f"- Server Exclusive: Yes\n"
+                f"- Uptime: {self.get_uptime()}"
             ),
             inline=True
-        )
-        
-        # Most popular commands
-        embed.add_field(
-            name="⭐ Most Popular",
-            value=(
-                "• `/help` - This help menu\n"
-                "• `/ping` - Check bot status\n"
-                "• `/afk` - Set away message\n"
-                "• `/serverinfo` - Server details\n"
-                "• `/warnings` - Warning system"
-            ),
-            inline=True
-        )
-        
-        # Quick links
-        embed.add_field(
-            name="🔗 Quick Links",
-            value=(
-                "• [Bot Features](https://github.com/TheCodeVerseHub/CodeVerse-Bot)\n"
-                "• [Support Server](https://discord.gg/3xKFvKhuGR)\n"
-                "• [Documentation](https://github.com/TheCodeVerseHub/CodeVerse-Bot/tree/master/docs)\n"
-                "• [Open an Issue](https://github.com/TheCodeVerseHub/CodeVerse-Bot)"
-            ),
-            inline=False
         )
         
         embed.set_footer(text="Select a category from the dropdown below to see detailed commands")
@@ -477,69 +508,59 @@ class HelpDropdown(discord.ui.Select):
         
         options = [
             discord.SelectOption(
-                label="🏠 Core Commands",
+                label="Core Commands",
                 description="Essential bot commands (ping, info, help)",
-                value="core",
-                emoji="🏠"
+                value="core"
             ),
             discord.SelectOption(
-                label="😴 AFK System",
+                label="AFK System",
                 description="Away from keyboard status management",
-                value="afk",
-                emoji="😴"
+                value="afk"
             ),
             discord.SelectOption(
-                label="🛡️ ModCog",
+                label="ModCog",
                 description="Merged moderation system with warnings",
-                value="moderation",
-                emoji="🛡️"
+                value="moderation"
             ),
             discord.SelectOption(
-                label="🔒 Advanced Moderation",
+                label="Advanced Moderation",
                 description="Extended moderation and protection tools",
-                value="advanced_moderation",
-                emoji="🔒"
+                value="advanced_moderation"
             ),
             discord.SelectOption(
-                label="⭐ Staff Systems",
+                label="Staff Systems",
                 description="Points, shifts, and staff management",
-                value="staff",
-                emoji="⭐"
+                value="staff"
             ),
             discord.SelectOption(
-                label="� Ticket System",
+                label="Ticket System",
                 description="Support tickets with specialized role routing",
-                value="tickets",
-                emoji="🎫"
+                value="tickets"
             ),
             discord.SelectOption(
-                label="�🎨 Embed Tools",
+                label="Embed Tools",
                 description="Create and edit server announcements",
-                value="embeds",
-                emoji="🎨"
+                value="embeds"
             ),
             discord.SelectOption(
-                label="🧵 Thread Management",
+                label="Thread Management",
                 description="Manage threads and posts (close, lock, pin, purge)",
-                value="threads",
-                emoji="🧵"
+                value="threads"
             ),
             discord.SelectOption(
-                label="📊 Data Management",
+                label="Data Management",
                 description="Backup, restore, and data operations",
-                value="data",
-                emoji="📊"
+                value="data"
             ),
             discord.SelectOption(
-                label="🔧 Diagnostics",
+                label="Diagnostics",
                 description="Bot health, testing, and troubleshooting",
-                value="diagnostics",
-                emoji="🔧"
+                value="diagnostics"
             )
         ]
         
         super().__init__(
-            placeholder="📂 Choose a command category to explore...",
+            placeholder="Choose a command category to explore...",
             min_values=1,
             max_values=1,
             options=options
