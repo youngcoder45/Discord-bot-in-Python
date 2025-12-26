@@ -183,7 +183,7 @@ class Core(commands.Cog):
                     await interaction_or_ctx.response.send_message(msg, ephemeral=True)
                 return
 
-        embed = discord.Embed(title="🚨 User Report", color=discord.Color.red(), timestamp=datetime.now(timezone.utc))
+        embed = discord.Embed(title=" User Report", color=discord.Color.red(), timestamp=datetime.now(timezone.utc))
         embed.add_field(name="Reporter", value=f"{reporter.mention} ({reporter.id})", inline=False)
         embed.add_field(name="Reported User", value=f"{message.author.mention} ({message.author.id})", inline=False)
         embed.add_field(name="Channel", value=f"{message.channel.mention}", inline=True)
@@ -195,7 +195,7 @@ class Core(commands.Cog):
 
         await report_channel.send(embed=embed)
         
-        success_msg = "✅ Report sent to moderators."
+        success_msg = " Report sent to moderators."
         if isinstance(interaction_or_ctx, commands.Context):
             await interaction_or_ctx.reply(success_msg, ephemeral=True)
         else:
@@ -226,7 +226,7 @@ class Core(commands.Cog):
                 pass
                 
         if not message:
-            await ctx.reply("❌ Could not find the message. Please provide a valid Message Link or ID from this channel.", ephemeral=True)
+            await ctx.reply(" Could not find the message. Please provide a valid Message Link or ID from this channel.", ephemeral=True)
             return
             
         await self._send_report(ctx.author, message, ctx)
@@ -301,22 +301,22 @@ class Core(commands.Cog):
 
         # Friendly / emoji name mapping (extend as needed)
         emoji_map = {
-            "Core": "🏠",
-            "AFK": "😴",
-            "Afk": "😴",
-            "Community": "🎪",
-            "Fun": "🎮",
-            "Utility": "💻",
-            "Programming": "💻",
-            "Moderation": "🛡️",
-            "ModerationExtended": "🛡️",
-            "Roles": "🎭",
-            "Tags": "🏷️",
-            "Highlights": "🔔",
-            "Staff": "⭐",
-            "Diagnostics": "🔧",
-            "Database": "🗄️",
-            "Misc": "📦"
+            "Core": "",
+            "AFK": "",
+            "Afk": "",
+            "Community": "",
+            "Fun": "",
+            "Utility": "",
+            "Programming": "",
+            "Moderation": "",
+            "ModerationExtended": "",
+            "Roles": "",
+            "Tags": "",
+            "Highlights": "",
+            "Staff": "",
+            "Diagnostics": "",
+            "Database": "",
+            "Misc": ""
         }
 
         # Helper to format command line
@@ -346,7 +346,7 @@ class Core(commands.Cog):
                 timestamp=datetime.now(timezone.utc)
             )
             for cat_name, value in preview_fields:
-                emoji = emoji_map.get(cat_name, "📁")
+                emoji = emoji_map.get(cat_name, "")
                 embed.add_field(name=f"{emoji} {cat_name}", value=value[:1024] or "No commands", inline=False)
             embed.set_footer(text=f"Total: {sum(len(v) for v in categories.values())} commands • Use ?help <command> for details")
             embed.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user and self.bot.user.avatar else None)
@@ -367,7 +367,7 @@ class Core(commands.Cog):
         )
         summary_embed.add_field(
             name="Categories",
-            value=" • ".join(f"{emoji_map.get(n,'📁')} {n}" for n in categories.keys()),
+            value=" • ".join(f"{emoji_map.get(n,'')} {n}" for n in categories.keys()),
             inline=False
         )
         summary_embed.set_footer(text=f"{sum(len(v) for v in categories.values())} commands across {len(categories)} categories")
@@ -402,7 +402,7 @@ class BotHelpView(discord.ui.View):
         self.emoji_map = emoji_map
         # Create a button per category (Discord max 25 components total; assume safe)
         for cat_name in list(categories.keys())[:25]:
-            emoji = self.emoji_map.get(cat_name, '📁')
+            emoji = self.emoji_map.get(cat_name, '')
             self.add_item(CategoryButton(cat_name, emoji, categories))
 
 class CategoryButton(discord.ui.Button):
@@ -636,7 +636,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="🔧 How it works",
+            name=" How it works",
             value=(
                 "• Set AFK with custom reason\n"
                 "• Bot responds to mentions automatically\n"
@@ -673,7 +673,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="📊 Server Information",
+            name=" Server Information",
             value=(
                 "**`/serverinfo`** - Detailed server information\n"
                 "**`/userinfo [@user]`** - Detailed user information\n"
@@ -683,7 +683,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="⚠️ Warning System",
+            name=" Warning System",
             value=(
                 "**`/warnings add <@user> [reason]`** - Issue warning to user\n"
                 "**`/warnings remove <@user> <case_id> [reason]`** - Revoke specific warning\n"
@@ -695,14 +695,14 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="📋 Appeal System (With Confirmation)",
+            name=" Appeal System (With Confirmation)",
             value=(
                 "**`/appeals [status]`** - View appeal requests *(Admin)*\n"
                 "**`/approve <id> [reason]`** - Approve unban appeal *(Admin)*\n"
                 "**`/deny <id> <reason>`** - Deny unban appeal *(Admin)*\n"
                 "**`/appealinfo <id>`** - Get detailed appeal info *(Admin)*\n"
                 "**`/appealcancel`** - Cancel pending appeal with confirmation\n\n"
-                "**✅ NEW Appeal Flow:**\n"
+                "** NEW Appeal Flow:**\n"
                 "1. User gets kicked/banned/timed out\n"
                 "2. Bot sends DM with appeal form\n"
                 "3. Shows confirmation embed with Yes/No buttons\n"
@@ -736,7 +736,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="⏰ Shift Tracking",
+            name=" Shift Tracking",
             value=(
                 "**`/shift start [note]`** - Start staff shift *(Staff)*\n"
                 "**`/shift end [note]`** - End staff shift *(Staff)*\n"
@@ -761,15 +761,15 @@ class HelpDropdown(discord.ui.Select):
             name="User Commands",
             value=(
                 "**`/ticketpanel [#channel]`** - Create ticket panel with button *(Admin)*\n"
-                "**`🎫 Create Ticket`** - Button to create new tickets\n"
+                "**` Create Ticket`** - Button to create new tickets\n"
                 "**`?close`** - Close ticket thread (auto-detects tickets)\n"
-                "**`🔒 Close`** - Close button in ticket threads"
+                "**` Close`** - Close button in ticket threads"
             ),
             inline=False
         )
         
         embed.add_field(
-            name="⚙️ Setup Commands",
+            name=" Setup Commands",
             value=(
                 "**`/ticketsupport [@role]`** - Set general support team *(Admin)*\n"
                 "**`/ticketreport [@role]`** - Set report team for report tickets *(Admin)*\n"
@@ -780,7 +780,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="🔧 Management Commands",
+            name=" Management Commands",
             value=(
                 "**`/ticketsupport-disable`** - Remove support role setting *(Admin)*\n"
                 "**`/ticketreport-disable`** - Remove report role setting *(Admin)*\n"
@@ -791,7 +791,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="✨ Key Features",
+            name=" Key Features",
             value=(
                 "• **Persistent Panels** - Ticket buttons survive bot restarts and updates\n"
                 "• **Black Theme Design** - Professional black color scheme (no emojis)\n"
@@ -806,7 +806,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="📋 Ticket Categories",
+            name=" Ticket Categories",
             value=(
                 "Bug Reports - General support team\n"
                 "General Support - General support team\n"
@@ -839,7 +839,7 @@ class HelpDropdown(discord.ui.Select):
             embed.add_field(name=cmd, value=desc, inline=False)
             
         embed.add_field(
-            name="✨ Features",
+            name=" Features",
             value=(
                 "• Interactive popup forms\n"
                 "• Color customization\n"
@@ -865,31 +865,31 @@ class HelpDropdown(discord.ui.Select):
             name="Thread Controls",
             value=(
                 "**`/close [thread_id]`** - Archive (close) a thread with embed notification *(Mod / Creator)*\n"
-                "  ➜ *Sends embed before archiving to prevent reopening*\n"
-                "**`/lock [thread_id]`** - Lock thread & rename with 🔒 emoji *(Manage Threads)*\n"
-                "  ➜ *Adds lock emoji to thread name for visibility*\n"
-                "**`/unlock [thread_id]`** - Unlock thread & remove 🔒 emoji *(Manage Threads)*\n"
-                "  ➜ *Restores original thread name*"
+                "  *Sends embed before archiving to prevent reopening*\n"
+                "**`/lock [thread_id]`** - Lock thread & rename with emoji *(Manage Threads)*\n"
+                "  *Adds lock emoji to thread name for visibility*\n"
+                "**`/unlock [thread_id]`** - Unlock thread & remove emoji *(Manage Threads)*\n"
+                "  *Restores original thread name*"
             ),
             inline=False
         )
         
         embed.add_field(
-            name="📍 Message Management",
+            name=" Message Management",
             value=(
                 "**`/pin [message_id]`** - Pin a message in thread or channel *(Manage Messages)*\n"
-                "  ➜ *Reply to message or provide ID*\n"
+                "  *Reply to message or provide ID*\n"
                 "**`/unpin [message_id]`** - Unpin a message from thread or channel *(Manage Messages)*\n"
-                "  ➜ *Works with replies or message IDs*"
+                "  *Works with replies or message IDs*"
             ),
             inline=False
         )
         
         embed.add_field(
-            name="🧹 Message Cleanup",
+            name=" Message Cleanup",
             value=(
                 "**`/purge <amount>`** - Delete 1-100 messages *(Manage Messages)*\n"
-                "  ➜ *Works in channels and threads*\n"
+                "  *Works in channels and threads*\n"
                 "**`/mute [thread_id] [duration]`** - Enable slow mode *(Manage Threads)*\n"
                 "**`/unmute [thread_id]`** - Disable slow mode *(Manage Threads)*"
             ),
@@ -897,10 +897,10 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="💡 Tips",
+            name=" Tips",
             value=(
                 "• **Close**: Only mods or thread creator can close\n"
-                "• **Lock/Unlock**: Auto-adds/removes 🔒 emoji prefix\n"
+                "• **Lock/Unlock**: Auto-adds/removes emoji prefix\n"
                 "• **Pin**: Reply to a message or use message ID\n"
                 "• Run in thread or provide thread ID\n"
                 "• Use `/help <command>` for more details"
@@ -930,7 +930,7 @@ class HelpDropdown(discord.ui.Select):
             embed.add_field(name=cmd, value=desc, inline=False)
             
         embed.add_field(
-            name="🔄 Automatic Backups",
+            name=" Automatic Backups",
             value=(
                 "• Every 6 hours automatically\n"
                 "• On bot startup\n"
@@ -968,7 +968,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="🛡️ Anti-Spam & Anti-Raid",
+            name=" Anti-Spam & Anti-Raid",
             value=(
                 "**`/automod`** - Configure automatic moderation settings\n"
                 "**`/automodstatus`** - View current automod configuration\n"
@@ -980,7 +980,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="🔍 Information & Utility Commands",
+            name=" Information & Utility Commands",
             value=(
                 "**`/serverinfo`** - Detailed server statistics\n"
                 "**`/userinfo [@user]`** - Member information and history\n"
@@ -992,7 +992,7 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="⚔️ Advanced Actions",
+            name=" Advanced Actions",
             value=(
                 "**`/lockdown [#channel]`** - Lock channel to prevent messages *(Admin)*\n"
                 "**`/unlockdown [#channel]`** - Unlock channel *(Admin)*\n"
@@ -1007,12 +1007,12 @@ class HelpDropdown(discord.ui.Select):
         )
         
         embed.add_field(
-            name="📋 Logging Configuration",
+            name=" Logging Configuration",
             value=(
                 "**`!setlogchannels`** - Configure guild-specific log channels *(Admin)*\n"
-                "  ➜ *Set member logs, mod logs, and ticket logs per server*\n"
-                "  ➜ *Ensures logs from different servers don't mix*\n"
-                "  ➜ *Must be run in each server separately*"
+                "  *Set member logs, mod logs, and ticket logs per server*\n"
+                "  *Ensures logs from different servers don't mix*\n"
+                "  *Must be run in each server separately*"
             ),
             inline=False
         )
@@ -1040,7 +1040,7 @@ class HelpDropdown(discord.ui.Select):
             embed.add_field(name=cmd, value=desc, inline=False)
             
         embed.add_field(
-            name="🩺 Health Monitoring",
+            name=" Health Monitoring",
             value=(
                 "• Database connectivity\n"
                 "• File system checks\n"
