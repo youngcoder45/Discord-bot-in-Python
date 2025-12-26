@@ -224,12 +224,8 @@ class LoggingCog(commands.Cog):
             message_ch, member_ch, server_ch, ticket_ch, mod_ch, other_ch = result
             
             # Route events to appropriate channels
-            # Message logs
-            if event_type in ("MESSAGE_EDIT", "MESSAGE_DELETE", "MESSAGE_BULK_DELETE"):
-                return self.bot.get_channel(message_ch) if message_ch else None
-            
             # Member logs (joins, leaves, roles, nicknames)
-            elif event_type in ("MEMBER_JOIN", "MEMBER_LEAVE", "MEMBER_JOIN_BOT", "ROLE_ADD", 
+            if event_type in ("MEMBER_JOIN", "MEMBER_LEAVE", "MEMBER_JOIN_BOT", "ROLE_ADD", 
                                "ROLE_REMOVE", "NICKNAME_UPDATE"):
                 return self.bot.get_channel(member_ch) if member_ch else None
             
@@ -289,9 +285,9 @@ class LoggingCog(commands.Cog):
         
         # Configure embed based on event type
         if event_type.startswith("MEMBER_JOIN"):
-            embed.title = "📥 Member Joined"
+            embed.title = "Member Joined"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} joined the server"
-            embed.color = discord.Color(0x00ff00)
+            embed.color = discord.Color(0x2B2D31)
             
             # Add account creation date if available
             if isinstance(user, discord.User):
@@ -304,18 +300,18 @@ class LoggingCog(commands.Cog):
                     embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("MEMBER_LEAVE"):
-            embed.title = "📤 Member Left"
+            embed.title = "Member Left"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} left the server"
-            embed.color = discord.Color(0xff0000)
+            embed.color = discord.Color(0x2B2D31)
             
             # Set thumbnail if available
             if isinstance(user, discord.User) and user.avatar:
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("BAN"):
-            embed.title = "🔨 Member Banned"
+            embed.title = "Member Banned"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was banned"
-            embed.color = discord.Color(0xff0000)
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -328,9 +324,9 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("UNBAN"):
-            embed.title = "🔓 Member Unbanned"
+            embed.title = "Member Unbanned"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was unbanned"
-            embed.color = discord.Color(0x00ff00)
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -343,9 +339,9 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("KICK"):
-            embed.title = "👢 Member Kicked"
+            embed.title = "Member Kicked"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was kicked"
-            embed.color = discord.Color(0xff0000)
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -358,9 +354,9 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("TIMEOUT") or event_type.startswith("MUTE"):
-            embed.title = "🔇 Member Timed Out"
+            embed.title = "Member Timed Out"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was timed out"
-            embed.color = discord.Color(0xff0000)
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -382,9 +378,9 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("UNMUTE"):
-            embed.title = "🔊 Member Unmuted"
+            embed.title = "Timeout Removed"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was unmuted"
-            embed.color = discord.Color(0x00ff00)
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -397,9 +393,9 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("WARN"):
-            embed.title = "⚠️ Member Warned"
+            embed.title = "Warning Issued"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was warned"
-            embed.color = discord.Color.yellow()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -417,17 +413,17 @@ class LoggingCog(commands.Cog):
         
         elif event_type.startswith("APPEAL_"):
             if "SUBMITTED" in event_type:
-                embed.title = "📩 Appeal Submitted"
-                embed.color = discord.Color.blue()
+                embed.title = "Appeal Submitted"
+                embed.color = discord.Color(0x2B2D31)
             elif "APPROVED" in event_type:
-                embed.title = "✅ Appeal Approved"
-                embed.color = discord.Color.green()
+                embed.title = "Appeal Approved"
+                embed.color = discord.Color(0x2B2D31)
             elif "DENIED" in event_type:
-                embed.title = "❌ Appeal Denied"
-                embed.color = discord.Color.red()
+                embed.title = "Appeal Denied"
+                embed.color = discord.Color(0x2B2D31)
             else:
-                embed.title = "📝 Appeal Updated"
-                embed.color = discord.Color.purple()
+                embed.title = "Appeal Updated"
+                embed.color = discord.Color(0x2B2D31)
             
             embed.description = f"Appeal from {user.mention if isinstance(user, discord.User) else user}"
             
@@ -446,9 +442,9 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("ROLE_"):
-            embed.title = "👤 Role Updated"
+            embed.title = "Role Updated"
             embed.description = f"Role change for {user.mention if isinstance(user, discord.User) else user}"
-            embed.color = discord.Color.blue()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Updated By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -461,9 +457,9 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("POINT_"):
-            embed.title = "🔢 Moderation Points"
+            embed.title = "Staff Points Updated"
             embed.description = f"Point update for {user.mention if isinstance(user, discord.User) else user}"
-            embed.color = discord.Color.dark_purple()
+            embed.color = discord.Color(0x2B2D31)
             
             if "points" in log_item:
                 points = log_item.get("points")
@@ -484,9 +480,9 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("NICKNAME_"):
-            embed.title = "✏️ Nickname Changed"
+            embed.title = "Nickname Changed"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} changed nickname"
-            embed.color = discord.Color.blue()
+            embed.color = discord.Color(0x2B2D31)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
@@ -495,96 +491,77 @@ class LoggingCog(commands.Cog):
             if isinstance(user, discord.User) and user.avatar:
                 embed.set_thumbnail(url=user.avatar.url)
         
-        elif event_type.startswith("MESSAGE_EDIT"):
-            embed.title = "📝 Message Edited"
-            embed.description = f"Message by {user.mention if isinstance(user, discord.User) else user} was edited"
-            embed.color = discord.Color.orange()
-            
-            if details:
-                embed.add_field(name="Details", value=details[:1024], inline=False)
-        
-        elif event_type.startswith("MESSAGE_DELETE"):
-            embed.title = "🗑️ Message Deleted"
-            embed.description = f"Message by {user.mention if isinstance(user, discord.User) else user} was deleted"
-            embed.color = discord.Color.red()
-            
-            if moderator:
-                embed.add_field(name="Deleted By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
-            
-            if details:
-                embed.add_field(name="Details", value=details[:1024], inline=False)
-        
-        elif event_type.startswith("MESSAGE_BULK"):
-            embed.title = "🗑️ Messages Purged"
-            embed.description = "Multiple messages were deleted"
-            embed.color = discord.Color.dark_red()
-            
-            if moderator:
-                embed.add_field(name="Purged By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
-            
-            if details:
-                embed.add_field(name="Details", value=details, inline=False)
-        
-        elif event_type.startswith("VOICE_JOIN"):
-            embed.title = "🔊 Voice Channel Joined"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} joined voice"
-            embed.color = discord.Color.green()
-            
-            if details:
-                embed.add_field(name="Channel", value=details, inline=False)
-        
-        elif event_type.startswith("VOICE_LEAVE"):
-            embed.title = "🔇 Voice Channel Left"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} left voice"
-            embed.color = discord.Color.greyple()
-            
-            if details:
-                embed.add_field(name="Channel", value=details, inline=False)
-        
-        elif event_type.startswith("VOICE_MOVE"):
-            embed.title = "🔄 Voice Channel Moved"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} moved channels"
-            embed.color = discord.Color.blue()
-            
-            if details:
-                embed.add_field(name="Details", value=details, inline=False)
-        
+
+
+
         elif event_type.startswith("VOICE_MUTE"):
-            embed.title = "🔇 Voice Muted"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was muted"
-            embed.color = discord.Color.orange()
+            embed.title = "Voice Server Muted"
+            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was server muted"
+            embed.color = discord.Color(0x2B2D31)
+            
+            if moderator:
+                embed.add_field(name="Muted By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
         
         elif event_type.startswith("VOICE_UNMUTE"):
-            embed.title = "🔊 Voice Unmuted"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was unmuted"
-            embed.color = discord.Color.green()
+            embed.title = "Voice Server Unmuted"
+            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was server unmuted"
+            embed.color = discord.Color(0x2B2D31)
+            
+            if moderator:
+                embed.add_field(name="Unmuted By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
         
         elif event_type.startswith("VOICE_DEAFEN"):
-            embed.title = "🙉 Voice Deafened"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was deafened"
-            embed.color = discord.Color.orange()
+            embed.title = "Voice Server Deafened"
+            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was server deafened"
+            embed.color = discord.Color(0x2B2D31)
+            
+            if moderator:
+                embed.add_field(name="Deafened By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
         
         elif event_type.startswith("VOICE_UNDEAFEN"):
-            embed.title = "👂 Voice Undeafened"
+            embed.title = "Voice Server Undeafened"
+            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was server undeafened"
+            embed.color = discord.Color(0x2B2D31)
+            
+            if moderator:
+                embed.add_field(name="Undeafened By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+            
+            if details:
+                embed.add_field(name="Details", value=details, inline=False)
+        
+        elif event_type.startswith("VOICE_DISCONNECT"):
+            embed.title = "Voice Disconnected"
+            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was disconnected from voice"
+            embed.color = discord.Color(0x2B2D31)
+            
+            if moderator:
+                embed.add_field(name="Disconnected By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+            embed.color = discord.Color(0x2B2D31)
+            
+            if details:
+                embed.add_field(name="Details", value=details, inline=False)
+        
+        elif event_type.startswith("VOICE_UNDEAFEN"):
+            embed.title = "Voice Undeafened"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was undeafened"
-            embed.color = discord.Color.green()
+            embed.color = discord.Color(0x2B2D31)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
         
         elif event_type.startswith("CHANNEL_CREATE"):
-            embed.title = "📁 Channel Created"
+            embed.title = "Channel Created"
             embed.description = "A new channel was created"
-            embed.color = discord.Color.green()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Created By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -593,9 +570,9 @@ class LoggingCog(commands.Cog):
                 embed.add_field(name="Details", value=details, inline=False)
         
         elif event_type.startswith("CHANNEL_DELETE"):
-            embed.title = "🗑️ Channel Deleted"
+            embed.title = "Channel Deleted"
             embed.description = "A channel was deleted"
-            embed.color = discord.Color.red()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Deleted By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -604,9 +581,9 @@ class LoggingCog(commands.Cog):
                 embed.add_field(name="Details", value=details, inline=False)
         
         elif event_type.startswith("CHANNEL_UPDATE"):
-            embed.title = "✏️ Channel Updated"
+            embed.title = "Channel Updated"
             embed.description = "A channel was modified"
-            embed.color = discord.Color.blue()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Updated By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -615,9 +592,9 @@ class LoggingCog(commands.Cog):
                 embed.add_field(name="Changes", value=details, inline=False)
         
         elif event_type == "ROLE_CREATE":
-            embed.title = "🎭 Role Created"
+            embed.title = "Role Created"
             embed.description = "A new role was created"
-            embed.color = discord.Color.green()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Created By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -626,9 +603,9 @@ class LoggingCog(commands.Cog):
                 embed.add_field(name="Details", value=details, inline=False)
         
         elif event_type == "ROLE_DELETE":
-            embed.title = "🗑️ Role Deleted"
+            embed.title = "Role Deleted"
             embed.description = "A role was deleted"
-            embed.color = discord.Color.red()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Deleted By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -637,9 +614,9 @@ class LoggingCog(commands.Cog):
                 embed.add_field(name="Details", value=details, inline=False)
         
         elif event_type == "ROLE_UPDATE":
-            embed.title = "✏️ Role Updated"
+            embed.title = "Role Updated"
             embed.description = "A role was modified"
-            embed.color = discord.Color.blue()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Updated By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -648,17 +625,17 @@ class LoggingCog(commands.Cog):
                 embed.add_field(name="Changes", value=details, inline=False)
         
         elif event_type.startswith("EMOJI_"):
-            embed.title = "😀 Emojis Updated"
+            embed.title = "Emojis Updated"
             embed.description = "Server emojis were modified"
-            embed.color = discord.Color.gold()
+            embed.color = discord.Color(0x2B2D31)
             
             if details:
                 embed.add_field(name="Changes", value=details, inline=False)
         
         elif event_type.startswith("GUILD_"):
-            embed.title = "🏰 Server Updated"
+            embed.title = "Server Updated"
             embed.description = "Server settings were modified"
-            embed.color = discord.Color.purple()
+            embed.color = discord.Color(0x2B2D31)
             
             if moderator:
                 embed.add_field(name="Updated By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
@@ -668,9 +645,9 @@ class LoggingCog(commands.Cog):
         
         else:
             # Default for other log types
-            embed.title = f"📝 {event_type.replace('_', ' ').title()}"
+            embed.title = f"{event_type.replace('_', ' ').title()}"
             embed.description = details if details else "No details provided"
-            embed.color = discord.Color.light_grey()
+            embed.color = discord.Color(0x2B2D31)
             
             if user:
                 embed.add_field(name="User", value=f"{user.mention if isinstance(user, discord.User) else user}", inline=True)
@@ -964,152 +941,100 @@ class LoggingCog(commands.Cog):
             )
     
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
-        """Log message edits"""
-        # Ignore bot messages and DMs
-        if not after.guild or after.author.bot:
-            return
-        
-        # Ignore if content didn't change (embed updates, etc.)
-        if before.content == after.content:
-            return
-        
-        await self.log_event(
-            event_type="MESSAGE_EDIT",
-            user_id=after.author.id,
-            guild_id=after.guild.id,
-            details=f"Channel: {after.channel.mention}\n"
-                   f"Before: {before.content[:500] if before.content else '(empty)'}...\n"
-                   f"After: {after.content[:500] if after.content else '(empty)'}...\n"
-                   f"[Jump to Message]({after.jump_url})"
-        )
-    
-    @commands.Cog.listener()
-    async def on_message_delete(self, message):
-        """Log message deletions"""
-        # Ignore bot messages and DMs
-        if not message.guild or message.author.bot:
-            return
-        
-        # Try to get moderator who deleted it
-        moderator_id = None
-        try:
-            await asyncio.sleep(0.5)
-            async for entry in message.guild.audit_logs(action=discord.AuditLogAction.message_delete, limit=10):
-                if entry.target and entry.target.id == message.author.id:
-                    if entry.extra.channel.id == message.channel.id:
-                        moderator_id = entry.user.id
-                        break
-        except Exception as e:
-            logger.error(f"Error fetching audit logs for message delete: {e}")
-        
-        await self.log_event(
-            event_type="MESSAGE_DELETE",
-            user_id=message.author.id,
-            guild_id=message.guild.id,
-            moderator_id=moderator_id,
-            details=f"Channel: {message.channel.mention}\n"
-                   f"Content: {message.content[:500] if message.content else '(empty)'}...\n"
-                   f"Attachments: {len(message.attachments)}"
-        )
-    
-    @commands.Cog.listener()
-    async def on_bulk_message_delete(self, messages):
-        """Log bulk message deletions"""
-        if not messages or not messages[0].guild:
-            return
-        
-        guild = messages[0].guild
-        channel = messages[0].channel
-        
-        # Try to get moderator who purged
-        moderator_id = None
-        try:
-            await asyncio.sleep(0.5)
-            async for entry in guild.audit_logs(action=discord.AuditLogAction.message_bulk_delete, limit=5):
-                if entry.extra.channel.id == channel.id:
-                    moderator_id = entry.user.id
-                    break
-        except Exception as e:
-            logger.error(f"Error fetching audit logs for bulk delete: {e}")
-        
-        await self.log_event(
-            event_type="MESSAGE_BULK_DELETE",
-            guild_id=guild.id,
-            moderator_id=moderator_id,
-            details=f"Channel: {channel.mention}\n"
-                   f"Messages Deleted: {len(messages)}"
-        )
-    
-    @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        """Log voice state changes"""
+        """Log voice state changes - only moderator actions"""
         if not member.guild:
             return
         
-        # User joined voice
-        if before.channel is None and after.channel is not None:
-            await self.log_event(
-                event_type="VOICE_JOIN",
-                user_id=member.id,
-                guild_id=member.guild.id,
-                details=f"Joined: {after.channel.mention}"
-            )
+        # Only log server mute (not self-mute) - check if it was done by a moderator
+        if before.mute != after.mute and not before.self_mute and not after.self_mute:
+            moderator_id = None
+            try:
+                await asyncio.sleep(0.5)
+                async for entry in member.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=10):
+                    if entry.target and entry.target.id == member.id:
+                        if entry.user and entry.user.id != member.id:
+                            moderator_id = entry.user.id
+                            break
+            except Exception as e:
+                logger.error(f"Error fetching audit logs for voice mute: {e}")
+            
+            # Only log if moderator was found (not self-action)
+            if moderator_id:
+                if after.mute and not before.mute:
+                    # Server muted by moderator
+                    await self.log_event(
+                        event_type="VOICE_MUTE",
+                        user_id=member.id,
+                        guild_id=member.guild.id,
+                        moderator_id=moderator_id,
+                        details=f"Server muted in {after.channel.mention if after.channel else 'voice'}"
+                    )
+                elif not after.mute and before.mute:
+                    # Server unmuted by moderator
+                    await self.log_event(
+                        event_type="VOICE_UNMUTE",
+                        user_id=member.id,
+                        guild_id=member.guild.id,
+                        moderator_id=moderator_id,
+                        details=f"Server unmuted in {after.channel.mention if after.channel else 'voice'}"
+                    )
         
-        # User left voice
-        elif before.channel is not None and after.channel is None:
-            await self.log_event(
-                event_type="VOICE_LEAVE",
-                user_id=member.id,
-                guild_id=member.guild.id,
-                details=f"Left: {before.channel.mention}"
-            )
+        # Only log server deafen (not self-deafen) - check if it was done by a moderator
+        if before.deaf != after.deaf and not before.self_deaf and not after.self_deaf:
+            moderator_id = None
+            try:
+                await asyncio.sleep(0.5)
+                async for entry in member.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=10):
+                    if entry.target and entry.target.id == member.id:
+                        if entry.user and entry.user.id != member.id:
+                            moderator_id = entry.user.id
+                            break
+            except Exception as e:
+                logger.error(f"Error fetching audit logs for voice deafen: {e}")
+            
+            # Only log if moderator was found (not self-action)
+            if moderator_id:
+                if after.deaf and not before.deaf:
+                    # Server deafened by moderator
+                    await self.log_event(
+                        event_type="VOICE_DEAFEN",
+                        user_id=member.id,
+                        guild_id=member.guild.id,
+                        moderator_id=moderator_id,
+                        details=f"Server deafened in {after.channel.mention if after.channel else 'voice'}"
+                    )
+                elif not after.deaf and before.deaf:
+                    # Server undeafened by moderator
+                    await self.log_event(
+                        event_type="VOICE_UNDEAFEN",
+                        user_id=member.id,
+                        guild_id=member.guild.id,
+                        moderator_id=moderator_id,
+                        details=f"Server undeafened in {after.channel.mention if after.channel else 'voice'}"
+                    )
         
-        # User moved channels
-        elif before.channel != after.channel and before.channel is not None and after.channel is not None:
-            await self.log_event(
-                event_type="VOICE_MOVE",
-                user_id=member.id,
-                guild_id=member.guild.id,
-                details=f"Moved from {before.channel.mention} to {after.channel.mention}"
-            )
-        
-        # Mute/unmute changes
-        if before.mute != after.mute or before.self_mute != after.self_mute:
-            if after.mute and not before.mute:
-                # Server muted
+        # Log voice disconnects by moderators (when user is kicked from voice)
+        if before.channel is not None and after.channel is None:
+            moderator_id = None
+            try:
+                await asyncio.sleep(0.5)
+                async for entry in member.guild.audit_logs(action=discord.AuditLogAction.member_disconnect, limit=10):
+                    if entry.target and entry.target.id == member.id:
+                        if entry.user and entry.user.id != member.id:
+                            moderator_id = entry.user.id
+                            break
+            except Exception as e:
+                logger.error(f"Error fetching audit logs for voice disconnect: {e}")
+            
+            # Only log if moderator was found (means they were kicked, not left voluntarily)
+            if moderator_id:
                 await self.log_event(
-                    event_type="VOICE_MUTE",
+                    event_type="VOICE_DISCONNECT",
                     user_id=member.id,
                     guild_id=member.guild.id,
-                    details=f"Server muted in {after.channel.mention if after.channel else 'voice'}"
-                )
-            elif not after.mute and before.mute:
-                # Server unmuted
-                await self.log_event(
-                    event_type="VOICE_UNMUTE",
-                    user_id=member.id,
-                    guild_id=member.guild.id,
-                    details=f"Server unmuted in {after.channel.mention if after.channel else 'voice'}"
-                )
-        
-        # Deafen/undeafen changes
-        if before.deaf != after.deaf or before.self_deaf != after.self_deaf:
-            if after.deaf and not before.deaf:
-                # Server deafened
-                await self.log_event(
-                    event_type="VOICE_DEAFEN",
-                    user_id=member.id,
-                    guild_id=member.guild.id,
-                    details=f"Server deafened in {after.channel.mention if after.channel else 'voice'}"
-                )
-            elif not after.deaf and before.deaf:
-                # Server undeafened
-                await self.log_event(
-                    event_type="VOICE_UNDEAFEN",
-                    user_id=member.id,
-                    guild_id=member.guild.id,
-                    details=f"Server undeafened in {after.channel.mention if after.channel else 'voice'}"
+                    moderator_id=moderator_id,
+                    details=f"Disconnected from {before.channel.mention}"
                 )
     
     @commands.Cog.listener()
