@@ -98,7 +98,7 @@ class Core(commands.Cog):
         embed = discord.Embed(
             title="Connection Status", 
             description=f"WebSocket Latency: {latency_ms}ms",
-            color=0x2ECC71
+            color=0x00ff00
         )
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -342,7 +342,7 @@ class Core(commands.Cog):
             embed = discord.Embed(
                 title="CodeVerse Bot - Command Reference",
                 description="All commands support both prefix `?` and slash `/`.",
-                color=0x3498DB,
+                color=0x0000ff,
                 timestamp=datetime.now(timezone.utc)
             )
             for cat_name, value in preview_fields:
@@ -362,7 +362,7 @@ class Core(commands.Cog):
                 "All commands work with both prefix `?` and slash `/`.\n"
                 "Use `?help <command>` for detailed usage."
             ),
-            color=0x3498DB,
+            color=0x0000ff,
             timestamp=datetime.now(timezone.utc)
         )
         summary_embed.add_field(
@@ -415,7 +415,7 @@ class CategoryButton(discord.ui.Button):
         # Build embed for this category
         embed = discord.Embed(
             title=f"{self.emoji} {self.category} Commands" if self.emoji else f"{self.category} Commands",
-            color=0x3498DB,
+            color=0x0000ff,
             timestamp=datetime.now(timezone.utc)
         )
         cmds = self.categories.get(self.category, [])
@@ -593,7 +593,7 @@ class HelpDropdown(discord.ui.Select):
         embed = discord.Embed(
             title="Core Commands",
             description="Essential bot functionality and information",
-            color=0x2ECC71
+            color=0x00ff00
         )
         
         commands = [
@@ -655,7 +655,7 @@ class HelpDropdown(discord.ui.Select):
         embed = discord.Embed(
             title="ModCog - Combined Moderation System",
             description="Unified moderation system with integrated warnings",
-            color=0xE74C3C
+            color=0xff0000
         )
         
         embed.add_field(
@@ -825,7 +825,7 @@ class HelpDropdown(discord.ui.Select):
         embed = discord.Embed(
             title="Embed Creation Tools",
             description="Professional embed creation for server announcements",
-            color=0x17A2B8
+            color=0x0000ff
         )
         
         commands = [
@@ -858,7 +858,7 @@ class HelpDropdown(discord.ui.Select):
         embed = discord.Embed(
             title="Thread Management",
             description="Manage threads and posts in Discord servers",
-            color=0x3498DB
+            color=0x0000ff
         )
         
         embed.add_field(
@@ -1027,7 +1027,7 @@ class HelpDropdown(discord.ui.Select):
         embed = discord.Embed(
             title="Diagnostics & Testing",
             description="Bot health monitoring and troubleshooting tools",
-            color=0x28A745
+            color=0x00ff00
         )
         
         commands = [

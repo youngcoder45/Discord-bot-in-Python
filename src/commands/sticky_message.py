@@ -292,7 +292,7 @@ class StickyMessage(commands.Cog):
                 embed = discord.Embed(
                     title="📝 Sticky Messages",
                     description="No sticky messages found in this server.",
-                    color=0x3498db
+                    color=0x0000ff
                 )
                 await ctx.send(embed=embed)
                 return
@@ -300,7 +300,7 @@ class StickyMessage(commands.Cog):
             embed = discord.Embed(
                 title="📝 Sticky Messages",
                 description=f"Found {len(results)} sticky message(s) in this server:",
-                color=0x3498db
+                color=0x0000ff
             )
             
             for channel_id, content, created_at in results[:10]:  # Limit to 10 for embed limits

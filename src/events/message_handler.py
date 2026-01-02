@@ -74,7 +74,7 @@ class MessageHandler(commands.Cog):
                 embed = discord.Embed(
                     title="Aura Awarded",
                     description=f"Added 1 aura to {staff_member.mention} for their helpful contribution.",
-                    color=0x2ECC71,
+                    color=0x00ff00,
                     timestamp=datetime.now(timezone.utc)
                 )
                 await message.reply(embed=embed, mention_author=False)

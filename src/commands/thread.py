@@ -86,7 +86,18 @@ class ThreadCloser(commands.Cog):
             await ctx.reply("❌ Only the ticket owner or staff can close this ticket.")
             return
         
-        # Update database
+        # Delegate to ticket cog's full force-close flow when available so we get logs, transcript, and DM
+        tickets_cog = self.bot.get_cog("Tickets")
+        if tickets_cog:
+            await tickets_cog.force_close_ticket(
+                ctx,
+                ticket_id,
+                reason="Closed via ?close command",
+                announce_in_channel=False,
+            )
+            return
+
+        # Fallback: minimal close if ticket cog is unavailable
         conn = sqlite3.connect(DATABASE_NAME)
         cursor = conn.cursor()
         cursor.execute(
@@ -96,14 +107,13 @@ class ThreadCloser(commands.Cog):
         conn.commit()
         conn.close()
         
-        # Send closure message
         embed = discord.Embed(
-            title="🔒 Ticket Closed",
+            title="Ticket Closed",
             description=f"This ticket has been closed by {ctx.author.mention}",
-            color=0xe74c3c
+            color=0xff0000
         )
         embed.add_field(
-            name="📋 Next Steps",
+            name="Next Steps",
             value="This thread will be archived and locked in 10 seconds.\nA transcript has been saved.",
             inline=False
         )
@@ -112,7 +122,6 @@ class ThreadCloser(commands.Cog):
         
         await ctx.send(embed=embed)
         
-        # Archive and lock thread after delay
         await asyncio.sleep(10)
         try:
             await thread.edit(archived=True, locked=True)
@@ -150,7 +159,7 @@ class ThreadCloser(commands.Cog):
         try:
             # Create embed for close message
             embed = discord.Embed(
-                title="🔒 Thread Closed",
+                title="Thread Closed",
                 description=f"This thread has been closed and archived.",
                 color=discord.Color.red()
             )

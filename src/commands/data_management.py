@@ -31,7 +31,7 @@ class DataManagement(commands.Cog):
         embed = discord.Embed(
             title="🔄 Creating Data Backup",
             description="Starting backup process...",
-            color=0x3498DB
+            color=0x0000ff
         )
         embed.add_field(name="Status", value="⏳ In Progress", inline=False)
         
@@ -85,7 +85,7 @@ class DataManagement(commands.Cog):
             embed = discord.Embed(
                 title="🔄 Restoring Data",
                 description="Starting restore process...",
-                color=0xFF6600
+                color=0xff0000
             )
             embed.add_field(name="Status", value="⏳ In Progress", inline=False)
             embed.add_field(name="Warning", value="⚠️ Do not restart the bot during this process!", inline=False)
@@ -130,7 +130,7 @@ class DataManagement(commands.Cog):
         embed = discord.Embed(
             title="📊 Data Management Status",
             description="Current status of bot data and backups",
-            color=0x3498DB
+            color=0x0000ff
         )
         
         # Check GitHub configuration

@@ -71,7 +71,7 @@ class Protection(commands.Cog):
                 embed = discord.Embed(
                     title="Raid Detection Alert",
                     description=f"Potential raid detected: {len(self.recent_joins)} joins in {JOIN_TIME_WINDOW} seconds",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(name="Recommended Action", value="Consider enabling verification requirements", inline=False)
                 
@@ -92,7 +92,7 @@ class Protection(commands.Cog):
                 embed = discord.Embed(
                     title="Welcome",
                     description=f"Welcome to **{member.guild.name}**! Your account is {account_age} days old. Please familiarize yourself with our community guidelines.",
-                    color=0x3498db
+                    color=0x0000ff
                 )
                 embed.set_footer(text="New Account Detection")
                 await member.send(embed=embed)
@@ -175,7 +175,7 @@ class Protection(commands.Cog):
                 embed = discord.Embed(
                     title="🛡️ Anti-Nuke: Ban Rate Limit Triggered",
                     description=f"**{actor}** exceeded the ban rate limit and has been blocked from taking moderation actions.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(name="⚠️ Reason", value=reason, inline=False)
                 embed.add_field(name="👤 Target", value=f"{user} ({user.id})", inline=True)
@@ -264,7 +264,7 @@ class Protection(commands.Cog):
                 embed = discord.Embed(
                     title="🛡️ Anti-Nuke: Kick Rate Limit Triggered",
                     description=f"**{actor}** exceeded the kick rate limit and has been blocked from taking moderation actions.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(name="⚠️ Reason", value=reason, inline=False)
                 embed.add_field(name="👤 Target", value=f"{member} ({member.id})", inline=True)
@@ -302,7 +302,7 @@ class Protection(commands.Cog):
                 embed = discord.Embed(
                     title="Mass Delete Alert",
                     description=f"Mass delete detected: {len(messages)} messages deleted",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(name="Channel", value=messages[0].channel.mention, inline=True)
                 embed.add_field(name="Recommended Action", value="Check audit logs for suspicious activity", inline=False)
@@ -322,7 +322,7 @@ class Protection(commands.Cog):
     async def antispam(self, ctx, action: str = "status"):
         """Configure anti-spam settings"""
         if action.lower() == "status":
-            embed = discord.Embed(title="Anti-Spam Status", color=0x3498db)
+            embed = discord.Embed(title="Anti-Spam Status", color=0x0000ff)
             embed.add_field(name="Message Threshold", value=f"{SPAM_THRESHOLD} messages", inline=True)
             embed.add_field(name="Time Window", value=f"{SPAM_TIME_WINDOW} seconds", inline=True)
             embed.add_field(name="Duplicate Threshold", value=f"{DUPLICATE_THRESHOLD} duplicates", inline=True)
@@ -343,7 +343,7 @@ class Protection(commands.Cog):
     async def antiraid(self, ctx, action: str = "status"):
         """Configure anti-raid settings"""
         if action.lower() == "status":
-            embed = discord.Embed(title="Anti-Raid Status", color=0x3498db)
+            embed = discord.Embed(title="Anti-Raid Status", color=0x0000ff)
             embed.add_field(name="Join Threshold", value=f"{JOIN_THRESHOLD} joins", inline=True)
             embed.add_field(name="Time Window", value=f"{JOIN_TIME_WINDOW} seconds", inline=True)
             embed.add_field(name="New Account Threshold", value=f"{NEW_ACCOUNT_THRESHOLD} days", inline=True)
@@ -362,7 +362,7 @@ class Protection(commands.Cog):
     async def antinuke(self, ctx, action: str = "status"):
         """Configure anti-nuke settings with dual-window rate limiting"""
         if action.lower() == "status":
-            embed = discord.Embed(title="🛡️ Anti-Nuke Status (Enhanced Rate Limiting)", color=0x3498db)
+            embed = discord.Embed(title="🛡️ Anti-Nuke Status (Enhanced Rate Limiting)", color=0x0000ff)
             
             # Short window (1 minute)
             embed.add_field(

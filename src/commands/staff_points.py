@@ -200,7 +200,7 @@ class StaffPoints(commands.Cog):
         embed = discord.Embed(
             title="Points Set ",
             description=f"**{member.display_name}**'s points have been set to **{amount}**.\n\n**Reason:** {reason}",
-            color=0x3498DB
+            color=0x0000ff
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.add_field(name="Previous Total", value=f"{current_points} points", inline=True)
@@ -255,7 +255,7 @@ class StaffPoints(commands.Cog):
         
         embed = discord.Embed(
             title=f" Points History - {member.display_name}",
-            color=0x3498DB
+            color=0x0000ff
         )
         embed.set_thumbnail(url=member.display_avatar.url)
 
@@ -310,7 +310,7 @@ class StaffPoints(commands.Cog):
         embed = discord.Embed(
             title="Staff Aura Leaderboard",
             description="All staff members with aura",
-            color=0x3498DB
+            color=0x0000ff
         )
         
         leaderboard_text = ""
@@ -444,7 +444,7 @@ class StaffPoints(commands.Cog):
         
         embed = discord.Embed(
             title=f" Staff Statistics - {member.display_name}",
-            color=0x3498DB
+            color=0x0000ff
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         
@@ -791,7 +791,7 @@ class StaffPoints(commands.Cog):
             emoji = ""
             action_text = "Points Added"
         elif action_type == "reset":
-            color = 0xFF6600  # Orange
+            color = 0xff0000  # Orange
             emoji = ""
             action_text = "Points Reset"
         else:
@@ -836,7 +836,7 @@ class StaffPoints(commands.Cog):
         
         embed = discord.Embed(
             title=" Staff Points Configuration",
-            color=0x3498DB
+            color=0x0000ff
         )
         
         if result:

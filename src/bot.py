@@ -185,7 +185,7 @@ async def on_ready():
     
     # Set bot status
     try:
-        activity = discord.CustomActivity(name="I'll Ghost U 💀")
+        activity = discord.CustomActivity(name="I'll Ghost U")
         await bot.change_presence(activity=activity, status=discord.Status.online)
         logger.info("✅ Bot status set successfully")
     except Exception as e:

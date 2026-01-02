@@ -92,7 +92,7 @@ class AppealModal(discord.ui.Modal):
             success_embed = discord.Embed(
                 title="✅ Appeal Submitted Successfully",
                 description="Your appeal has been submitted to our moderation team.",
-                color=0x2ecc71
+                color=0x00ff00
             )
             success_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
             success_embed.add_field(name="📊 Status", value="Pending Review", inline=True)
@@ -149,7 +149,7 @@ class AppealModal(discord.ui.Modal):
             staff_embed = discord.Embed(
                 title="📨 New Appeal Submitted",
                 description=f"Appeal #{appeal_id} from {user}",
-                color=0x3498db
+                color=0x0000ff
             )
             trimmed = content[:800] + ("..." if len(content) > 800 else "")
             staff_embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
@@ -162,7 +162,8 @@ class AppealModal(discord.ui.Modal):
             staff_embed.timestamp = datetime.now(timezone.utc)
             
             try:
-                await staff_channel.send(embed=staff_embed, view=view)
+                allowed_mentions = discord.AllowedMentions(everyone=True, users=False, roles=False, replied_user=False)
+                await staff_channel.send(content="@here", embed=staff_embed, view=view, allowed_mentions=allowed_mentions)
             except Exception as e:
                 print(f"[Appeals] ❌ Failed to send staff notification: {e}")
 
@@ -287,7 +288,7 @@ class AppealApproveModal(discord.ui.Modal):
         else:
             # Send success message
             display_target = member or user or f"User {self.user_id}"
-            embed = discord.Embed(title='✅ Appeal Approved', color=0x2ecc71)
+            embed = discord.Embed(title='✅ Appeal Approved', color=0x00ff00)
             embed.add_field(name='Appeal ID', value=f"#{self.appeal_id}", inline=True)
             embed.add_field(name='User', value=f'{display_target} ({self.user_id})', inline=True)
             embed.add_field(name='Action', value=action_taken or 'Completed', inline=True)
@@ -304,7 +305,7 @@ class AppealApproveModal(discord.ui.Modal):
                     dm = discord.Embed(
                         title="✅ Appeal Approved",
                         description=f"## Your appeal has been reviewed and **approved**\n\nWelcome back to **{guild.name if guild else 'the server'}**! We're glad to have you return.",
-                        color=0x2ecc71
+                        color=0x00ff00
                     )
                     dm.add_field(name="📋 Appeal ID", value=f"`#{self.appeal_id}`", inline=True)
                     dm.add_field(name="📊 Result", value=f"**{action_taken or 'Processed'}**", inline=True)
@@ -406,7 +407,7 @@ class AppealDenyModal(discord.ui.Modal):
             conn.close()
             
             # Send response
-            embed = discord.Embed(title='❌ Appeal Denied', color=0xe74c3c)
+            embed = discord.Embed(title='❌ Appeal Denied', color=0xff0000)
             embed.add_field(name='Appeal ID', value=f"#{self.appeal_id}", inline=True)
             embed.add_field(name='User ID', value=str(self.user_id), inline=True)
             embed.add_field(name='Denied By', value=interaction.user.mention, inline=True)
@@ -422,7 +423,7 @@ class AppealDenyModal(discord.ui.Modal):
                 embed_dm = discord.Embed(
                     title="❌ Appeal Denied",
                     description=f"## Your appeal has been reviewed\n\nAfter careful consideration, your appeal for **{interaction.guild.name if interaction.guild else 'the server'}** has been denied.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed_dm.add_field(name="📋 Appeal ID", value=f"`#{self.appeal_id}`", inline=True)
                 embed_dm.add_field(name="👮 Reviewed By", value=str(interaction.user), inline=True)
@@ -764,7 +765,7 @@ class Appeals(commands.Cog):
                 description = f"Appeal #{appeal_id} has been automatically resolved because the timeout naturally expired."
             elif is_ban_removal:
                 title = "🔓 Appeal Auto-Resolved - Ban Removed"
-                color = 0x3498db  # Blue for ban removal
+                color = 0x0000ff  # Blue for ban removal
                 description = f"Appeal #{appeal_id} has been automatically resolved because the ban was removed."
             else:
                 title = "⚠️ Appeal Auto-Resolved - Punishment Invalid"
@@ -917,7 +918,7 @@ class Appeals(commands.Cog):
                 embed = discord.Embed(
                     title="⚠️ Appeal DM Failed",
                     description=f"**Could not send appeal form to {user.mention}**\n\nUser will NOT be able to submit an appeal via DM.",
-                    color=0xe67e22
+                    color=0xff0000
                 )
                 embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
                 embed.add_field(name="🏛️ Guild", value=guild.name, inline=True)
@@ -946,7 +947,7 @@ class Appeals(commands.Cog):
                 embed = discord.Embed(
                     title="📧 Appeal DM Sent",
                     description=f"Successfully sent appeal form to {user.mention}",
-                    color=0x2ecc71
+                    color=0x00ff00
                 )
                 embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
                 embed.add_field(name="🏛️ Guild", value=guild.name, inline=True)
@@ -1130,7 +1131,7 @@ class Appeals(commands.Cog):
                     dm = discord.Embed(
                         title="✅ Appeal Automatically Approved",
                         description=f"## Your appeal has been automatically approved\n\nYour timeout in **{after.guild.name}** has been removed.",
-                        color=0x2ecc71
+                        color=0x00ff00
                     )
                     dm.add_field(name="📋 Result", value="**Timeout removed**", inline=True)
                     dm.set_footer(text=f"{after.guild.name} • Moderation System")
@@ -1166,7 +1167,7 @@ class Appeals(commands.Cog):
             await ctx.send(embed=embed)
             return
         
-        embed = discord.Embed(title=f'{status.title()} Appeals', color=0x3498db)
+        embed = discord.Embed(title=f'{status.title()} Appeals', color=0x0000ff)
         
         for appeal in appeals:
             appeal_id, user_id, reason, appeal_status, timestamp = appeal
@@ -1219,7 +1220,7 @@ class Appeals(commands.Cog):
         
         status_emoji = {"pending": "🟡", "approved": "🟢", "denied": ""}.get(status, "")
         
-        embed = discord.Embed(title=f'{status_emoji} Appeal #{appeal_id} Details', color=0x3498db)
+        embed = discord.Embed(title=f'{status_emoji} Appeal #{appeal_id} Details', color=0x0000ff)
         embed.add_field(name="User", value=user_info, inline=True)
         embed.add_field(name="Status", value=status.title(), inline=True)
         embed.add_field(name="Submitted", value=timestamp, inline=True)
@@ -1285,7 +1286,7 @@ class Appeals(commands.Cog):
                 result_embed = discord.Embed(
                     title="✅ Appeal Cancelled",
                     description=f"Your appeal **#{self.appeal_id_val}** has been cancelled successfully.\n\nYou can submit a new appeal at any time.",
-                    color=0x2ecc71
+                    color=0x00ff00
                 )
                 await button_interaction.response.send_message(embed=result_embed, ephemeral=True)
                 
@@ -1390,7 +1391,7 @@ class Appeals(commands.Cog):
                 embed = discord.Embed(
                     title="✅ Appeal Check Complete",
                     description="No pending appeals found.",
-                    color=0x2ecc71
+                    color=0x00ff00
                 )
                 await processing_msg.edit(content=None, embed=embed)
                 return
@@ -1427,7 +1428,7 @@ class Appeals(commands.Cog):
             embed = discord.Embed(
                 title="📋 Appeal Validity Check",
                 description=f"Found {len(pending_appeals)} pending appeals",
-                color=0x3498db
+                color=0x0000ff
             )
             
             if valid_appeals:

@@ -75,64 +75,6 @@ class TicketConfirmationView(discord.ui.View):
         
         await interaction.response.edit_message(embed=embed, view=view)
 
-
-# DEPRECATED: Old button class - now integrated into TicketPanelView
-# class TicketCreateButton(discord.ui.Button):
-#     """Button to create a new ticket"""
-#     
-#     def __init__(self, cog):
-#         super().__init__(
-#             label="Create Ticket",
-#             style=discord.ButtonStyle.grey,
-#             custom_id="ticket_create_button"
-#         )
-#         self.cog = cog
-#     
-#     async def callback(self, interaction: discord.Interaction):
-#         """Handle ticket creation"""
-#         # Check if user already has an open ticket
-#         conn = sqlite3.connect(DATABASE_NAME)
-#         cursor = conn.cursor()
-#         cursor.execute(
-#             'SELECT ticket_thread_id FROM tickets WHERE user_id = ? AND status = "open"',
-#             (interaction.user.id,)
-#         )
-#         existing = cursor.fetchone()
-#         conn.close()
-#         
-#         if existing:
-#             await interaction.response.send_message(
-#                 embed=create_error_embed(
-#                     "Ticket Already Open",
-#                     f"You already have an open ticket: <#{existing[0]}>"
-#                 ),
-#                 ephemeral=True
-#             )
-#             return
-#         
-#         # Show ticket category selection
-#         view = TicketCategoryView(self.cog)
-#         embed = discord.Embed(
-#             title="Select Ticket Category",
-#             description="Please choose the category that best describes your issue:",
-#             color=0x2B2D31
-#         )
-#         embed.add_field(
-#             name="Available Categories",
-#             value=(
-#                 "**Partnership** - Business partnerships and collaborations\n"
-#                 "**General Support** - Get help with using our services\n"
-#                 "**Role Issues** - Issues related to roles and permissions\n"
-#                 "**Reports** - Report inappropriate behavior\n"
-#                 "**Warn Appeals** - Appeal warnings or moderation actions\n"
-#                 "**Other Issues** - Anything else that needs attention"
-#             ),
-#             inline=False
-#         )
-#         
-#         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-
-
 class TicketControlView(discord.ui.View):
     """Persistent view with ticket control buttons"""
     
@@ -141,8 +83,8 @@ class TicketControlView(discord.ui.View):
         self.cog = cog
     
     @discord.ui.button(
-        label="🔒 Close Ticket",
-        style=discord.ButtonStyle.red,
+        label="Close Ticket",
+        style=discord.ButtonStyle.grey,
         custom_id="ticket_close_button"
     )
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -150,8 +92,8 @@ class TicketControlView(discord.ui.View):
         await self.cog.handle_close_ticket(interaction)
     
     @discord.ui.button(
-        label="📌 Claim Ticket",
-        style=discord.ButtonStyle.primary,
+        label="Claim Ticket",
+        style=discord.ButtonStyle.grey,
         custom_id="ticket_claim_button"
     )
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -623,14 +565,14 @@ class Tickets(commands.Cog):
         guild = interaction.guild
         user = interaction.user
         
-        # Category emojis and names
+        # Category names
         category_info = {
-            "partnership": ("🤝", "Partnership"),
-            "support": ("❓", "General Support"),
-            "role_issue": ("🎭", "Role Issues"),
-            "report": ("🚨", "Reports"),
-            "warn_appeal": ("⚖️", "Warn Appeals"),
-            "other": ("📝", "Other Issues")
+            "partnership": ("", "Partnership"),
+            "support": ("", "General Support"),
+            "role_issue": ("", "Role Issues"),
+            "report": ("", "Reports"),
+            "warn_appeal": ("", "Warn Appeals"),
+            "other": ("", "Other Issues")
         }
         
         emoji, category_name = category_info.get(category, ("", "Ticket"))
@@ -657,7 +599,7 @@ class Tickets(commands.Cog):
         ticket_number = self.ticket_counter
         self.ticket_counter += 1
         
-        thread_name = f"{emoji} Ticket-{ticket_number:04d} | {category_name}"
+        thread_name = f"Ticket-{ticket_number:04d} | {category_name}"
         
         try:
             # Create the thread
@@ -701,24 +643,24 @@ class Tickets(commands.Cog):
         
         # Send welcome message in thread
         embed = discord.Embed(
-            title=f"{emoji} Ticket #{ticket_number} - {category_name}",
+            title=f"Ticket #{ticket_number} - {category_name}",
             description=f"Welcome {user.mention}! Thank you for creating a ticket.\n\nPlease describe your issue in detail, and our staff team will assist you shortly.",
-            color=0x2ecc71
+            color=0x00ff00
         )
         embed.add_field(
-            name="📋 Ticket Information",
+            name="Ticket Information",
             value=(
                 f"**Category:** {category_name}\n"
                 f"**Created:** <t:{int(datetime.now(timezone.utc).timestamp())}:R>\n"
-                f"**Status:** 🟢 Open"
+                f"**Status:** Open"
             ),
             inline=False
         )
         embed.add_field(
-            name="🎛️ Ticket Controls",
+            name="Ticket Controls",
             value=(
-                "• **🔒 Close** - Close this ticket\n"
-                "• **📌 Claim** - Claim this ticket (Staff)"
+                "• Close - Close this ticket\n"
+                "• Claim - Claim this ticket (Staff)"
             ),
             inline=False
         )
@@ -808,12 +750,12 @@ class Tickets(commands.Cog):
         
         # Send closure message
         embed = discord.Embed(
-            title="🔒 Ticket Closed",
+            title="Ticket Closed",
             description=f"This ticket has been closed by {interaction.user.mention}",
-            color=0xe74c3c
+            color=0xff0000
         )
         embed.add_field(
-            name="📋 Next Steps",
+            name="Next Steps",
             value="This thread will be archived and locked in 10 seconds.\nA transcript has been saved.",
             inline=False
         )
@@ -920,9 +862,9 @@ class Tickets(commands.Cog):
         
         # Send claim message
         embed = discord.Embed(
-            title="📌 Ticket Claimed",
+            title="Ticket Claimed",
             description=f"{interaction.user.mention} is now handling this ticket.",
-            color=0x3498db
+            color=0x0000ff
         )
         embed.timestamp = datetime.now(timezone.utc)
         
@@ -961,7 +903,7 @@ class Tickets(commands.Cog):
                     )
                     
                     embed = discord.Embed(
-                        title=f"📄 Ticket #{ticket_id} Transcript",
+                        title=f"Ticket #{ticket_id} Transcript",
                         description="Transcript saved for closed ticket.",
                         color=0x95a5a6
                     )
@@ -987,19 +929,19 @@ class Tickets(commands.Cog):
             return
         
         colors = {
-            "CREATED": 0x2ecc71,
-            "CLOSED": 0xe74c3c,
-            "CLAIMED": 0x3498db
+            "CREATED": 0x00ff00,
+            "CLOSED": 0xff0000,
+            "CLAIMED": 0x0000ff
         }
         
         titles = {
-            "CREATED": "✨ Ticket Created",
-            "CLOSED": "🔒 Ticket Closed",
-            "CLAIMED": "📌 Ticket Claimed"
+            "CREATED": "Ticket Created",
+            "CLOSED": "Ticket Closed",
+            "CLAIMED": "Ticket Claimed"
         }
         
         embed = discord.Embed(
-            title=titles.get(action, f"🎫 Ticket {action}"),
+            title=titles.get(action, f"Ticket {action}"),
             color=colors.get(action, 0x95a5a6)
         )
         
@@ -1011,7 +953,7 @@ class Tickets(commands.Cog):
             embed.add_field(name="Category", value=category, inline=True)
         
         if reason:
-            embed.add_field(name="📝 Reason", value=reason, inline=False)
+            embed.add_field(name="Reason", value=reason, inline=False)
         
         embed.timestamp = datetime.now(timezone.utc)
         embed.set_footer(text="Ticket System")
@@ -1045,16 +987,21 @@ class Tickets(commands.Cog):
             return
         
         embed = discord.Embed(
-            title="🎫 Support Tickets",
+            title="Support Tickets",
             description=(
-                "Need help? Click Create Ticket below to get started!\n\n"
+                "Need help? Click **Create Ticket** below to get started!\n" \
+                "Below are few available categories to choose from when creating a ticket.\n" \
+                "Click on **Create Ticket** below to know more about each category in detail.\n"
+                "> Creating tickets will open a private thread where our support team can assist you.\n\n" \
                 "**Available Categories:**\n"
                 "• General Support\n"
                 "• Role Issues\n"
                 "• Warn Appeals\n"
                 "• Partnership\n"
                 "• Reports\n"
-                "• Other Issues"
+                "• Other Issues\n" \
+                "> Note:- Creating Ticket for Fun or Spam may lead to Disciplinary Action."
+                
             ),
             color=0x2B2D31
         )
@@ -1184,7 +1131,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="📋 Ticket Log Channel",
                     description="❌ No ticket log channel is currently set up.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="🔧 Setup Instructions",
@@ -1226,7 +1173,7 @@ class Tickets(commands.Cog):
             success_embed = discord.Embed(
                 title="✅ Ticket Log Channel Set",
                 description=f"Ticket logs will now be sent to {channel.mention}",
-                color=0x2ecc71
+                color=0x00ff00
             )
             success_embed.add_field(
                 name="📝 What gets logged?",
@@ -1297,7 +1244,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="🚫 Ticket Logging Disabled",
                     description="Custom ticket log channel has been removed.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="ℹ️ Note",
@@ -1360,7 +1307,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="👥 Ticket Support Role",
                     description="❌ No support role is currently set up.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="🔧 Setup Instructions",
@@ -1389,7 +1336,7 @@ class Tickets(commands.Cog):
             success_embed = discord.Embed(
                 title="✅ Support Role Set",
                 description=f"Support role set to {role.mention}",
-                color=0x2ecc71
+                color=0x00ff00
             )
             success_embed.add_field(
                 name="📝 What happens now?",
@@ -1438,7 +1385,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="🚫 Support Role Disabled",
                     description="Custom support role has been removed.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="ℹ️ Note",
@@ -1508,7 +1455,7 @@ class Tickets(commands.Cog):
             return
         
         embed = discord.Embed(
-            title=f" {status.title()} Tickets",
+            title=f"{status.title()} Tickets",
             color=0x5865F2
         )
         
@@ -1521,8 +1468,6 @@ class Tickets(commands.Cog):
             except:
                 user_name = f"Unknown ({user_id})"
             
-            status_emoji = "🟢" if ticket_status == "open" else ""
-            
             claimer_text = ""
             if claimed_by:
                 try:
@@ -1532,7 +1477,7 @@ class Tickets(commands.Cog):
                     claimer_text = "\n**Claimed by:** Unknown"
             
             embed.add_field(
-                name=f"{status_emoji} Ticket #{ticket_id}",
+                name=f"Ticket #{ticket_id} ({ticket_status})",
                 value=(
                     f"**User:** {user_name}\n"
                     f"**Category:** {category.title()}\n"
@@ -1570,16 +1515,16 @@ class Tickets(commands.Cog):
         conn.close()
         
         embed = discord.Embed(
-            title="📊 Ticket Statistics",
+            title="Ticket Statistics",
             color=0x5865F2
         )
         
         embed.add_field(
-            name="📋 Overview",
+            name="Overview",
             value=(
                 f"**Total Tickets:** {total_tickets}\n"
-                f"**🟢 Open:** {open_tickets}\n"
-                f"**🔴 Closed:** {closed_tickets}"
+                f"**Open:** {open_tickets}\n"
+                f"**Closed:** {closed_tickets}"
             ),
             inline=True
         )
@@ -1603,7 +1548,15 @@ class Tickets(commands.Cog):
         ticket_id="The ID of the ticket to force close",
         reason="Reason for force closing the ticket"
     )
-    async def force_close_ticket(self, ctx, ticket_id: int, *, reason: str = "Force closed by staff"):
+    async def force_close_ticket(
+        self,
+        ctx,
+        ticket_id: int,
+        *,
+        reason: str = "Force closed by staff",
+        announce_in_channel: bool = True,
+        announce_in_thread: bool = True,
+    ):
         """Force close a ticket by its ID (Staff only)"""
         # Get ticket info from database
         conn = sqlite3.connect(DATABASE_NAME)
@@ -1648,41 +1601,43 @@ class Tickets(commands.Cog):
         conn.close()
         
         # Send confirmation to command channel
-        embed = discord.Embed(
-            title="🔒 Ticket Force Closed",
-            description=f"Ticket **#{ticket_id}** has been force closed.",
-            color=0xe74c3c
-        )
-        embed.add_field(name="👤 Ticket Owner", value=f"<@{user_id}> ({user_id})", inline=True)
-        embed.add_field(name="👮 Closed By", value=ctx.author.mention, inline=True)
-        embed.add_field(name="📁 Category", value=category.title(), inline=True)
-        embed.add_field(name="📝 Reason", value=reason, inline=False)
-        
-        if thread:
-            embed.add_field(name="📺 Thread", value=thread.mention, inline=True)
-        
-        embed.timestamp = datetime.now(timezone.utc)
-        embed.set_footer(text="Force Close Command")
-        
-        await ctx.send(embed=embed)
+        if announce_in_channel:
+            embed = discord.Embed(
+                title="Ticket Force Closed",
+                description=f"Ticket #{ticket_id} has been force closed.",
+                color=0xff0000
+            )
+            embed.add_field(name="Ticket Owner", value=f"<@{user_id}> ({user_id})", inline=True)
+            embed.add_field(name="Closed By", value=ctx.author.mention, inline=True)
+            embed.add_field(name="Category", value=category.title(), inline=True)
+            embed.add_field(name="Reason", value=reason, inline=False)
+            
+            if thread:
+                embed.add_field(name="Thread", value=thread.mention, inline=True)
+            
+            embed.timestamp = datetime.now(timezone.utc)
+            embed.set_footer(text="Force Close Command")
+            
+            await ctx.send(embed=embed)
         
         # Send message to thread if it exists and is accessible
         if thread and isinstance(thread, discord.Thread):
             try:
-                closure_embed = discord.Embed(
-                    title="🔒 Ticket Force Closed",
-                    description=f"This ticket has been force closed by {ctx.author.mention}",
-                    color=0xe74c3c
-                )
-                closure_embed.add_field(name="📝 Reason", value=reason, inline=False)
-                closure_embed.add_field(
-                    name="ℹ️ Next Steps",
-                    value="This thread will be archived and locked in 10 seconds.\nA transcript has been saved.",
-                    inline=False
-                )
-                closure_embed.timestamp = datetime.now(timezone.utc)
-                
-                await thread.send(embed=closure_embed)
+                if announce_in_thread:
+                    closure_embed = discord.Embed(
+                        title="Ticket Force Closed",
+                        description=f"This ticket has been force closed by {ctx.author.mention}",
+                        color=0xff0000
+                    )
+                    closure_embed.add_field(name="Reason", value=reason, inline=False)
+                    closure_embed.add_field(
+                        name="Next Steps",
+                        value="This thread will be archived and locked in 10 seconds.\nA transcript has been saved.",
+                        inline=False
+                    )
+                    closure_embed.timestamp = datetime.now(timezone.utc)
+                    
+                    await thread.send(embed=closure_embed)
                 
                 # Generate transcript before archiving
                 await self._generate_transcript(thread, ticket_id, save_to_log=True)
@@ -1691,12 +1646,12 @@ class Tickets(commands.Cog):
                 await asyncio.sleep(10)
                 try:
                     await thread.edit(archived=True, locked=True)
-                    print(f"[Tickets] 🔒 Thread archived for force closed ticket #{ticket_id}")
+                    print(f"[Tickets] Thread archived for force closed ticket #{ticket_id}")
                 except Exception as e:
-                    print(f"[Tickets] ❌ Failed to archive force closed ticket thread: {e}")
+                    print(f"[Tickets] Failed to archive force closed ticket thread: {e}")
                 
             except Exception as e:
-                print(f"[Tickets] ❌ Failed to send force close message to thread: {e}")
+                print(f"[Tickets] Failed to send force close message to thread: {e}")
                 # Still continue with logging even if thread message fails
         
         # Log to staff channel
@@ -1715,13 +1670,13 @@ class Tickets(commands.Cog):
             user = await self.bot.fetch_user(user_id)
             if user:
                 dm_embed = discord.Embed(
-                    title="🔒 Your Ticket Has Been Closed",
-                    description=f"Your ticket **#{ticket_id}** in **{ctx.guild.name}** has been closed by staff.",
-                    color=0xe74c3c
+                    title="Your Ticket Has Been Closed",
+                    description=f"Your ticket #{ticket_id} in {ctx.guild.name} has been closed by staff.",
+                    color=0xff0000
                 )
-                dm_embed.add_field(name="📁 Category", value=category.title(), inline=True)
-                dm_embed.add_field(name="👮 Closed By", value=str(ctx.author), inline=True)
-                dm_embed.add_field(name="📝 Reason", value=reason, inline=False)
+                dm_embed.add_field(name="Category", value=category.title(), inline=True)
+                dm_embed.add_field(name="Closed By", value=str(ctx.author), inline=True)
+                dm_embed.add_field(name="Reason", value=reason, inline=False)
                 dm_embed.set_footer(text=f"{ctx.guild.name} • Ticket System")
                 
                 await user.send(embed=dm_embed)
@@ -1751,7 +1706,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="📋 Ticket Report Role",
                     description=f"Current report role: {current_role.mention}",
-                    color=0xe67e22
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="ℹ️ Information", 
@@ -1766,7 +1721,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="📋 Ticket Report Role",
                     description=f"❌ No specialized report role is currently set up.{fallback_msg}",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="🔧 Setup Instructions",
@@ -1795,7 +1750,7 @@ class Tickets(commands.Cog):
             success_embed = discord.Embed(
                 title="✅ Report Role Set",
                 description=f"Report role set to {role.mention}",
-                color=0x2ecc71
+                color=0x00ff00
             )
             success_embed.add_field(
                 name="📝 What happens now?",
@@ -1844,7 +1799,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="🚫 Report Role Disabled",
                     description="Custom report role has been removed.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="ℹ️ Note",
@@ -1905,7 +1860,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="🤝 Ticket Partner Role",
                     description=f"❌ No specialized partner role is currently set up.{fallback_msg}",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="🔧 Setup Instructions",
@@ -1934,7 +1889,7 @@ class Tickets(commands.Cog):
             success_embed = discord.Embed(
                 title="✅ Partner Role Set",
                 description=f"Partner role set to {role.mention}",
-                color=0x2ecc71
+                color=0x00ff00
             )
             success_embed.add_field(
                 name="📝 What happens now?",
@@ -1983,7 +1938,7 @@ class Tickets(commands.Cog):
                 embed = discord.Embed(
                     title="🚫 Partner Role Disabled",
                     description="Custom partner role has been removed.",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(
                     name="ℹ️ Note",

@@ -18,7 +18,7 @@ class Diagnostics(commands.Cog):
         embed = discord.Embed(
             title="Bot Diagnostics",
             description="Current system status and health metrics",
-            color=0x3498DB,
+            color=0x0000ff,
             timestamp=datetime.now(timezone.utc)
         )
         

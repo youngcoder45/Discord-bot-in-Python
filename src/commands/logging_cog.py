@@ -226,7 +226,7 @@ class LoggingCog(commands.Cog):
             # Route events to appropriate channels
             # Member logs (joins, leaves, roles, nicknames)
             if event_type in ("MEMBER_JOIN", "MEMBER_LEAVE", "MEMBER_JOIN_BOT", "ROLE_ADD", 
-                               "ROLE_REMOVE", "NICKNAME_UPDATE"):
+                               "ROLE_REMOVE", "ROLE_UPDATE_MEMBER", "NICKNAME_UPDATE"):
                 return self.bot.get_channel(member_ch) if member_ch else None
             
             # Server logs (channels, roles, server settings, emojis)
@@ -354,25 +354,44 @@ class LoggingCog(commands.Cog):
                 embed.set_thumbnail(url=user.avatar.url)
         
         elif event_type.startswith("TIMEOUT") or event_type.startswith("MUTE"):
-            embed.title = "Member Timed Out"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was timed out"
-            embed.color = discord.Color(0x2B2D31)
-            
-            if moderator:
-                embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
-            
-            if "duration" in log_item:
-                duration = log_item.get("duration", "Unknown")
-                embed.add_field(name="Duration", value=duration, inline=True)
+            # Split timeout cases for clearer mod logs
+            if "APPLIED" in event_type:
+                embed.title = "Member Timed Out"
+                embed.description = f"{user.mention if isinstance(user, discord.User) else user} was timed out"
+                embed.color = discord.Color(0x2B2D31)
                 
-            if "expires" in log_item:
-                expires = log_item.get("expires")
-                if expires:
-                    embed.add_field(name="Expires", value=f"<t:{int(expires.timestamp())}:R>", inline=True)
-            
-            if details:
-                embed.add_field(name="Reason", value=details, inline=False)
+                if moderator:
+                    embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
                 
+                if "duration" in log_item:
+                    duration = log_item.get("duration", "Unknown")
+                    embed.add_field(name="Duration", value=duration, inline=True)
+                    
+                if "expires" in log_item:
+                    expires = log_item.get("expires")
+                    if expires:
+                        embed.add_field(name="Expires", value=f"<t:{int(expires.timestamp())}:R>", inline=True)
+                
+                if details:
+                    embed.add_field(name="Reason", value=details, inline=False)
+            elif "EXPIRED" in event_type:
+                embed.title = "Timeout Expired"
+                embed.description = f"{user.mention if isinstance(user, discord.User) else user}'s timeout naturally expired"
+                embed.color = discord.Color(0x95a5a6)
+
+                if details:
+                    embed.add_field(name="Details", value=details, inline=False)
+            elif "REMOVED" in event_type:
+                embed.title = "Timeout Removed"
+                embed.description = f"{user.mention if isinstance(user, discord.User) else user} had their timeout removed early"
+                embed.color = discord.Color(0xff9900)
+
+                if moderator:
+                    embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+
+                if details:
+                    embed.add_field(name="Reason", value=details, inline=False)
+            
             # Set thumbnail if available
             if isinstance(user, discord.User) and user.avatar:
                 embed.set_thumbnail(url=user.avatar.url)
@@ -813,17 +832,11 @@ class LoggingCog(commands.Cog):
             
         # Check for role changes
         if before.roles != after.roles:
-            # Calculate role differences
             added_roles = [role for role in after.roles if role not in before.roles]
             removed_roles = [role for role in before.roles if role not in after.roles]
-            
-            role_changes = []
-            if added_roles:
-                role_changes.append(f"**Added:** {', '.join(role.mention for role in added_roles)}")
-            if removed_roles:
-                role_changes.append(f"**Removed:** {', '.join(role.mention for role in removed_roles)}")
-                
-            if role_changes:
+
+            # Skip empty diff (should not happen) to avoid noisy logs
+            if added_roles or removed_roles:
                 # Try to get moderator from audit log
                 moderator_id = None
                 try:
@@ -835,25 +848,23 @@ class LoggingCog(commands.Cog):
                             break
                 except Exception as e:
                     logger.error(f"Error fetching audit log for role update: {e}")
-                
-                # Log each role change separately for proper routing
-                for role in added_roles:
-                    await self.log_event(
-                        event_type="ROLE_ADD",
-                        user_id=after.id,
-                        guild_id=after.guild.id,
-                        moderator_id=moderator_id,
-                        details=f"**Role Added:** {role.mention}"
-                    )
-                
-                for role in removed_roles:
-                    await self.log_event(
-                        event_type="ROLE_REMOVE",
-                        user_id=after.id,
-                        guild_id=after.guild.id,
-                        moderator_id=moderator_id,
-                        details=f"**Role Removed:** {role.mention}"
-                    )
+
+                added_text = ", ".join(role.mention for role in added_roles) if added_roles else "None"
+                removed_text = ", ".join(role.mention for role in removed_roles) if removed_roles else "None"
+
+                details = []
+                if added_roles:
+                    details.append(f"Added: {added_text}")
+                if removed_roles:
+                    details.append(f"Removed: {removed_text}")
+
+                await self.log_event(
+                    event_type="ROLE_UPDATE_MEMBER",
+                    user_id=after.id,
+                    guild_id=after.guild.id,
+                    moderator_id=moderator_id,
+                    details="\n".join(details) or "Roles updated"
+                )
         
         # Check for nickname changes
         if before.nick != after.nick:
@@ -925,25 +936,29 @@ class LoggingCog(commands.Cog):
                 expires=after_timeout
             )
         
-        # Timeout removed early
-        elif before_timeout and before_timeout > datetime.now(timezone.utc) and (after_timeout is None or after_timeout <= datetime.now(timezone.utc)):
-            # Try to get timeout removal reason and moderator from audit log
-            reason = "No reason provided"
+        # Timeout removed early or naturally expired
+        elif before_timeout and (after_timeout is None or after_timeout <= datetime.now(timezone.utc)):
+            natural_expiry = before_timeout <= datetime.now(timezone.utc)
+
+            reason = "Timeout expired naturally" if natural_expiry else "No reason provided"
             moderator_id = None
-            try:
-                await asyncio.sleep(1)
-                async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=5):
-                    if entry.target and entry.target.id == after.id:
-                        if entry.reason:
-                            reason = entry.reason
-                        if entry.user:
-                            moderator_id = entry.user.id
-                        break
-            except:
-                pass
+
+            # Only look for moderator/audit info if it ended early (manual removal)
+            if not natural_expiry:
+                try:
+                    await asyncio.sleep(1)
+                    async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=5):
+                        if entry.target and entry.target.id == after.id:
+                            if entry.reason:
+                                reason = entry.reason
+                            if entry.user:
+                                moderator_id = entry.user.id
+                            break
+                except Exception:
+                    pass
             
             await self.log_event(
-                event_type="TIMEOUT_REMOVED",
+                event_type="TIMEOUT_EXPIRED" if natural_expiry else "TIMEOUT_REMOVED",
                 user_id=after.id,
                 guild_id=after.guild.id,
                 moderator_id=moderator_id,
@@ -1098,18 +1113,21 @@ class LoggingCog(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
         """Log channel updates"""
-        if before.name == after.name and before.topic == getattr(before, 'topic', None) == getattr(after, 'topic', None):
+        # Categories have no topic attribute; use getattr to avoid AttributeError
+        before_topic = getattr(before, "topic", None)
+        after_topic = getattr(after, "topic", None)
+
+        if before.name == after.name and before_topic == after_topic:
             return  # No significant changes
         
         changes = []
         if before.name != after.name:
             changes.append(f"Name: `{before.name}` → `{after.name}`")
         
-        if hasattr(before, 'topic') and hasattr(after, 'topic'):
-            if before.topic != after.topic:
-                before_topic = before.topic or "(none)"
-                after_topic = after.topic or "(none)"
-                changes.append(f"Topic: `{before_topic[:100]}` → `{after_topic[:100]}`")
+        if before_topic != after_topic:
+            before_topic_val = before_topic or "(none)"
+            after_topic_val = after_topic or "(none)"
+            changes.append(f"Topic: `{before_topic_val[:100]}` → `{after_topic_val[:100]}`")
         
         if not changes:
             return

@@ -64,7 +64,7 @@ class AdvancedModeration(commands.Cog):
             embed = discord.Embed(
                 title="❌ Invalid Feature",
                 description=f"Valid features: {', '.join(valid_features)}",
-                color=0xe74c3c
+                color=0xff0000
             )
             await ctx.send(embed=embed, ephemeral=True)
             return
@@ -74,7 +74,7 @@ class AdvancedModeration(commands.Cog):
         embed = discord.Embed(
             title="✅ Automod Updated",
             description=f"**{feature}** has been {'enabled' if status else 'disabled'}",
-            color=0x2ecc71
+            color=0x00ff00
         )
         await ctx.send(embed=embed)
 
@@ -84,7 +84,7 @@ class AdvancedModeration(commands.Cog):
         """View current automod settings"""
         embed = discord.Embed(
             title="🤖 Automod Settings",
-            color=0x3498db
+            color=0x0000ff
         )
         
         for feature, enabled in self.automod_settings.items():
@@ -125,7 +125,7 @@ class AdvancedModeration(commands.Cog):
                 embed = discord.Embed(
                     title="Temporary Ban Notice",
                     description=f"You have been temporarily banned from **{ctx.guild.name}**",
-                    color=0xe74c3c
+                    color=0xff0000
                 )
                 embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
                 embed.add_field(name="Reason", value=reason, inline=False)
@@ -143,7 +143,7 @@ class AdvancedModeration(commands.Cog):
             embed = discord.Embed(
                 title="⏰ Temporary Ban Issued",
                 description=f"**{member}** has been temporarily banned",
-                color=0xe74c3c
+                color=0xff0000
             )
             embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
@@ -156,7 +156,7 @@ class AdvancedModeration(commands.Cog):
             log_embed = discord.Embed(
                 title="🔨 Temporary Ban Issued",
                 description=f"**{member}** was temporarily banned",
-                color=0xe74c3c
+                color=0xff0000
             )
             log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
             log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
@@ -247,7 +247,7 @@ class AdvancedModeration(commands.Cog):
             embed = discord.Embed(
                 title="🔊 Member Unmuted",
                 description=f"**{member}** has been unmuted",
-                color=0x2ecc71
+                color=0x00ff00
             )
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
             
@@ -257,7 +257,7 @@ class AdvancedModeration(commands.Cog):
             log_embed = discord.Embed(
                 title="🔊 Member Unmuted",
                 description=f"**{member}** was unmuted",
-                color=0x2ecc71
+                color=0x00ff00
             )
             log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
             log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
@@ -333,7 +333,7 @@ class AdvancedModeration(commands.Cog):
             embed = discord.Embed(
                 title="👁️ Channel Unhidden",
                 description=f"**{channel.name}** is now visible to @everyone",
-                color=0x2ecc71
+                color=0x00ff00
             )
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
             await ctx.send(embed=embed)
@@ -342,7 +342,7 @@ class AdvancedModeration(commands.Cog):
             log_embed = discord.Embed(
                 title="👁️ Channel Unhidden",
                 description=f"**#{channel.name}** is now visible to @everyone",
-                color=0x2ecc71
+                color=0x00ff00
             )
             log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
             log_embed.add_field(name="Channel", value=f"#{channel.name} ({channel.id})", inline=True)
@@ -363,7 +363,7 @@ class AdvancedModeration(commands.Cog):
         """View moderation statistics"""
         embed = discord.Embed(
             title="📊 Moderation Statistics",
-            color=0x3498db
+            color=0x0000ff
         )
         
         if moderator:

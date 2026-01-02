@@ -152,7 +152,7 @@ class MemberEvents(commands.Cog):
             enabled = await self.get_welcome_enabled(ctx.guild.id)
             embed = discord.Embed(
                 title="Welcome Message Settings",
-                color=0x3498DB
+                color=0x0000ff
             )
             embed.add_field(
                 name="Status",
@@ -250,7 +250,7 @@ class MemberEvents(commands.Cog):
         
         embed = discord.Embed(
             title="Welcome Message Status",
-            color=0x3498DB
+            color=0x0000ff
         )
         embed.add_field(
             name="Welcome Messages",

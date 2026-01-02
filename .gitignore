@@ -4,7 +4,7 @@
 .env.production
 *.key
 *.pem
-
+/dash 
 # Python
 __pycache__/
 *.py[cod]
@@ -30,7 +30,6 @@ MANIFEST
 venv/
 env/
 ENV/
-
 # PyInstaller
 *.manifest
 *.spec

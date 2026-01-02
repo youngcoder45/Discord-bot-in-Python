@@ -471,6 +471,10 @@ class StaffShifts(commands.Cog):
         self.log_embed_provider = LogEmbedProvider(bot)
         self.service = ShiftService(Path("data/staff_shifts.db"))
         self.ready = asyncio.Event()
+        self.deprecation_message = "Shift commands are deprecated and disabled."
+
+    async def _notify_deprecated(self, ctx: commands.Context):
+        await ctx.send(self.deprecation_message)
     
     def safe_timestamp(self, dt) -> int:
         """Safely get timestamp from datetime object or string"""
@@ -526,44 +530,13 @@ class StaffShifts(commands.Cog):
         self.ready.set()
     
     async def log_start(self, ctx: commands.Context, shift: Shift):
-        assert ctx.guild is not None
-        settings = await self.service.get_settings(ctx.guild.id)
-        if settings.log_channel_id is None:
-            return
-        log_channel = self.bot.get_channel(settings.log_channel_id) or await self.bot.fetch_channel(settings.log_channel_id)
-        if log_channel is None or not isinstance(log_channel, discord.TextChannel):
-            print("Log channel not found")
-            return
-        await log_channel.send(
-            embed=await self.log_embed_provider.get_shift_start_embed(ctx, shift)
-        )
+        return
 
     async def log_end(self, ctx: commands.Context, shift: Shift):
-        assert ctx.guild is not None
-        settings = await self.service.get_settings(ctx.guild.id)
-        if settings.log_channel_id is None:
-            return
-        log_channel = self.bot.get_channel(settings.log_channel_id) or await self.bot.fetch_channel(settings.log_channel_id)
-        if log_channel is None or not isinstance(log_channel, discord.TextChannel):
-            print("Log channel not found")
-            return
-        assert shift.end is not None
-        await log_channel.send(
-            embed=await self.log_embed_provider.get_shift_end_embed(ctx, shift)
-        )
+        return
     
     async def log_invalidate(self, ctx: commands.Context, shift: Shift):
-        assert ctx.guild is not None
-        settings = await self.service.get_settings(ctx.guild.id)
-        if settings.log_channel_id is None:
-            return
-        log_channel = self.bot.get_channel(settings.log_channel_id) or await self.bot.fetch_channel(settings.log_channel_id)
-        if log_channel is None or not isinstance(log_channel, discord.TextChannel):
-            print("Log channel not found")
-            return
-        await log_channel.send(
-            embed=await self.log_embed_provider.get_shift_discard_embed(ctx, shift)
-        )
+        return
     
     async def is_staff(self, ctx: commands.Context) -> bool:
         assert ctx.guild is not None
@@ -608,9 +581,8 @@ class StaffShifts(commands.Cog):
     @commands.has_permissions()
     @commands.cooldown(1, 2, commands.BucketType.member)
     async def shift(self, ctx: commands.Context):
-        await self.ready.wait()
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+        await self._notify_deprecated(ctx)
+        return
 
     @shift.command(
         name="start",
@@ -623,22 +595,8 @@ class StaffShifts(commands.Cog):
     async def shift_start(
         self, ctx: commands.Context, note: str = None  # type: ignore
     ):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        
-        # Check if user is staff
-        if not (await self.is_staff(ctx)):
-            await self.send_staff_error(ctx)
-            return
-        user_id = ctx.author.id
-        existing_shift = await self.service.get_shift(ctx.guild.id, user_id)
-        if existing_shift:
-            await ctx.send(f"You already have a shift in progress since <t:{self.safe_timestamp(existing_shift.start)}:F>. Use `{ctx.prefix}shift end` to end it now or `{ctx.prefix}shift discard` to discard it.")
-            return
-        start = datetime.now(timezone.utc)
-        await self.service.start_shift(Shift.new(ctx.guild.id, user_id, start, note))
-        await ctx.send(f"The start of your shift has been logged at <t:{self.safe_timestamp(start)}:F>. Use `{ctx.prefix}shift end` to log its end.")
-        await self.log_start(ctx, Shift.new(ctx.guild.id, user_id, start, note))
+        await self._notify_deprecated(ctx)
+        return
     
     @shift.command(
         name="discard",
@@ -650,19 +608,8 @@ class StaffShifts(commands.Cog):
     @commands.has_permissions()
     @commands.cooldown(1, 2, commands.BucketType.member)
     async def shift_invalidate(self, ctx: commands.Context):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        if not (await self.is_staff(ctx)):
-            await self.send_staff_error(ctx)
-            return
-        user_id = ctx.author.id
-        current_shift = await self.service.get_shift(ctx.guild.id, user_id)
-        if not current_shift:
-            await ctx.send("You don't have an active shift to discard.")
-            return
-        await self.service.discard_shift(current_shift)
-        await ctx.send("Your current shift has been discarded.")
-        await self.log_invalidate(ctx, current_shift)
+        await self._notify_deprecated(ctx)
+        return
 
     @shift.command(
         name="pause",
@@ -673,20 +620,8 @@ class StaffShifts(commands.Cog):
     @commands.has_permissions()
     @commands.cooldown(1, 2, commands.BucketType.member)
     async def shift_pause(self, ctx: commands.Context):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        if not (await self.is_staff(ctx)):
-            await self.send_staff_error(ctx)
-            return
-        current_shift = await self.service.get_shift(ctx.guild.id, ctx.author.id)
-        if not current_shift:
-            await ctx.send("You don't have an active shift.")
-            return
-        if current_shift.paused:
-            await ctx.send("Your shift is already paused.")
-            return
-        await self.service.pause_shift(current_shift)
-        await ctx.send(f"Your shift has been paused at <t:{self.safe_timestamp(datetime.now(timezone.utc))}:F>.")
+        await self._notify_deprecated(ctx)
+        return
 
     @shift.command(
         name="resume",
@@ -697,20 +632,8 @@ class StaffShifts(commands.Cog):
     @commands.has_permissions()
     @commands.cooldown(1, 2, commands.BucketType.member)
     async def shift_resume(self, ctx: commands.Context):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        if not (await self.is_staff(ctx)):
-            await self.send_staff_error(ctx)
-            return
-        current_shift = await self.service.get_shift(ctx.guild.id, ctx.author.id)
-        if not current_shift:
-            await ctx.send("You don't have an active shift.")
-            return
-        if not current_shift.paused:
-            await ctx.send("Your shift is not paused.")
-            return
-        await self.service.resume_shift(current_shift)
-        await ctx.send(f"Your shift has been resumed at <t:{self.safe_timestamp(datetime.now(timezone.utc))}:F>.")
+        await self._notify_deprecated(ctx)
+        return
 
     @shift.command(
         name="end",
@@ -723,38 +646,15 @@ class StaffShifts(commands.Cog):
     async def shift_end(
         self, ctx: commands.Context, reason: str = None  # type: ignore
     ):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        if not (await self.is_staff(ctx)):
-            await self.send_staff_error(ctx)
-            return
-        current_shift = await self.service.get_shift(ctx.guild.id, ctx.author.id)
-        if not current_shift:
-            await ctx.send("You don't have an active shift.")
-            return
-        
-        # Validate the shift object
-        if not isinstance(current_shift, Shift):
-            await ctx.send("Shift data is invalid. Contact an administrator.")
-            return
-        
-        # Ensure we have a proper datetime object for the end time
-        end_time = datetime.now(timezone.utc)
-        current_shift.end = end_time
-        current_shift.end_note = reason
-        
-        await self.service.end_shift(current_shift)
-        
-        # Use the end_time variable directly to avoid any potential issues
-        await ctx.send(f"The end of your shift has been logged at <t:{self.safe_timestamp(end_time)}:F>.")
-        await self.log_end(ctx, current_shift)
+        await self._notify_deprecated(ctx)
+        return
     
     @shift.group("admin")
     @commands.has_permissions(manage_guild=True)
     async def shift_admin(self, ctx: commands.Context):
         """Admin commands for managing staff shifts"""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_admin.command(
         name="active",
@@ -766,58 +666,8 @@ class StaffShifts(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.member)
     async def shift_admin_active(self, ctx: commands.Context):
         """Show all currently active shifts"""
-        assert ctx.guild is not None
-        await self.ready.wait()
-        
-        active_shifts = await self.service.get_active_shifts(ctx.guild.id)
-        
-        if not active_shifts:
-            embed = discord.Embed(
-                title="Active Shifts", 
-                description="No staff members are currently on duty.",
-                color=discord.Color.blue()
-            )
-            await ctx.send(embed=embed)
-            return
-        
-        embed = discord.Embed(
-            title="Active Shifts", 
-            description=f"{len(active_shifts)} staff member(s) currently on duty",
-            color=discord.Color.green()
-        )
-        
-        for shift in active_shifts:
-            user = ctx.guild.get_member(shift.user_id)
-            if user:
-                # Ensure shift.start is a datetime object for calculation
-                if isinstance(shift.start, str):
-                    try:
-                        start_str = str(shift.start)  # Ensure it's treated as string
-                        start_dt = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
-                    except ValueError:
-                        start_str = str(shift.start)
-                        start_dt = datetime.strptime(start_str.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-                elif isinstance(shift.start, datetime):
-                    start_dt = shift.start
-                else:
-                    start_dt = datetime.now(timezone.utc)
-                
-                duration = datetime.now(timezone.utc) - start_dt
-                hours, remainder = divmod(int(duration.total_seconds()), 3600)
-                minutes = remainder // 60
-                
-                value = f"**Started:** <t:{self.safe_timestamp(shift.start)}:R>\n"
-                value += f"**Duration:** {hours}h {minutes}m"
-                if shift.start_note:
-                    value += f"\n**Note:** {shift.start_note[:100]}{'...' if len(shift.start_note) > 100 else ''}"
-                
-                embed.add_field(
-                    name=user.display_name,
-                    value=value,
-                    inline=True
-                )
-        
-        await ctx.send(embed=embed)
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_admin.command(
         name="history",
@@ -829,80 +679,8 @@ class StaffShifts(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.member)
     async def shift_admin_history(self, ctx: commands.Context, user: Optional[discord.Member] = None, days: int = 7):
         """Show shift history with optional user and day filters"""
-        assert ctx.guild is not None
-        await self.ready.wait()
-        
-        if days < 1 or days > 365:
-            await ctx.send("Days must be between 1 and 365.")
-            return
-        
-        user_id = user.id if user else None
-        shifts = await self.service.get_shift_history(ctx.guild.id, user_id, days, 20)
-        
-        if not shifts:
-            target = f" for {user.display_name}" if user else ""
-            embed = discord.Embed(
-                title="Shift History", 
-                description=f"No shifts found{target} in the last {days} days.",
-                color=discord.Color.blue()
-            )
-            await ctx.send(embed=embed)
-            return
-        
-        target = f" - {user.display_name}" if user else ""
-        embed = discord.Embed(
-            title=f"Shift History{target}", 
-            description=f"Latest {len(shifts)} shifts in the past {days} days",
-            color=discord.Color.blue()
-        )
-        
-        for shift in shifts[:10]:  # Limit to 10 for embed space
-            member = ctx.guild.get_member(shift.user_id)
-            username = member.display_name if member else f"Unknown User ({shift.user_id})"
-            
-            if shift.end:
-                # Ensure both start and end are datetime objects for calculation
-                if isinstance(shift.start, str):
-                    try:
-                        start_str = str(shift.start)
-                        start_dt = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
-                    except ValueError:
-                        start_str = str(shift.start)
-                        start_dt = datetime.strptime(start_str.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-                else:
-                    start_dt = shift.start
-                
-                if isinstance(shift.end, str):
-                    try:
-                        end_str = str(shift.end)
-                        end_dt = datetime.fromisoformat(end_str.replace('Z', '+00:00'))
-                    except ValueError:
-                        end_str = str(shift.end)
-                        end_dt = datetime.strptime(end_str.replace('+00:00', ''), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-                else:
-                    end_dt = shift.end
-                
-                duration = end_dt - start_dt
-                hours, remainder = divmod(int(duration.total_seconds()), 3600)
-                minutes = remainder // 60
-                status = f"Active ({hours}h {minutes}m)"
-            else:
-                status = "Ongoing"
-            
-            value = f"**Started:** <t:{self.safe_timestamp(shift.start)}:R>\n**Status:** {status}"
-            if shift.start_note:
-                value += f"\n**Note:** {shift.start_note[:50]}{'...' if len(shift.start_note) > 50 else ''}"
-            
-            embed.add_field(
-                name=username,
-                value=value,
-                inline=True
-            )
-        
-        if len(shifts) > 10:
-            embed.set_footer(text=f"Showing 10 of {len(shifts)} shifts")
-        
-        await ctx.send(embed=embed)
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_admin.command(
         name="end",
@@ -914,41 +692,8 @@ class StaffShifts(commands.Cog):
     @commands.cooldown(1, 3, commands.BucketType.member)
     async def shift_admin_end(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str] = None):
         """Force end a user's active shift"""
-        assert ctx.guild is not None
-        await self.ready.wait()
-        
-        current_shift = await self.service.get_shift(ctx.guild.id, user.id)
-        if not current_shift:
-            await ctx.send(f"{user.display_name} does not have an active shift.")
-            return
-        
-        # Add admin note to end reason
-        admin_note = f"[Force ended by {ctx.author.display_name}]"
-        if reason:
-            end_note = f"{reason} {admin_note}"
-        else:
-            end_note = admin_note
-        
-        ended_shift = await self.service.force_end_shift(ctx.guild.id, user.id, end_note)
-        if ended_shift and ended_shift.end:
-            duration = ended_shift.end - ended_shift.start
-            hours, remainder = divmod(int(duration.total_seconds()), 3600)
-            minutes = remainder // 60
-            
-            embed = discord.Embed(
-                title="Shift Force Ended",
-                description=f"Ended {user.mention}'s shift.",
-                color=discord.Color.orange()
-            )
-            embed.add_field(name="Duration", value=f"{hours}h {minutes}m", inline=True)
-            embed.add_field(name="Ended by", value=ctx.author.mention, inline=True)
-            if reason:
-                embed.add_field(name="Reason", value=reason, inline=False)
-            
-            await ctx.send(embed=embed)
-            
-            # Log the forced end
-            await self.log_end(ctx, ended_shift)
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_admin.command(
         name="stats",
@@ -960,53 +705,8 @@ class StaffShifts(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.member)
     async def shift_admin_stats(self, ctx: commands.Context, user: Optional[discord.Member] = None, days: int = 30):
         """Show shift statistics"""
-        assert ctx.guild is not None
-        await self.ready.wait()
-        
-        if days < 1 or days > 365:
-            await ctx.send("Days must be between 1 and 365.")
-            return
-        
-        user_id = user.id if user else None
-        stats = await self.service.get_shift_stats(ctx.guild.id, user_id, days)
-        
-        if user:
-            embed = discord.Embed(
-                title=f"Shift Statistics - {user.display_name}",
-                description=f"Statistics for the last {days} days",
-                color=discord.Color.blue()
-            )
-            embed.set_thumbnail(url=user.display_avatar.url)
-        else:
-            embed = discord.Embed(
-                title="Server Shift Statistics",
-                description=f"Statistics for the last {days} days",
-                color=discord.Color.blue()
-            )
-        
-        total_shifts = stats[0] if stats else 0
-        completed_shifts = stats[1] if stats else 0
-        total_seconds = stats[3] if stats and len(stats) > 3 and stats[3] else 0
-        avg_seconds = stats[4] if stats and len(stats) > 4 and stats[4] else 0
-        
-        # Convert seconds to human readable
-        total_hours = int(total_seconds // 3600)
-        avg_hours = int(avg_seconds // 3600)
-        avg_minutes = int((avg_seconds % 3600) // 60)
-        
-        embed.add_field(name="Total Shifts", value=str(total_shifts), inline=True)
-        embed.add_field(name="Completed Shifts", value=str(completed_shifts), inline=True)
-        embed.add_field(name="Ongoing Shifts", value=str(total_shifts - completed_shifts), inline=True)
-        embed.add_field(name="Total Hours", value=f"{total_hours}h", inline=True)
-        
-        if completed_shifts > 0:
-            embed.add_field(name="Avg Shift Length", value=f"{avg_hours}h {avg_minutes}m", inline=True)
-        
-        if not user and stats and len(stats) > 2:
-            unique_staff = stats[2]
-            embed.add_field(name="Active Staff", value=str(unique_staff), inline=True)
-        
-        await ctx.send(embed=embed)
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_admin.command(
         name="summary",
@@ -1018,98 +718,13 @@ class StaffShifts(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.member)
     async def shift_admin_summary(self, ctx: commands.Context, days: int = 7):
         """Show staff activity summary"""
-        assert ctx.guild is not None
-        await self.ready.wait()
-        
-        if days < 1 or days > 365:
-            await ctx.send("Days must be between 1 and 365.")
-            return
-        
-        # Get all shifts in the timeframe
-        all_shifts = await self.service.get_shift_history(ctx.guild.id, None, days, 1000)
-        
-        # Get staff roles to identify all potential staff
-        settings = await self.service.get_settings(ctx.guild.id)
-        staff_members = set()
-        for role_id in settings.staff_role_ids:
-            role = ctx.guild.get_role(role_id)
-            if role:
-                staff_members.update(role.members)
-        
-        # Organize data by user
-        user_data = {}
-        for shift in all_shifts:
-            if shift.user_id not in user_data:
-                user_data[shift.user_id] = {'shifts': 0, 'hours': 0, 'ongoing': 0}
-            
-            user_data[shift.user_id]['shifts'] += 1
-            if shift.end:
-                duration = (shift.end - shift.start).total_seconds()
-                user_data[shift.user_id]['hours'] += duration / 3600
-            else:
-                user_data[shift.user_id]['ongoing'] += 1
-        
-        embed = discord.Embed(
-            title="Staff Activity Summary",
-            description=f"Activity for the last {days} days",
-            color=discord.Color.green()
-        )
-        
-        # Active staff (those with shifts)
-        active_staff = []
-        for user_id, data in user_data.items():
-            member = ctx.guild.get_member(user_id)
-            if member:
-                active_staff.append((member, data))
-        
-        # Sort by total hours
-        active_staff.sort(key=lambda x: x[1]['hours'], reverse=True)
-        
-        if active_staff:
-            top_staff = []
-            for member, data in active_staff[:5]:  # Top 5
-                hours = int(data['hours'])
-                shifts = data['shifts']
-                ongoing = data['ongoing']
-                status = f" ({ongoing} ongoing)" if ongoing else ""
-                top_staff.append(f"{member.display_name}: {hours}h, {shifts} shifts{status}")
-            
-            embed.add_field(
-                name="Most Active Staff",
-                value="\n".join(top_staff) if top_staff else "None",
-                inline=False
-            )
-        
-        # Inactive staff (staff members with no shifts)
-        inactive_staff = []
-        for member in staff_members:
-            if member.id not in user_data:
-                inactive_staff.append(member.display_name)
-        
-        if inactive_staff:
-            embed.add_field(
-                name="Inactive Staff",
-                value="\n".join(inactive_staff[:10]) if inactive_staff else "None",
-                inline=False
-            )
-            if len(inactive_staff) > 10:
-                embed.set_footer(text=f"Showing 10 of {len(inactive_staff)} inactive staff")
-        
-        # Overall stats
-        total_shifts = sum(data['shifts'] for data in user_data.values())
-        total_hours = sum(data['hours'] for data in user_data.values())
-        active_count = len(active_staff)
-        
-        embed.add_field(name="Total Shifts", value=str(total_shifts), inline=True)
-        embed.add_field(name="Total Hours", value=f"{int(total_hours)}h", inline=True)
-        embed.add_field(name="Active Staff", value=f"{active_count}/{len(staff_members)}", inline=True)
-        
-        await ctx.send(embed=embed)
+        await self._notify_deprecated(ctx)
+        return
     
     @shift.group("settings")
     async def shift_settings(self, ctx: commands.Context):
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_settings.command(
         name="logs",
@@ -1122,15 +737,8 @@ class StaffShifts(commands.Cog):
     async def shift_settings_logs(
         self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
     ):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        settings = await self.service.get_settings(ctx.guild.id)
-        settings.log_channel_id = channel.id if channel is not None else None
-        await self.service.update_settings(settings)
-        if channel is not None:
-            await ctx.send(f"Shift logs will be sent to <#{channel.id}>.")
-        else:
-            await ctx.send("Shift logging will be disabled.")
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_settings.command(
         name="addrole",
@@ -1143,15 +751,8 @@ class StaffShifts(commands.Cog):
     async def shift_settings_addrole(
         self, ctx: commands.Context, role: discord.Role
     ):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        settings = await self.service.get_settings(ctx.guild.id)
-        if role.id in settings.staff_role_ids:
-            await ctx.send(f"{role.mention} is already a staff role.")
-            return
-        settings.staff_role_ids.append(role.id)
-        await self.service.update_settings(settings)
-        await ctx.send(f"{role.mention} is now a staff role.")
+        await self._notify_deprecated(ctx)
+        return
 
     @shift_settings.command(
         name="removerole",
@@ -1164,15 +765,8 @@ class StaffShifts(commands.Cog):
     async def shift_settings_removerole(
         self, ctx: commands.Context, role: discord.Role
     ):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        settings = await self.service.get_settings(ctx.guild.id)
-        if role.id not in settings.staff_role_ids:
-            await ctx.send(f"{role.mention} is not a staff role.")
-            return
-        settings.staff_role_ids.remove(role.id)
-        await self.service.update_settings(settings)
-        await ctx.send(f"{role.mention} is no longer a staff role.")
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_settings.command(
         name="clearroles",
@@ -1185,12 +779,8 @@ class StaffShifts(commands.Cog):
     async def shift_settings_clearroles(
         self, ctx: commands.Context
     ):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        settings = await self.service.get_settings(ctx.guild.id)
-        settings.staff_role_ids = []
-        await self.service.update_settings(settings)
-        await ctx.send("Cleared the list of staff roles.")
+        await self._notify_deprecated(ctx)
+        return
     
     @shift_settings.command(
         name="listroles",
@@ -1202,13 +792,8 @@ class StaffShifts(commands.Cog):
     async def shift_settings_listroles(
         self, ctx: commands.Context
     ):
-        assert ctx.guild is not None
-        await self.ready.wait()
-        settings = await self.service.get_settings(ctx.guild.id)
-        roles: list[discord.Role] = [ctx.guild.get_role(role_id) for role_id in settings.staff_role_ids if ctx.guild.get_role(role_id) is not None] # type: ignore
-        await ctx.send(
-            "The list of staff roles is: " + "\n -".join(["" if len(roles) > 0 else "None"] + [f"<@&{role.id}>" for role in roles])
-        )
+        await self._notify_deprecated(ctx)
+        return
 
 
 async def setup(bot: commands.Bot):
