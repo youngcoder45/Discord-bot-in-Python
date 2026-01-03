@@ -890,12 +890,16 @@ class LoggingCog(commands.Cog):
                 details=f"**Before:** {old_nick}\n**After:** {new_nick}"
             )
         
-        # Check for timeout changes
+        # Check for timeout changes - only process if timeout status actually changed
         before_timeout = getattr(before, 'timed_out_until', None)
         after_timeout = getattr(after, 'timed_out_until', None)
         
-        # Timeout applied
-        if (before_timeout is None or before_timeout <= datetime.now(timezone.utc)) and after_timeout and after_timeout > datetime.now(timezone.utc):
+        # Normalize None and expired timeouts for comparison
+        before_timeout_active = before_timeout and before_timeout > datetime.now(timezone.utc)
+        after_timeout_active = after_timeout and after_timeout > datetime.now(timezone.utc)
+        
+        # Timeout applied - only log if status changed from not-timed-out to timed-out
+        if not before_timeout_active and after_timeout_active:
             # Try to get timeout reason and moderator from audit log
             reason = "No reason provided"
             moderator_id = None
@@ -936,8 +940,8 @@ class LoggingCog(commands.Cog):
                 expires=after_timeout
             )
         
-        # Timeout removed early or naturally expired
-        elif before_timeout and (after_timeout is None or after_timeout <= datetime.now(timezone.utc)):
+        # Timeout removed early or naturally expired - only log if status changed from timed-out to not-timed-out
+        elif before_timeout_active and not after_timeout_active:
             natural_expiry = before_timeout <= datetime.now(timezone.utc)
 
             reason = "Timeout expired naturally" if natural_expiry else "No reason provided"
