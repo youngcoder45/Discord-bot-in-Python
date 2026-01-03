@@ -376,7 +376,9 @@ async def main():
         keep_alive()
     except Exception as e:
         logger.warning(f"Keep-alive server failed to start: {e}")
-    await bot.start(TOKEN)
+    
+    async with bot:
+        await bot.start(TOKEN)
 
 if __name__ == "__main__":
     try:
