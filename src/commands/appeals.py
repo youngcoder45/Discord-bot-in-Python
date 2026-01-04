@@ -17,14 +17,14 @@ from utils.embeds import create_error_embed, create_success_embed, create_info_e
 
 class AppealModal(discord.ui.Modal):
     """Modal for collecting appeal information"""
-    
+
     def __init__(self, cog, guild: discord.Guild, punishment_type: str, reason: str):
         super().__init__(title="Submit Your Appeal", timeout=300)
         self.cog = cog
         self.guild = guild
         self.punishment_type = punishment_type
         self.reason = reason
-        
+
         # Question 1: What are you appealing?
         self.punishment_input = discord.ui.TextInput(
             label="What punishment are you appealing?",
@@ -34,7 +34,7 @@ class AppealModal(discord.ui.Modal):
             required=True
         )
         self.add_item(self.punishment_input)
-        
+
         # Question 2: Why did you get punished?
         self.reason_input = discord.ui.TextInput(
             label="Why did you get this punishment?",
@@ -44,7 +44,7 @@ class AppealModal(discord.ui.Modal):
             required=True
         )
         self.add_item(self.reason_input)
-        
+
         # Question 3: Your appeal message
         self.appeal_input = discord.ui.TextInput(
             label="Your appeal message",
@@ -54,6 +54,26 @@ class AppealModal(discord.ui.Modal):
             required=True
         )
         self.add_item(self.appeal_input)
+
+    def reappeal_limit_check(self, user_id: int) -> bool:
+        """check if user reappealed 2 times this month"""
+        if self.punishment_type.lower() not in ['ban', 'banned', 'kick', 'kicked', 'timeout', 'timed out']:
+            return False
+
+        current_time = datetime.now(timezone.utc)
+        start_of_month = current_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        conn = sqlite3.connect(DATABASE_NAME)
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT COUNT(*) FROM unban_requests
+            WHERE user_id = ? AND status = 'denied'
+            AND timestamp >= ?
+        ''', (user_id, start_of_month.strftime('%Y-%m-%d %H:%M:%S')))
+        denied_count = cur.fetchone()[0]
+        conn.close()
+
+        return denied_count >= 2
     
     async def on_submit(self, interaction: discord.Interaction):
         """Handle appeal submission"""
@@ -69,7 +89,18 @@ class AppealModal(discord.ui.Modal):
                     ephemeral=True
                 )
                 return
-            
+
+            # Check monthly reappeal limit for ban/kick appeals
+            if self.reappeal_limit_check(interaction.user.id):
+                await interaction.response.send_message(
+                    embed=create_error_embed(
+                        "Monthly Reappeal Limit Exceeded",
+                        "You have reached the maximum of 2 reappeals per month for ban/kick appeals.\n\nPlease wait until next month to submit another appeal."
+                    ),
+                    ephemeral=True
+                )
+                return
+
             # Create full appeal content
             appeal_content = (
                 f"**Punishment Being Appealed:** {self.punishment_input.value}\n\n"
