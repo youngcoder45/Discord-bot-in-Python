@@ -942,7 +942,9 @@ class LoggingCog(commands.Cog):
         
         # Timeout removed early or naturally expired - only log if status changed from timed-out to not-timed-out
         elif before_timeout_active and not after_timeout_active:
-            natural_expiry = before_timeout <= datetime.now(timezone.utc)
+            natural_expiry = False
+            if before_timeout:
+                natural_expiry = before_timeout <= datetime.now(timezone.utc)
 
             reason = "Timeout expired naturally" if natural_expiry else "No reason provided"
             moderator_id = None
