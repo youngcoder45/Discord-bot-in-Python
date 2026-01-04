@@ -76,6 +76,7 @@ COGS_TO_LOAD = [
     # Data & Utility (Useful but not critical)
     'commands.data_management',  # Data backup and persistence management
     'commands.utility',       # Embed builder commands for announcements
+    'commands.rules',         # Rules commands
     
     # Thread Management (Essential)
     'commands.thread',        # Thread/post management (close, lock, pin, etc.)

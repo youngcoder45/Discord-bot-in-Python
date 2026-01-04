@@ -3,6 +3,7 @@ import os
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime, timezone
+from typing import Optional
 from utils.json_store import get_warnings
 
 REPORT_CHANNEL_ID = 1418492683277570109
@@ -50,7 +51,6 @@ class Core(commands.Cog):
             "advanced_mod": "commands.advanced_moderation",
             "advanced_moderation": "commands.advanced_moderation",
             "tickets": "commands.tickets",
-            "tickets2": "commands.tickets2",
             "utility": "commands.utility",
             "embeds": "commands.utility",
             "thread": "commands.thread",
@@ -70,6 +70,7 @@ class Core(commands.Cog):
             "reaction_roles": "commands.reaction_roles",
             "sticky": "commands.sticky_message",
             "sticky_message": "commands.sticky_message",
+            "rules": "commands.rules",
         }
         
         # Get the actual cog path
@@ -104,22 +105,24 @@ class Core(commands.Cog):
 
     @commands.hybrid_command(name="info", aliases=["whois", "info-user"], help="Get user information")
     @app_commands.describe(user="The user to get information about")
-    async def info(self, ctx: commands.Context, user: discord.Member = None):
+    async def info(self, ctx: commands.Context, user: Optional[discord.Member] = None):
         """Get detailed information about a user."""
-        user = user or ctx.author
+        target_user = user or ctx.author
         
         # Fetch warnings
-        warnings = await get_warnings(user.id)
+        warnings = await get_warnings(target_user.id)
         warn_count = len(warnings)
         
         # Embed setup
-        embed = discord.Embed(color=user.color)
+        embed = discord.Embed(color=target_user.color)
         
         # General Information
-        created_at = f"<t:{int(user.created_at.timestamp())}:R>"
-        joined_at = f"<t:{int(user.joined_at.timestamp())}:R>" if user.joined_at else "Unknown"
+        created_at = f"<t:{int(target_user.created_at.timestamp())}:R>"
+        joined_at = "Unknown"
+        if isinstance(target_user, discord.Member) and target_user.joined_at:
+            joined_at = f"<t:{int(target_user.joined_at.timestamp())}:R>"
         
-        embed.add_field(name="General Informations:", value=f"**Name:** {user.name}\n**ID:** {user.id}\n**Creation:** {created_at}\n**Join:** {joined_at}\n**Color:** {str(user.color)}", inline=False)
+        embed.add_field(name="General Informations:", value=f"**Name:** {target_user.name}\n**ID:** {target_user.id}\n**Creation:** {created_at}\n**Join:** {joined_at}\n**Color:** {str(target_user.color)}", inline=False)
 
         # Bot sus Informations
         is_sus = "Yes" if warn_count > 0 else "No"
@@ -127,27 +130,30 @@ class Core(commands.Cog):
         embed.add_field(name="Bot sus Informations:", value=f"**Suspicious?** {is_sus}\n**Warn Points:** {warn_count}\n**Active Strikes:** {warn_count}\n**Current Heat:** 0%", inline=False)
 
         # Whitelisted Status
-        is_staff = user.guild_permissions.manage_messages
+        is_staff = False
+        if isinstance(target_user, discord.Member):
+            is_staff = target_user.guild_permissions.manage_messages
         status = "Yes" if is_staff else "No"
         
         embed.add_field(name="Whitelisted User:", value=f"**Whitelisted?** {status}\n» **Spam:** {status}\n» **Ping:** {status}\n» **Advertising:** {status}\n» **Quarantine:** {status}\n» **Public Roles:** {status}", inline=False)
 
         # Dangerous User
         dangerous_text = "No special status."
-        if user.id == ctx.guild.owner_id:
+        if ctx.guild and target_user.id == ctx.guild.owner_id:
             dangerous_text = "**This user is the owner.**"
-        elif user.guild_permissions.administrator:
+        elif isinstance(target_user, discord.Member) and target_user.guild_permissions.administrator:
             dangerous_text = "**This user is an administrator.**"
             
         embed.add_field(name="Dangerous User:", value=dangerous_text, inline=False)
         
         # BOT Permissions
         perms = []
-        if user.guild_permissions.administrator: perms.append("Administrator")
-        if user.guild_permissions.ban_members: perms.append("Ban Members")
-        if user.guild_permissions.kick_members: perms.append("Kick Members")
-        if user.guild_permissions.manage_messages: perms.append("Manage Messages")
-        if user.guild_permissions.manage_roles: perms.append("Manage Roles")
+        if isinstance(target_user, discord.Member):
+            if target_user.guild_permissions.administrator: perms.append("Administrator")
+            if target_user.guild_permissions.ban_members: perms.append("Ban Members")
+            if target_user.guild_permissions.kick_members: perms.append("Kick Members")
+            if target_user.guild_permissions.manage_messages: perms.append("Manage Messages")
+            if target_user.guild_permissions.manage_roles: perms.append("Manage Roles")
         
         perms_str = " | ".join(perms) if perms else "None"
         has_perms = "Yes" if perms else "No"
@@ -155,7 +161,9 @@ class Core(commands.Cog):
         embed.add_field(name="BOT Permissions:", value=f"**Has Permissions:** {has_perms}\n» **Permissions:** {perms_str}", inline=False)
 
         # Account Accessories
-        roles = [r.mention for r in user.roles if r != ctx.guild.default_role]
+        roles = []
+        if ctx.guild and isinstance(target_user, discord.Member):
+            roles = [r.mention for r in target_user.roles if r != ctx.guild.default_role]
         roles.reverse()
         roles_str = ", ".join(roles[:10])
         if len(roles) > 10:
@@ -164,8 +172,8 @@ class Core(commands.Cog):
             
         embed.add_field(name="Account Accessories:", value=f"**Roles:** {roles_str}\n**Webhooks:** No", inline=False)
 
-        if user.avatar:
-            embed.set_thumbnail(url=user.avatar.url)
+        if target_user.avatar:
+            embed.set_thumbnail(url=target_user.avatar.url)
             
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -182,6 +190,10 @@ class Core(commands.Cog):
                 else:
                     await interaction_or_ctx.response.send_message(msg, ephemeral=True)
                 return
+
+        if not isinstance(report_channel, discord.TextChannel):
+             # Fallback or error if channel is not a text channel
+             return
 
         embed = discord.Embed(title=" User Report", color=discord.Color.red(), timestamp=datetime.now(timezone.utc))
         embed.add_field(name="Reporter", value=f"{reporter.mention} ({reporter.id})", inline=False)
@@ -214,7 +226,8 @@ class Core(commands.Cog):
                 channel_id = int(parts[-2])
                 message_id = int(parts[-1])
                 channel = self.bot.get_channel(channel_id) or await self.bot.fetch_channel(channel_id)
-                message = await channel.fetch_message(message_id)
+                if isinstance(channel, (discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.StageChannel)):
+                    message = await channel.fetch_message(message_id)
             except:
                 pass
         

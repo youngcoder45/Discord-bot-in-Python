@@ -1186,7 +1186,7 @@ class LoggingCog(commands.Cog):
         try:
             await asyncio.sleep(0.5)
             async for entry in role.guild.audit_logs(action=discord.AuditLogAction.role_delete, limit=5):
-                if entry.target and entry.target.name == role.name:
+                if entry.target and entry.target.id == role.id:
                     moderator_id = entry.user.id
                     break
         except Exception as e:

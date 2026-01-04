@@ -4,14 +4,22 @@ from discord import app_commands
 from typing import Optional
 import json
 import os
+import logging
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 class ReactionRoles(commands.Cog):
     """Reaction role system for automatic role assignment"""
     
     def __init__(self, bot):
         self.bot = bot
-        self.data_file = "data/reaction_roles.json"
+        # Robust path determination
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # src/commands -> src -> root
+        self.root_dir = os.path.dirname(os.path.dirname(current_dir))
+        self.data_file = os.path.join(self.root_dir, "data", "reaction_roles.json")
+        
         self.reaction_roles = self.load_reaction_roles()
     
     def load_reaction_roles(self):
@@ -19,10 +27,13 @@ class ReactionRoles(commands.Cog):
         try:
             if os.path.exists(self.data_file):
                 with open(self.data_file, 'r') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    logger.info(f"Loaded {len(data)} reaction role messages from {self.data_file}")
+                    return data
+            logger.info(f"No reaction role file found at {self.data_file}, starting fresh.")
             return {}
         except Exception as e:
-            print(f"Error loading reaction roles: {e}")
+            logger.error(f"Error loading reaction roles: {e}")
             return {}
     
     def save_reaction_roles(self):
@@ -31,8 +42,9 @@ class ReactionRoles(commands.Cog):
             os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
             with open(self.data_file, 'w') as f:
                 json.dump(self.reaction_roles, f, indent=2)
+            logger.info(f"Saved reaction roles to {self.data_file}")
         except Exception as e:
-            print(f"Error saving reaction roles: {e}")
+            logger.error(f"Error saving reaction roles: {e}")
     
     # Default number emojis
     DEFAULT_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
@@ -256,7 +268,7 @@ class ReactionRoles(commands.Cog):
             # Bot doesn't have permission to assign roles
             pass
         except Exception as e:
-            print(f"Error adding reaction role: {e}")
+            logger.error(f"Error adding reaction role: {e}")
     
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
@@ -297,7 +309,7 @@ class ReactionRoles(commands.Cog):
             # Bot doesn't have permission to remove roles
             pass
         except Exception as e:
-            print(f"Error removing reaction role: {e}")
+            logger.error(f"Error removing reaction role: {e}")
     
     @app_commands.command(
         name="rrlist",
