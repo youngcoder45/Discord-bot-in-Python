@@ -72,6 +72,7 @@ COGS_TO_LOAD = [
     # Staff Management (Essential)
     'commands.staff_shifts',  # Staff shift tracking and logging system
     'commands.staff_points',  # Staff aura system with leaderboard
+    'commands.permits',       # Permit system for bot-controlled moderation perms
     
     # Data & Utility (Useful but not critical)
     'commands.data_management',  # Data backup and persistence management
@@ -80,6 +81,7 @@ COGS_TO_LOAD = [
     
     # Thread Management (Essential)
     'commands.thread',        # Thread/post management (close, lock, pin, etc.)
+    'commands.help_thread_notification', # Help thread notification system
     
     # Event Handlers (Essential)
     'events.member_events',   # Member join/leave event handlers

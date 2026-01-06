@@ -124,9 +124,25 @@ class ModCog(commands.Cog):
             await self._safe_reply(ctx, f"❌ Failed to purge messages: {e}")
 
     @commands.hybrid_command(name="kick", description="Kick a member from the server.")
-    @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     async def kick(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
+        # PERM CHECK: Native Kick OR Permit
+        has_native = ctx.author.guild_permissions.kick_members
+        permits_cog = self.bot.get_cog("PermitSystem")
+        has_permit = permits_cog and permits_cog.check_permit(ctx.author.id, ctx.guild.id, "kick_members")
+        
+        if not (has_native or has_permit):
+             return await self._safe_reply(ctx, "❌ You do not have permission to kick members (Need native perms or 'kick_members' permit).")
+
+        # RATE LIMIT and ANTI-NUKE CHECK
+        protection_cog = self.bot.get_cog("Protection")
+        if protection_cog:
+            if not protection_cog.check_rate_limit(ctx.author.id, "kick"):
+                return await self._safe_reply(ctx, "❌ KICK BLOCKED: You are kicking too fast! (Anti-Nuke Protection)", ephemeral=True)
+        else:
+            # Fallback local rate limit if protection cog is missing
+            pass # Or implement simple local check
+
         if ctx.guild is None:
             return await self._safe_reply(ctx, "❌ This command can only be used in a server.")
         if member == ctx.author:
@@ -137,15 +153,36 @@ class ModCog(commands.Cog):
         try:
             await member.kick(reason=reason)
             await self._safe_reply(ctx, f"👢 Kicked {member.mention} | Reason: {reason}")
+            
+            # Record action in Protection cog to update counters
+            if protection_cog:
+                 protection_cog.record_action(ctx.author.id, "kick")
+
         except discord.Forbidden:
             await self._safe_reply(ctx, "❌ I don't have permission to kick that member.")
         except Exception as e:
             await self._safe_reply(ctx, f"❌ Error: {e}")
 
     @commands.hybrid_command(name="ban", description="Ban a member from the server.")
-    @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     async def ban(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
+        # PERM CHECK: Native Ban OR Permit
+        has_native = ctx.author.guild_permissions.ban_members
+        permits_cog = self.bot.get_cog("PermitSystem")
+        has_permit = permits_cog and permits_cog.check_permit(ctx.author.id, ctx.guild.id, "ban_members")
+        
+        if not (has_native or has_permit):
+             return await self._safe_reply(ctx, "❌ You do not have permission to ban members (Need native perms or 'ban_members' permit).")
+
+        # RATE LIMIT and ANTI-NUKE CHECK
+        protection_cog = self.bot.get_cog("Protection")
+        if protection_cog:
+            if not protection_cog.check_rate_limit(ctx.author.id, "ban"):
+                return await self._safe_reply(ctx, "❌ BAN BLOCKED: You are banning too fast! (Anti-Nuke Protection)", ephemeral=True)
+        else:
+            # Fallback local rate limit
+            pass
+
         if ctx.guild is None:
             return await self._safe_reply(ctx, "❌ This command can only be used in a server.")
         if member == ctx.author:
@@ -156,6 +193,11 @@ class ModCog(commands.Cog):
         try:
             await member.ban(reason=reason)
             await self._safe_reply(ctx, f"🔨 Banned {member.mention} | Reason: {reason}")
+
+            # Record action in Protection cog
+            if protection_cog:
+                 protection_cog.record_action(ctx.author.id, "ban")
+
         except discord.Forbidden:
             await self._safe_reply(ctx, "❌ I don't have permission to ban that member.")
         except Exception as e:

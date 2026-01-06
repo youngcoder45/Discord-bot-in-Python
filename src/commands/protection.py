@@ -49,6 +49,59 @@ class Protection(commands.Cog):
         self.ANTINUKE_20MIN_LIMIT = 12          # max 12 bans/kicks per 20 minutes
         self.BLOCK_COOLDOWN = 300               # Block actions for 5 minutes
 
+    def record_action(self, actor_id: int, action_type: str):
+        """Record an action for rate limiting"""
+        now = time.time()
+        if action_type == "ban":
+            self.recent_bans_1min.append((now, actor_id))
+            self.recent_bans_20min.append((now, actor_id))
+        elif action_type == "kick":
+            self.recent_kicks_1min.append((now, actor_id))
+            self.recent_kicks_20min.append((now, actor_id))
+
+    def check_rate_limit(self, actor_id: int, action_type: str) -> bool:
+        """Check if an actor is rate limited for a specific action"""
+        now = time.time()
+        
+        # Check if actor is blocked
+        if actor_id in self.blocked_actors:
+            if now - self.blocked_actors[actor_id] < self.BLOCK_COOLDOWN:
+                return False
+            else:
+                 del self.blocked_actors[actor_id]
+
+        if action_type == "ban":
+            # Clean old entries
+            while self.recent_bans_1min and now - self.recent_bans_1min[0][0] > self.ANTINUKE_1MIN_WINDOW:
+                self.recent_bans_1min.popleft()
+            while self.recent_bans_20min and now - self.recent_bans_20min[0][0] > self.ANTINUKE_20MIN_WINDOW:
+                self.recent_bans_20min.popleft()
+                
+            bans_1min = sum(1 for t, aid in self.recent_bans_1min if aid == actor_id)
+            bans_20min = sum(1 for t, aid in self.recent_bans_20min if aid == actor_id)
+            
+            # Pre-emptive check: if one more action would exceed limit
+            if bans_1min >= self.ANTINUKE_1MIN_LIMIT or bans_20min >= self.ANTINUKE_20MIN_LIMIT:
+                 # Add to blocked actors
+                 self.blocked_actors[actor_id] = now
+                 return False
+
+        elif action_type == "kick":
+             # Clean old entries
+            while self.recent_kicks_1min and now - self.recent_kicks_1min[0][0] > self.ANTINUKE_1MIN_WINDOW:
+                self.recent_kicks_1min.popleft()
+            while self.recent_kicks_20min and now - self.recent_kicks_20min[0][0] > self.ANTINUKE_20MIN_WINDOW:
+                self.recent_kicks_20min.popleft()
+                
+            kicks_1min = sum(1 for t, aid in self.recent_kicks_1min if aid == actor_id)
+            kicks_20min = sum(1 for t, aid in self.recent_kicks_20min if aid == actor_id)
+            
+            if kicks_1min >= self.ANTINUKE_1MIN_LIMIT or kicks_20min >= self.ANTINUKE_20MIN_LIMIT:
+                 self.blocked_actors[actor_id] = now
+                 return False
+
+        return True
+
     # @commands.Cog.listener()
     # async def on_message(self, message):
     #     """Handle anti-spam checks - DISABLED BY USER REQUEST"""
@@ -428,6 +481,59 @@ class Protection(commands.Cog):
     async def getuserid(self, ctx, user: discord.Member):
         """Fallback text command to get user id: ?getuserid @member"""
         await ctx.send(f"{user} — ID: {user.id}")
+
+    def record_action(self, actor_id: int, action_type: str):
+        """Record an action for rate limiting"""
+        now = time.time()
+        if action_type == "ban":
+            self.recent_bans_1min.append((now, actor_id))
+            self.recent_bans_20min.append((now, actor_id))
+        elif action_type == "kick":
+            self.recent_kicks_1min.append((now, actor_id))
+            self.recent_kicks_20min.append((now, actor_id))
+
+    def check_rate_limit(self, actor_id: int, action_type: str) -> bool:
+        """Check if an actor is rate limited for a specific action"""
+        now = time.time()
+        
+        # Check if actor is blocked
+        if actor_id in self.blocked_actors:
+            if now - self.blocked_actors[actor_id] < self.BLOCK_COOLDOWN:
+                return False
+            else:
+                 del self.blocked_actors[actor_id]
+
+        if action_type == "ban":
+            # Clean old entries
+            while self.recent_bans_1min and now - self.recent_bans_1min[0][0] > self.ANTINUKE_1MIN_WINDOW:
+                self.recent_bans_1min.popleft()
+            while self.recent_bans_20min and now - self.recent_bans_20min[0][0] > self.ANTINUKE_20MIN_WINDOW:
+                self.recent_bans_20min.popleft()
+                
+            bans_1min = sum(1 for t, aid in self.recent_bans_1min if aid == actor_id)
+            bans_20min = sum(1 for t, aid in self.recent_bans_20min if aid == actor_id)
+            
+            # Pre-emptive check: if one more action would exceed limit
+            if bans_1min >= self.ANTINUKE_1MIN_LIMIT or bans_20min >= self.ANTINUKE_20MIN_LIMIT:
+                 # Add to blocked actors
+                 self.blocked_actors[actor_id] = now
+                 return False
+
+        elif action_type == "kick":
+             # Clean old entries
+            while self.recent_kicks_1min and now - self.recent_kicks_1min[0][0] > self.ANTINUKE_1MIN_WINDOW:
+                self.recent_kicks_1min.popleft()
+            while self.recent_kicks_20min and now - self.recent_kicks_20min[0][0] > self.ANTINUKE_20MIN_WINDOW:
+                self.recent_kicks_20min.popleft()
+                
+            kicks_1min = sum(1 for t, aid in self.recent_kicks_1min if aid == actor_id)
+            kicks_20min = sum(1 for t, aid in self.recent_kicks_20min if aid == actor_id)
+            
+            if kicks_1min >= self.ANTINUKE_1MIN_LIMIT or kicks_20min >= self.ANTINUKE_20MIN_LIMIT:
+                 self.blocked_actors[actor_id] = now
+                 return False
+
+        return True
 
 async def setup(bot):
     await bot.add_cog(Protection(bot))
