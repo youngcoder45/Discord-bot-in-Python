@@ -16,24 +16,12 @@ class MemberEvents(commands.Cog):
         self.db_path = "data/member_events.db"
         
     async def is_staff_member(self, member: discord.Member) -> bool:
-        """Check if member is a staff member using staff-shifts module logic"""
+        """Check if member is a staff member (has Manage Messages permission)"""
         if not member.guild:
             return False
-            
-        # Get staff shifts cog to check staff status
-        staff_shifts_cog = self.bot.get_cog('StaffShifts')
-        if not staff_shifts_cog:
-            return False
-            
-        try:
-            # Get staff settings from the staff shifts service
-            settings = await staff_shifts_cog.service.get_settings(member.guild.id)
-            
-            # Check if user has any of the configured staff roles
-            user_role_ids = [role.id for role in member.roles]
-            return any(role_id in settings.staff_role_ids for role_id in user_role_ids)
-        except:
-            return False
+        
+        # Simple permission check instead of using removed StaffShifts module
+        return member.guild_permissions.manage_messages
 
     async def cog_load(self):
         """Initialize the database when the cog loads"""

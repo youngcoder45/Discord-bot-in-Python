@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2026-01-09]
+
+### Removed
+- **Staff Shifts System**:
+    - Completely removed staff shift tracking functionality (`staff_shifts.py`, `staff_shifts.db`).
+    - Removed all database migrations and initialization logic for shift tracking.
+    - Updated permission checks in `member_events.py` to use native Discord permissions (`manage_messages`) instead of shift status.
+
+### Added
+- **Webhook-Based Logging**:
+    - Replaced direct channel messages with `WebhookManager` for all logging events.
+    - Implemented intelligent caching and rate-limit handling for webhooks.
+    - Added fallback to regular messages if webhooks fail.
+- **Backup System Upgrade**:
+    - Updated backup destination to active repository `TheCodeVerseHub/CodeVerse-Bot`.
+    - Added "Critical Backup Failure" alerts to Discord logging channels.
+
+### Fixed
+- **Moderation System (`modcog.py`)**:
+    - Fixed static analysis type errors in `kick` and `ban` commands.
+    - Added `ephemeral` parameter handling to `_safe_reply` to prevent Interaction errors.
+- **Bot Initialization**:
+    - Fixed `AttributeError` in WebhookManager when `bot.user` is None during early startup.
+
 ## [2025-12-22]
 
 ### Added

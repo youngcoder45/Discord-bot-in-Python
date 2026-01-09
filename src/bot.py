@@ -70,7 +70,6 @@ COGS_TO_LOAD = [
     'commands.sticky_message', # Sticky message feature for important announcements
     'commands.reaction_roles', # Reaction role system for automatic role assignment
     # Staff Management (Essential)
-    'commands.staff_shifts',  # Staff shift tracking and logging system
     'commands.staff_points',  # Staff aura system with leaderboard
     'commands.permits',       # Permit system for bot-controlled moderation perms
     
@@ -87,10 +86,6 @@ COGS_TO_LOAD = [
     'events.member_events',   # Member join/leave event handlers
     'events.message_handler', # Auto-thanks system for staff aura
 ]
-
-# REMOVED COGS (Non-essential fun/utility commands):
-# - commands.utility_extra  # Fun commands: emotes, roll, remindme, randomcolor, inviteinfo
-# - commands.roles          # Self-assignable ranks (file deleted during cleanup)
 
 class CodeVerseBot(commands.Bot):
     def __init__(self):
@@ -134,9 +129,11 @@ class CodeVerseBot(commands.Bot):
         """Async setup tasks (load cogs, etc.)."""
         # CRITICAL: Restore data BEFORE initializing databases or loading cogs
         try:
-            from utils.data_persistence import startup_restore
+            from utils.data_persistence import DataPersistenceManager
+            # Pass self (bot) to manager for alerts
+            persistence_manager = DataPersistenceManager(bot=self)
             logger.info("🔄 Restoring data before cog initialization...")
-            await startup_restore()
+            await persistence_manager.startup_restore()
             logger.info("✅ Data restoration completed")
         except Exception as e:
             logger.error(f"⚠️ Data restoration failed: {e}")
@@ -232,7 +229,7 @@ async def on_ready():
     # Start periodic backup task (every 6 hours)
     try:
         from utils.data_persistence import start_periodic_backup
-        await start_periodic_backup()
+        await start_periodic_backup(bot)
         logger.info("🔄 Periodic backup system started")
     except Exception as e:
         logger.error(f"⚠️ Periodic backup system failed to start: {e}")

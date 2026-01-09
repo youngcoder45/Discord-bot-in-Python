@@ -17,9 +17,6 @@ def initialize_all_databases():
         data_dir.mkdir(exist_ok=True)
         logger.info("📁 Data directory ensured")
         
-        # Initialize staff_shifts.db
-        init_staff_shifts_db()
-        
         # Initialize staff_points.db
         init_staff_points_db()
         
@@ -32,35 +29,6 @@ def initialize_all_databases():
     except Exception as e:
         logger.error(f"❌ Database initialization failed: {e}")
         return False
-
-def init_staff_shifts_db():
-    """Initialize staff shifts database"""
-    db_path = "data/staff_shifts.db"
-    
-    conn = sqlite3.connect(db_path)
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS shifts (
-            shift_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            start DATETIME NOT NULL,
-            end DATETIME DEFAULT NULL,
-            start_note TEXT DEFAULT NULL,
-            end_note TEXT DEFAULT NULL
-        )
-    ''')
-    
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS shift_settings (
-            guild_id INTEGER PRIMARY KEY,
-            log_channel_id INTEGER DEFAULT NULL,
-            staff_role_ids TEXT DEFAULT '[]'
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    logger.info("✅ staff_shifts.db initialized")
 
 def init_staff_points_db():
     """Initialize staff points (aura) database"""

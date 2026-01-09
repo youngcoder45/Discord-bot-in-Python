@@ -444,33 +444,6 @@ View staff points (aura) leaderboard or specific user.
 
 ---
 
-### Staff Shifts
-
-#### `/shift` or `?shift`
-**Permission Required:** Staff role required
-
-Clock in/out of staff shifts and view shift logs.
-
-**Usage:**
-```
-/shift start
-/shift end
-/shift log [@user]
-?shift start
-?shift end
-?shift log
-```
-
-**Examples:**
-- `/shift start` - Start your shift
-- `/shift end` - End your shift
-- `/shift log @moderator` - View someone's shift history
-
-**What it tracks:**
-- Shift start time
-- Shift end time
-- Total hours worked
-- All logged to database
 
 ---
 

@@ -16,6 +16,7 @@ from pathlib import Path
 # Add parent directory to path to import config
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from utils.database import DATABASE_NAME
+from utils.webhook_manager import WebhookManager
 import logging
 
 logger = logging.getLogger("codeverse.logging")
@@ -25,6 +26,7 @@ class LoggingCog(commands.Cog):
     
     def __init__(self, bot):
         self.bot = bot
+        self.webhook_manager = WebhookManager(bot)
         self.log_queue = asyncio.Queue()
         self.is_ready = False
         
@@ -189,18 +191,18 @@ class LoggingCog(commands.Cog):
         # Create and send appropriate embed based on event type
         embed = await self._create_log_embed(log_item)
         if embed:
-            try:
-                await log_channel.send(embed=embed)
-                
-                # Update database to mark log as sent
-                if log_id:
+            # Use webhook manager to send log
+            success = await self.webhook_manager.send(log_channel, embed)
+            
+            if success and log_id:
+                try:
                     conn = sqlite3.connect(DATABASE_NAME)
                     cursor = conn.cursor()
                     cursor.execute("UPDATE bot_logs SET sent_to_discord = 1 WHERE id = ?", (log_id,))
                     conn.commit()
                     conn.close()
-            except Exception as e:
-                logger.error(f"Error sending log to channel: {e}")
+                except Exception as e:
+                    logger.error(f"Error updating log database: {e}")
     
     async def _get_log_channel_for_event(self, guild_id: int, event_type: str):
         """Get the appropriate log channel for a guild and event type"""

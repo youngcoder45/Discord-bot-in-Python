@@ -38,8 +38,9 @@ class DataManagement(commands.Cog):
         message = await ctx.reply(embed=embed)
         
         try:
-            from utils.data_persistence import backup_data
-            await backup_data()
+            from utils.data_persistence import DataPersistenceManager
+            persistence_manager = DataPersistenceManager(bot=self.bot)
+            await persistence_manager.backup_all_data()
             
             embed = create_success_embed(
                 "Backup Completed",
@@ -93,8 +94,9 @@ class DataManagement(commands.Cog):
             await message.edit(embed=embed, view=None)
             
             try:
-                from utils.data_persistence import startup_restore
-                await startup_restore()
+                from utils.data_persistence import DataPersistenceManager
+                persistence_manager = DataPersistenceManager(bot=self.bot)
+                await persistence_manager.startup_restore()
                 
                 embed = create_success_embed(
                     "Restore Completed",
@@ -136,7 +138,7 @@ class DataManagement(commands.Cog):
         # Check GitHub configuration
         import os
         github_token = os.getenv('GITHUB_TOKEN')
-        github_repo = os.getenv('GITHUB_REPO', 'youngcoder45/Discord-bot-in-Python')
+        github_repo = os.getenv('GITHUB_REPO', 'thecoderversehub/codeverse-bot')
         
         if github_token:
             github_status = "✅ Configured"
@@ -169,7 +171,6 @@ class DataManagement(commands.Cog):
         # Check database files
         import os
         db_files = [
-            "data/staff_shifts.db",
             "data/staff_points.db", 
             "data/codeverse_bot.db"
         ]

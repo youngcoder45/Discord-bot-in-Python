@@ -12,15 +12,17 @@ from typing import Dict, Any, Optional
 import base64
 import aiohttp
 from pathlib import Path
+from utils.webhook_manager import WebhookManager
 
 logger = logging.getLogger("codeverse.persistence")
 
 class DataPersistenceManager:
     """Manages data persistence across bot deployments"""
     
-    def __init__(self):
+    def __init__(self, bot=None):
+        self.bot = bot
         self.github_token = os.getenv('GITHUB_TOKEN')
-        self.github_repo = os.getenv('GITHUB_REPO', 'youngcoder45/Discord-bot-in-Python')
+        self.github_repo = os.getenv('GITHUB_REPO', 'TheCodeVerseHub/CodeVerse-Bot')
         self.backup_branch = os.getenv('BACKUP_BRANCH', 'bot-data-backup')
         self.data_dir = Path("data")
         self.backup_dir = Path("backup")
@@ -63,7 +65,6 @@ class DataPersistenceManager:
         data_info = {"has_data": False, "databases": {}}
         
         db_files = [
-            "data/staff_shifts.db",
             "data/staff_points.db", 
             "data/codeverse_bot.db"
         ]
@@ -133,7 +134,6 @@ class DataPersistenceManager:
         
         # Backup SQLite databases
         db_files = [
-            "data/staff_shifts.db",
             "data/staff_points.db",
             "data/codeverse_bot.db"
         ]
@@ -355,6 +355,31 @@ class DataPersistenceManager:
                     else:
                         error_text = await response.text()
                         logger.error(f"❌ GitHub backup failed: {response.status} - {error_text}")
+                        # Fallback for archived/failed repo: try to log failure to Discord channel if bot available
+                        if "archived" in error_text.lower() and self.bot:
+                            try:
+                                # We need a log channel ID. Using database.py logic or config
+                                # Hardcoded for now based on context from logging logs
+                                log_channel_id = 1411766078920458333 # Server logs
+                                channel = self.bot.get_channel(log_channel_id)
+                                if channel:
+                                    # Create embed for alert
+                                    import discord
+                                    embed = discord.Embed(
+                                        title="❌ Backup System Alert",
+                                        description="GitHub backup failed because repository is archived/read-only.",
+                                        color=discord.Color.red(),
+                                        timestamp=datetime.now(timezone.utc)
+                                    )
+                                    embed.add_field(name="Error", value=error_text[:1000])
+                                    embed.add_field(name="Action Required", value="Update GITHUB_REPO env var to a writable repository.")
+                                    
+                                    # Use WebhookManager for reliable delivery
+                                    webhook_manager = WebhookManager(self.bot)
+                                    await webhook_manager.send(channel, embed)
+                            except Exception as alert_error:
+                                logger.error(f"Failed to send backup alert to Discord: {alert_error}")
+
                         return False
         
         except Exception as e:
@@ -489,6 +514,8 @@ async def backup_data():
     """Called to backup data"""
     await persistence_manager.backup_all_data()
 
-async def start_periodic_backup():
+async def start_periodic_backup(bot=None):
     """Start periodic backup task"""
+    if bot:
+        persistence_manager.bot = bot
     asyncio.create_task(persistence_manager.schedule_periodic_backup())

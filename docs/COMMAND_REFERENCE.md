@@ -8,7 +8,6 @@ This document provides a comprehensive list of all commands available in the Cod
   - [Basic Moderation & Server Information](#basic-moderation--server-information)
   - [Advanced Moderation](#advanced-moderation)
 - [Staff Management](#staff-management)
-  - [Staff Shifts](#staff-shifts)
   - [Staff Points (Aura)](#staff-points-aura)
 - [Utility](#utility)
   - [AFK System](#afk-system)
@@ -85,18 +84,6 @@ This document provides a comprehensive list of all commands available in the Cod
 ---
 
 ## Staff Management
-
-### Staff Shifts
-**Source:** `src/commands/staff_shifts.py`
-
-| Command | Description | Usage | Permission |
-|---------|-------------|-------|------------|
-| `/shift start`, `?shift start` | Start staff shift | `/shift start [note]` | Staff Role |
-| `/shift end`, `?shift end` | End staff shift | `/shift end [note]` | Staff Role |
-| `/shift pause`, `?shift pause` | Pause staff shift | `/shift pause [reason]` | Staff Role |
-| `/shift resume`, `?shift resume` | Resume paused shift | `/shift resume` | Staff Role |
-| `/shift admin active`, `?shift admin active` | View active shifts | `/shift admin active` | Administrator |
-| `/shift admin stats`, `?shift admin stats` | View statistics | `/shift admin stats [user]` | Administrator |
 
 ### Staff Points (Aura)
 **Source:** `src/commands/staff_points.py`
@@ -180,7 +167,7 @@ src/
 │   ├── point_moderation.py               # Point-based moderation system
 │   ├── protection.py                     # Anti-spam, anti-raid, anti-nuke
 │   ├── staff_points.py                   # Staff aura system
-│   ├── staff_shifts.py                   # Staff shift tracking
+
 │   ├── utility.py                        # Embed builder
 │   └── modules/
 │       └── sam/                          # Staff Activity Management

@@ -59,7 +59,6 @@ class Core(commands.Cog):
             "logging": "commands.logging_cog",
             "logging_cog": "commands.logging_cog",
             "staff_points": "commands.staff_points",
-            "staff_shifts": "commands.staff_shifts",
             "diagnostics": "commands.diagnostics",
             "data": "commands.data_management",
             "data_management": "commands.data_management",
@@ -748,16 +747,9 @@ class HelpDropdown(discord.ui.Select):
             inline=False
         )
         
-        embed.add_field(
-            name=" Shift Tracking",
-            value=(
-                "**`/shift start [note]`** - Start staff shift *(Staff)*\n"
-                "**`/shift end [note]`** - End staff shift *(Staff)*\n"
-                "**`/shift admin active`** - View active shifts *(Admin)*\n"
-                "**`/shift admin stats [user]`** - View statistics *(Admin)*"
-            ),
-            inline=False
-        )
+        
+        # Staff Shift Tracking section removed
+
         
         embed.set_footer(text="Staff systems include automatic recognition and logging")
         return embed

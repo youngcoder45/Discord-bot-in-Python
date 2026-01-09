@@ -4,16 +4,6 @@ This folder contains utility scripts for maintenance and migrations.
 
 ## Available Scripts
 
-### migrate_staff_shifts_db.py
-**Purpose:** Database migration script for staff shifts system  
-**Usage:** `python scripts/migrate_staff_shifts_db.py`  
-**Description:** Adds pause/resume functionality columns to existing staff_shifts.db
-
-**When to use:**
-- After updating staff shifts cog with new features
-- When database schema changes require migration
-- First-time setup if database already exists
-
 ### data_guard.py
 **Purpose:** Data protection and integrity monitoring  
 **Usage:** `python scripts/data_guard.py`  

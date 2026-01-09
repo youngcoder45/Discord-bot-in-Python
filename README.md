@@ -11,7 +11,11 @@
 </div>
 
 ## Features Overview
-
+### Recent Updates (January 2026)
+- **Log System Refactor** - Migrated to Webhook-based logging to eliminate rate-limit bottlenecks.
+- **Backup System Upgrade** - Switched to active cloud repository with real-time failure alerting.
+- **Codebase Optimization** - Removed legacy shift tracking systems for better performance.
+- **Enhanced Stability** - Fixes for static analysis errors in moderation commands.
 ### Recent Updates (December 22, 2025)
 - **Guild-Specific Logging** - Fixed cross-guild logging issue. Each server now has its own log channels configured separately.
 - **Persistent Panels** - Ticket panels and sticky messages now survive bot restarts and updates without breaking.
@@ -258,16 +262,7 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **`?aura config <action> [value]`** / **`/aura config <action> [value]`** - Configure system (Admin only)
 - **Automatic aura for "thanks"** - Staff get +1 aura when thanked via mention/reply
 
-### Staff Shift Tracking System
-**Professional staff shift logging system** for tracking on-duty time with comprehensive admin controls
-- **`?shift start [note]`** / **`/shift start [note]`** - Start your staff shift (Staff only)
-- **`?shift end [note]`** / **`/shift end [note]`** - End your staff shift (Staff only)
-- **`?shift discard`** / **`/shift discard`** - Discard current shift (Staff only)
-- **`?shift admin active`** / **`/shift admin active`** - View all active shifts (Admin only)
-- **`?shift admin history [user] [days]`** / **`/shift admin history [user] [days]`** - View shift history with filters (Admin only)
-- **`?shift admin end <user> [reason]`** / **`/shift admin end <user> [reason]`** - Force end user's shift (Admin only)
-- **`?shift admin stats [user] [days]`** / **`/shift admin stats [user] [days]`** - View shift statistics (Admin only)
-- **`?shift admin summary [days]`** / **`/shift admin summary [days]`** - Staff activity summary (Admin only)
+
 - **`?shift settings logs [#channel]`** / **`/shift settings logs [#channel]`** - Set shift log channel (Admin only)
 - **`?shift settings addrole <role>`** / **`/shift settings addrole <role>`** - Add staff role (Admin only)
 - **`?shift settings removerole <role>`** / **`/shift settings removerole <role>`** - Remove staff role (Admin only)
@@ -292,7 +287,7 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **`?data export`** / **`/data export`** - Export data as downloadable file (Admin only)
 - **GitHub-based cloud storage** with automatic backups every 6 hours
 - **Local backup files** as fallback storage
-- **Complete data protection** for staff shifts, points, elections, and configurations
+- **Complete data protection** for staff points, elections, and configurations
 - **Zero-downtime deployment** support with automatic data restoration
 
 ### Logging System
@@ -464,10 +459,10 @@ After the bot is running, configure your server:
    /data status
    ```
 
-2. **Configure staff shifts (if using staff management)**:
+2. **Configure staff management (Optional)**:
    ```
-   /shift settings logs #staff-logs
-   /shift settings addrole @Moderator
+   /aura config enable true
+   /aura config channel #staff-updates
    ```
 
 3. **Test core functionality**:
@@ -492,7 +487,6 @@ codeverse-bot/
 │   │   ├── moderation.py        # Basic moderation commands
 │   │   ├── moderation_extended.py # Advanced moderation (lockdown, nuke, massban, etc.)
 │   │   ├── staff_points.py      # Staff aura/points system with leaderboards
-│   │   ├── staff_shifts.py      # Staff shift tracking system
 │   │   ├── election.py          # Staff election system with weighted voting
 │   │   ├── data_management.py   # Data backup/restore/export system
 │   │   ├── afk.py               # AFK system with auto-responses and tracking
@@ -515,7 +509,6 @@ codeverse-bot/
 │       └── code_snippets.json   # Code snippet templates
 ├── data/                        # Database files (SQLite)
 │   ├── codeverse_bot.db         # Main bot database
-│   ├── staff_shifts.db          # Staff shift tracking data
 │   ├── staff_points.db          # Staff aura/points data
 │   └── afk.db                   # AFK system database
 ├── backup/                      # Local backup storage
@@ -645,11 +638,6 @@ python main.py
 
 #### 3. Staff Management Setup (Optional)
 ```bash
-# Configure staff shift tracking
-/shift settings logs #staff-logs
-/shift settings addrole @Moderator
-/shift settings addrole @Admin
-
 # Configure staff aura system
 /aura config enable true
 /aura config channel #staff-updates
@@ -713,7 +701,7 @@ This bot follows **enterprise-grade design principles** for scalability and main
 ### What Makes This Bot Special
 
 #### Fully-Featured Staff Management
-Unlike basic bots, this includes professional staff shift tracking, aura/points systems, and comprehensive admin controls that rival commercial solutions.
+Unlike basic bots, this includes professional staff aura/points systems, and comprehensive admin controls that rival commercial solutions.
 
 #### Enterprise Data Protection
 Automatic GitHub-based cloud backups ensure your data survives any deployment issues, server crashes, or hosting changes.

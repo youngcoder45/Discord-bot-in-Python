@@ -441,23 +441,7 @@ Complete reference of all bot commands organized by category.
 
 ---
 
-### `/shift` • `?shift`
-**Permission:** Staff role  
-**Description:** Manage staff shifts.
 
-**Subcommands:**
-```
-/shift start - Clock in
-/shift end - Clock out
-/shift log [@user] - View shift history
-```
-
-**Examples:**
-```
-/shift start
-/shift end
-/shift log @moderator
-```
 
 ---
 
