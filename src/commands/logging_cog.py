@@ -226,9 +226,9 @@ class LoggingCog(commands.Cog):
             message_ch, member_ch, server_ch, ticket_ch, mod_ch, other_ch = result
             
             # Route events to appropriate channels
-            # Member logs (joins, leaves, roles, nicknames)
+            # Member logs (joins, leaves, roles, nicknames, username changes)
             if event_type in ("MEMBER_JOIN", "MEMBER_LEAVE", "MEMBER_JOIN_BOT", "ROLE_ADD", 
-                               "ROLE_REMOVE", "ROLE_UPDATE_MEMBER", "NICKNAME_UPDATE"):
+                               "ROLE_REMOVE", "ROLE_UPDATE_MEMBER", "NICKNAME_UPDATE", "USER_UPDATE"):
                 return self.bot.get_channel(member_ch) if member_ch else None
             
             # Server logs (channels, roles, server settings, emojis)
@@ -503,6 +503,18 @@ class LoggingCog(commands.Cog):
         elif event_type.startswith("NICKNAME_"):
             embed.title = "Nickname Changed"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} changed nickname"
+            embed.color = discord.Color(0x2B2D31)
+            
+            if details:
+                embed.add_field(name="Details", value=details, inline=False)
+                
+            # Set thumbnail if available
+            if isinstance(user, discord.User) and user.avatar:
+                embed.set_thumbnail(url=user.avatar.url)
+
+        elif event_type.startswith("USER_UPDATE"):
+            embed.title = "Username Changed"
+            embed.description = f"{user.mention if isinstance(user, discord.User) else user} changed username"
             embed.color = discord.Color(0x2B2D31)
             
             if details:
@@ -972,6 +984,25 @@ class LoggingCog(commands.Cog):
                 moderator_id=moderator_id,
                 details=reason
             )
+
+    @commands.Cog.listener()
+    async def on_user_update(self, before, after):
+        """Log username changes"""
+        # Only check username changes
+        if before.name != after.name:
+            # We need to find which guild(s) the user shares with the bot to log it
+            # Paradox: USER_UPDATE is global, not per-guild.
+            # We should log it to ALL guilds where the user is a member and logging is enabled.
+            
+            for guild in self.bot.guilds:
+                if guild.get_member(after.id):
+                    await self.log_event(
+                        event_type="USER_UPDATE",
+                        user_id=after.id,
+                        guild_id=guild.id,
+                        moderator_id=None, # User changed it themselves
+                        details=f"**Before:** {before.name}\n**After:** {after.name}"
+                    )
     
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):

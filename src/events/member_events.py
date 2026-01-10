@@ -348,55 +348,8 @@ class MemberEvents(commands.Cog):
         #     
         #     await log_channel.send(embed=embed)
 
-    @commands.Cog.listener()
-    async def on_user_update(self, before, after):
-        """Handle user updates (username, avatar changes)"""
-        # Only log for members in our guild
-        guild_id = int(os.getenv('GUILD_ID', 0))
-        if not guild_id:
-            return
-            
-        guild = self.bot.get_guild(guild_id)
-        if not guild or not guild.get_member(after.id):
-            return
-        
-        server_logs_id = int(os.getenv('SERVER_LOGS_CHANNEL_ID', 0))
-        if not server_logs_id:
-            return
-            
-        log_channel = self.bot.get_channel(server_logs_id)
-        if not log_channel:
-            return
+    # on_user_update removed - strictly handled by LoggingCog now
 
-        # Check for username changes
-        if before.name != after.name:
-            embed = discord.Embed(
-                title="👤 Username Update",
-                color=discord.Color.purple(),
-                timestamp=datetime.now(tz=timezone.utc)
-            )
-            embed.set_thumbnail(url=after.display_avatar.url)
-            
-            embed.add_field(
-                name="User",
-                value=f"{after.mention} ({after.id})",
-                inline=False
-            )
-            embed.add_field(
-                name="Before",
-                value=before.name,
-                inline=True
-            )
-            embed.add_field(
-                name="After",
-                value=after.name,
-                inline=True
-            )
-            
-            await log_channel.send(embed=embed)
-            
-            # Update cached username
-            await add_or_update_user(after.id, str(after))
 
         # Check for avatar changes - removed per user request
         # if before.avatar != after.avatar:
