@@ -9,30 +9,28 @@ from datetime import datetime, timezone
 class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
     """Interactive modal for editing existing embeds"""
     
-    def __init__(self, cog, original_message, original_embed):
+    def __init__(self, cog, original_message, original_embed, webhook=None):
         super().__init__()
         self.cog = cog
         self.original_message = original_message
         self.original_embed = original_embed
+        self.webhook = webhook
         
         # Pre-populate fields with existing embed data
         self.embed_title.default = original_embed.title or ""
         self.embed_description.default = original_embed.description or ""
         self.embed_footer.default = original_embed.footer.text if original_embed.footer else ""
         
+        # Pre-populate content if message works
+        self.embed_premessage.default = original_message.content or ""
+        
         # Extract color as hex
         if original_embed.color:
             self.embed_color.default = f"#{original_embed.color.value:06x}"
         else:
             self.embed_color.default = "blue"
-        
-        # Extract image URL
-        if original_embed.image:
-            self.embed_image.default = original_embed.image.url
-        else:
-            self.embed_image.default = ""
     
-    # Input fields for the modal (same as create modal)
+    # Input fields for the modal
     embed_title = discord.ui.TextInput(
         label='Embed Title',
         placeholder='Enter the title for your embed...',
@@ -63,13 +61,13 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
         max_length=2048
     )
     
-    embed_image = discord.ui.TextInput(
-        label='Image URL (optional)',
-        placeholder='https://example.com/image.png',
+    embed_premessage = discord.ui.TextInput(
+        label='Pre-Message (optional)',
+        placeholder='Write a plain message to send before the embed (you can @mention people or roles)...',
+        style=discord.TextStyle.paragraph,
         required=False,
-        max_length=500
+        max_length=2000
     )
-    # (Edit modal) keep image in edit modal so users can update image URL when editing
 
     async def on_submit(self, interaction: discord.Interaction):
         """Handle the form submission and edit the embed"""
@@ -95,10 +93,21 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
             if self.embed_footer.value:
                 embed.set_footer(text=self.embed_footer.value)
             
-            # (image field removed from create modal) skip image handling here
+            # Preserve original image if it exists
+            if self.original_embed.image:
+                embed.set_image(url=self.original_embed.image.url)
+
+            # Preserve thumbnail if it exists
+            if self.original_embed.thumbnail:
+                embed.set_thumbnail(url=self.original_embed.thumbnail.url)
             
             # Edit the original message with the new embed
-            await self.original_message.edit(embed=embed)
+            new_content = self.embed_premessage.value
+            
+            if self.webhook:
+                await self.webhook.edit_message(self.original_message.id, content=new_content, embed=embed)
+            else:
+                await self.original_message.edit(content=new_content, embed=embed)
             
             # Send ephemeral confirmation
             success_embed = discord.Embed(
@@ -369,8 +378,18 @@ class EmbedBuilder(commands.Cog):
             except discord.Forbidden:
                 raise ValueError("No permission to access that message")
             
-            # Check if the message was sent by the bot
-            if not interaction.client.user or target_message.author.id != interaction.client.user.id:
+            # Check if the message was sent by the bot (id) or by a webhook (no user id checks for webhooks)
+            # Fetch webhook if it's a webhook message
+            is_webhook = bool(target_message.webhook_id)
+            webhook = None
+            
+            if is_webhook:
+                if isinstance(target_channel, discord.TextChannel) and interaction.guild and target_channel.permissions_for(interaction.guild.me).manage_webhooks:
+                     webhooks = await target_channel.webhooks()
+                     # Check if we own the webhook (it's one of ours)
+                     webhook = next((w for w in webhooks if w.id == target_message.webhook_id and (w.user and w.user.id == interaction.client.user.id)), None) if interaction.client.user else None
+
+            if not is_webhook and (not interaction.client.user or target_message.author.id != interaction.client.user.id):
                 error_embed = discord.Embed(
                     title="❌ Cannot Edit Message",
                     description="I can only edit messages that I sent myself.",
@@ -379,6 +398,15 @@ class EmbedBuilder(commands.Cog):
                 await interaction.response.send_message(embed=error_embed, ephemeral=True)
                 return
             
+            if is_webhook and not webhook:
+                 error_embed = discord.Embed(
+                    title="❌ Cannot Edit Message",
+                    description="This webhook message doesn't seem to belong to me or I don't have access to it.",
+                    color=discord.Color.red()
+                )
+                 await interaction.response.send_message(embed=error_embed, ephemeral=True)
+                 return
+
             # Check if the message has an embed
             if not target_message.embeds:
                 error_embed = discord.Embed(
@@ -393,7 +421,7 @@ class EmbedBuilder(commands.Cog):
             original_embed = target_message.embeds[0]
             
             # Show the pre-populated modal form
-            modal = EmbedEditModal(self, target_message, original_embed)
+            modal = EmbedEditModal(self, target_message, original_embed, webhook)
             await interaction.response.send_modal(modal)
             
         except ValueError as e:
