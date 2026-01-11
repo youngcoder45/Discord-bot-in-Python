@@ -77,8 +77,7 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
             # Create the updated embed
             embed = discord.Embed(
                 title=self.embed_title.value,
-                description=self.embed_description.value,
-                timestamp=datetime.now(timezone.utc)
+                description=self.embed_description.value
             )
             
             # Set color
@@ -186,8 +185,7 @@ class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
             # Create the embed with the provided data
             embed = discord.Embed(
                 title=self.embed_title.value,
-                description=self.embed_description.value,
-                timestamp=datetime.now(timezone.utc)
+                description=self.embed_description.value
             )
             
             # Set color
