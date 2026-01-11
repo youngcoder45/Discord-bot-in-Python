@@ -205,31 +205,61 @@ class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
             if self.embed_footer.value:
                 embed.set_footer(text=self.embed_footer.value)
             
-            # image field removed from create modal; images can be added via /embedquick or edited later
-            
-            # Send the pre-message (plain content) first if provided, then the embed
+            # Use Webhook to send ephemeral-style user impersonated message
             target_channel = interaction.channel
-            if isinstance(target_channel, (discord.TextChannel, discord.Thread)):
-                if self.embed_premessage.value:
-                    try:
-                        # Send plain message (mentions allowed)
-                        await target_channel.send(self.embed_premessage.value)
-                    except Exception:
-                        # Non-fatal; continue to send the embed
-                        pass
+            webhook_sent = False
+            
+            # Check if we can use webhooks (TextChannels only usually)
+            if isinstance(target_channel, discord.TextChannel) and interaction.guild and target_channel.permissions_for(interaction.guild.me).manage_webhooks:
+                try:
+                    # Find or create webhook
+                    webhooks = await target_channel.webhooks()
+                    webhook = next((w for w in webhooks if w.user and w.user.id == self.cog.bot.user.id), None)
+                    
+                    if not webhook:
+                        webhook = await target_channel.create_webhook(name="Embed Bot helper")
+                    
+                    # Send via webhook with user impersonation
+                    content = self.embed_premessage.value if self.embed_premessage.value else discord.utils.MISSING
+                    
+                    await webhook.send(
+                        content=content,
+                        embed=embed,
+                        username=interaction.user.display_name,
+                        avatar_url=interaction.user.display_avatar.url
+                    )
+                    webhook_sent = True
+                    
+                except Exception as e:
+                    # Fallback to normal send if webhook fails
+                    webhook_sent = False
+            
+            if not webhook_sent:
+                # Fallback: Send plain message first if provided, then embedding as bot
+                if isinstance(target_channel, (discord.TextChannel, discord.Thread)):
+                    if self.embed_premessage.value:
+                        try:
+                            # Send content and embed in same message if possible, or separate
+                            # User asked for "part of embed text message", so use content=
+                            await target_channel.send(content=self.embed_premessage.value, embed=embed)
+                        except Exception:
+                             # Try sending separate if failed (e.g. content too long?)
+                             await target_channel.send(self.embed_premessage.value)
+                             await target_channel.send(embed=embed)
+                    else:
+                        await target_channel.send(embed=embed)
+                else:
+                    # Fallback for other channel types
+                    await interaction.response.send_message(content=self.embed_premessage.value, embed=embed)
+                    return
 
-                await target_channel.send(embed=embed)
-                
-                # Send ephemeral confirmation to the user
-                success_embed = discord.Embed(
-                    title="✅ Embed Sent",
-                    description="Your embed has been sent to this channel!",
-                    color=discord.Color.green()
-                )
-                await interaction.response.send_message(embed=success_embed, ephemeral=True)
-            else:
-                # Fallback if not in a proper channel
-                await interaction.response.send_message(embed=embed)
+            # Send ephemeral confirmation to the user
+            success_embed = discord.Embed(
+                title="✅ Embed Sent",
+                description="Your embed has been sent to this channel!",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=success_embed, ephemeral=True)
             
         except Exception as e:
             error_embed = discord.Embed(
@@ -586,6 +616,101 @@ class EmbedBuilder(commands.Cog):
         help_embed.timestamp = discord.utils.utcnow()
         
         await interaction.response.send_message(embed=help_embed, ephemeral=True)
+
+    @commands.group(name="ls", invoke_without_command=True)
+    async def ls_command(self, ctx):
+        """List roles based on permissions"""
+        embed = discord.Embed(
+            title="Role Listing Help",
+            description="Use `?ls perms` or `?ls noperms` to list roles.",
+            color=self.colors["blue"]
+        )
+        embed.add_field(name="?ls perms", value="List roles that have permissions", inline=False)
+        embed.add_field(name="?ls noperms", value="List cosmetic roles (no permissions)", inline=False)
+        await ctx.send(embed=embed)
+
+    @ls_command.command(name="noperms")
+    async def ls_noperms(self, ctx):
+        """List cosmetic roles (no permissions at all)"""
+        roles = []
+        for role in ctx.guild.roles:
+            if role.is_default(): continue # Skip @everyone
+            # Check if role has NO permissions
+            if role.permissions.value == 0:
+                roles.append(role)
+        
+        # Sort by position (reverse = highest first)
+        roles.sort(key=lambda r: r.position, reverse=True)
+        
+        if not roles:
+            await ctx.send("No cosmetic-only roles found.")
+            return
+
+        # Create embed
+        embed = discord.Embed(
+            title="🎭 Cosmetic Roles (No Permissions)",
+            description="These roles have 0 permission value.",
+            color=self.colors["green"]
+        )
+        
+        # Chunking for description limit
+        chunk = ""
+        count = 0
+        for role in roles:
+            line = f"{role.mention} (Pos: {role.position})\n"
+            if len(chunk) + len(line) > 4000:
+                embed.description = chunk
+                await ctx.send(embed=embed)
+                chunk = line
+                embed = discord.Embed(title="Continued...", color=self.colors["green"])
+            else:
+                chunk += line
+            count += 1
+            
+        if chunk:
+            embed.description = chunk
+            embed.set_footer(text=f"Total: {count} roles")
+            await ctx.send(embed=embed)
+
+    @ls_command.command(name="perms")
+    async def ls_perms(self, ctx):
+        """List roles that have at least one permission"""
+        roles = []
+        for role in ctx.guild.roles:
+            if role.is_default(): continue
+            if role.permissions.value != 0:
+                roles.append(role)
+        
+        roles.sort(key=lambda r: r.position, reverse=True)
+        
+        if not roles:
+            await ctx.send("No roles with permissions found (unlikely).")
+            return
+
+        embed = discord.Embed(
+            title="🛡️ Functional Roles (With Permissions)",
+            description="These roles have at least one permission enabled.",
+            color=self.colors["red"]
+        )
+        
+        chunk = ""
+        count = 0
+        for role in roles:
+            line = f"{role.mention} (Pos: {role.position})\n"
+            if len(chunk) + len(line) > 4000:
+                embed.description = chunk
+                await ctx.send(embed=embed)
+                chunk = line
+                embed = discord.Embed(title="Continued...", color=self.colors["red"])
+            else:
+                chunk += line
+            count += 1
+            
+        if chunk:
+            embed.description = chunk
+            embed.set_footer(text=f"Total: {count} roles")
+            await ctx.send(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(EmbedBuilder(bot))
