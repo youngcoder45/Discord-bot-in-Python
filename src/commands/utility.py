@@ -219,14 +219,14 @@ class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
                     if not webhook:
                         webhook = await target_channel.create_webhook(name="Embed Bot helper")
                     
-                    # Send via webhook with user impersonation
+                    # Send via webhook with 'The Codeverse Hub' identity
                     content = self.embed_premessage.value if self.embed_premessage.value else discord.utils.MISSING
                     
                     await webhook.send(
                         content=content,
                         embed=embed,
-                        username=interaction.user.display_name,
-                        avatar_url=interaction.user.display_avatar.url
+                        username="The Codeverse Hub",
+                        avatar_url=self.cog.bot.user.display_avatar.url
                     )
                     webhook_sent = True
                     
