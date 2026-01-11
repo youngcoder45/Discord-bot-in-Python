@@ -24,8 +24,6 @@ class AdvancedModeration(commands.Cog):
             'banned_words': [],
             'auto_dehoist': False
         }
-        # Logging channel ID
-        self.log_channel_id = 1444013659134361703
         
     def _check_rate_limit(self, user_id: int, command: str, max_uses: int = 5, window: int = 60) -> bool:
         """Check if user is rate limited for a command (safety mechanism)"""
@@ -40,15 +38,6 @@ class AdvancedModeration(commands.Cog):
         
         user_commands.append(now)
         return True
-
-    async def _log_action(self, guild: discord.Guild, embed: discord.Embed):
-        """Log moderation action to designated channel"""
-        try:
-            log_channel = self.bot.get_channel(self.log_channel_id)
-            if log_channel:
-                await log_channel.send(embed=embed)
-        except Exception:
-            pass  # Silently fail if logging fails
 
     @commands.hybrid_command(name="automod")
     @commands.has_permissions(administrator=True)
@@ -152,19 +141,7 @@ class AdvancedModeration(commands.Cog):
             
             await ctx.send(embed=embed)
             
-            # Log to designated channel
-            log_embed = discord.Embed(
-                title="🔨 Temporary Ban Issued",
-                description=f"**{member}** was temporarily banned",
-                color=0xff0000
-            )
-            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
-            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
-            log_embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
-            log_embed.add_field(name="Reason", value=reason, inline=False)
-            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
-            log_embed.timestamp = datetime.now()
-            await self._log_action(ctx.guild, log_embed)
+            # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to ban this member", ephemeral=True)
@@ -217,19 +194,7 @@ class AdvancedModeration(commands.Cog):
             
             await ctx.send(embed=embed)
             
-            # Log to designated channel
-            log_embed = discord.Embed(
-                title="🔇 Member Muted",
-                description=f"**{member}** was muted",
-                color=0xf39c12
-            )
-            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
-            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
-            log_embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
-            log_embed.add_field(name="Reason", value=reason, inline=False)
-            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
-            log_embed.timestamp = datetime.now()
-            await self._log_action(ctx.guild, log_embed)
+            # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to timeout this member", ephemeral=True)
@@ -253,17 +218,7 @@ class AdvancedModeration(commands.Cog):
             
             await ctx.send(embed=embed)
             
-            # Log to designated channel
-            log_embed = discord.Embed(
-                title="🔊 Member Unmuted",
-                description=f"**{member}** was unmuted",
-                color=0x00ff00
-            )
-            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
-            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
-            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
-            log_embed.timestamp = datetime.now()
-            await self._log_action(ctx.guild, log_embed)
+            # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to remove timeout from this member", ephemeral=True)
@@ -297,15 +252,14 @@ class AdvancedModeration(commands.Cog):
             await ctx.send(embed=embed)
             
             # Log to designated channel
-            log_embed = discord.Embed(
-                title="👁️‍🗨️ Channel Hidden",
-                description=f"**#{channel.name}** was hidden from @everyone",
-                color=0x95a5a6
-            )
-            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
-            log_embed.add_field(name="Channel", value=f"#{channel.name} ({channel.id})", inline=True)
-            log_embed.timestamp = datetime.now()
-            await self._log_action(ctx.guild, log_embed)
+            logging_cog = self.bot.get_cog("LoggingCog")
+            if logging_cog:
+                await logging_cog.log_event(
+                    event_type="CHANNEL_UPDATE",
+                    guild_id=ctx.guild.id,
+                    moderator_id=ctx.author.id,
+                    details=f"**#{channel.name}** was hidden from @everyone"
+                )
             
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to manage this channel", ephemeral=True)
@@ -339,15 +293,14 @@ class AdvancedModeration(commands.Cog):
             await ctx.send(embed=embed)
             
             # Log to designated channel
-            log_embed = discord.Embed(
-                title="👁️ Channel Unhidden",
-                description=f"**#{channel.name}** is now visible to @everyone",
-                color=0x00ff00
-            )
-            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
-            log_embed.add_field(name="Channel", value=f"#{channel.name} ({channel.id})", inline=True)
-            log_embed.timestamp = datetime.now()
-            await self._log_action(ctx.guild, log_embed)
+            logging_cog = self.bot.get_cog("LoggingCog")
+            if logging_cog:
+                await logging_cog.log_event(
+                    event_type="CHANNEL_UPDATE",
+                    guild_id=ctx.guild.id,
+                    moderator_id=ctx.author.id,
+                    details=f"**#{channel.name}** is now visible to @everyone"
+                )
             
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to manage this channel", ephemeral=True)
