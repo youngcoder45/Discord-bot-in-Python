@@ -373,40 +373,14 @@ class MemberEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_member_ban(self, guild, user):
         """Handle member ban events"""
-        server_logs_id = int(os.getenv('SERVER_LOGS_CHANNEL_ID', 0))
-        if server_logs_id:
-            log_channel = self.bot.get_channel(server_logs_id)
-            if log_channel:
-                embed = discord.Embed(
-                    title="🔨 Member Banned",
-                    description=f"**{user}** ({user.id}) has been banned from the server.",
-                    color=discord.Color.dark_red(),
-                    timestamp=datetime.now(tz=timezone.utc)
-                )
-                embed.set_thumbnail(url=user.display_avatar.url)
-                
-                await log_channel.send(embed=embed)
-        
         # Logging now handled by centralized logging system
+        pass
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild, user):
         """Handle member unban events"""
-        server_logs_id = int(os.getenv('SERVER_LOGS_CHANNEL_ID', 0))
-        if server_logs_id:
-            log_channel = self.bot.get_channel(server_logs_id)
-            if log_channel:
-                embed = discord.Embed(
-                    title="🔓 Member Unbanned",
-                    description=f"**{user}** ({user.id}) has been unbanned from the server.",
-                    color=discord.Color.green(),
-                    timestamp=datetime.now(tz=timezone.utc)
-                )
-                embed.set_thumbnail(url=user.display_avatar.url)
-                
-                await log_channel.send(embed=embed)
-        
         # Logging now handled by centralized logging system
+        pass
 
 async def setup(bot):
     await bot.add_cog(MemberEvents(bot))

@@ -70,6 +70,33 @@ class LogFormatter:
             if isinstance(user, discord.User) and user.avatar:
                 embed.set_thumbnail(url=user.avatar.url)
         
+        elif event_type == "EXTERNAL_LOG":
+            # For logs coming from external modules like SAM
+            embed.title = log_item.get("title", "System Log")
+            embed.description = log_item.get("description", details)
+            
+            # Allow custom color
+            color_val = log_item.get("color")
+            if color_val:
+                try:
+                    embed.color = discord.Color(color_val) if isinstance(color_val, int) else color_val
+                except:
+                    embed.color = discord.Color.blue()
+            else:
+                embed.color = discord.Color.blue()
+                
+            # Add fields if provided
+            fields = log_item.get("fields", [])
+            for field in fields:
+                # Handle both object and dict styles if possible, but bridge sends objects usually. 
+                # bridge.py sends 'fields' which are objects with name/value/inline
+                name = getattr(field, 'name', None) or field.get('name')
+                value = getattr(field, 'value', None) or field.get('value')
+                inline = getattr(field, 'inline', True) if hasattr(field, 'inline') else field.get('inline', True)
+                
+                if name and value:
+                    embed.add_field(name=str(name), value=str(value), inline=inline)
+
         elif event_type.startswith("BAN"):
             embed.title = "Member Banned"
             embed.description = f"{user.mention if isinstance(user, discord.User) else user} was banned"
