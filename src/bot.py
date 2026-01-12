@@ -74,7 +74,7 @@ COGS_TO_LOAD = [
     'commands.permits',       # Permit system for bot-controlled moderation perms
     
     # Data & Utility (Useful but not critical)
-    'commands.data_management',  # Data backup and persistence management
+    # 'commands.data_management',  # Data backup system removed per user request
     'commands.utility',       # Embed builder commands for announcements
     'commands.rules',         # Rules commands
     
@@ -128,15 +128,16 @@ class CodeVerseBot(commands.Bot):
     async def setup_hook(self):
         """Async setup tasks (load cogs, etc.)."""
         # CRITICAL: Restore data BEFORE initializing databases or loading cogs
-        try:
-            from utils.data_persistence import DataPersistenceManager
-            # Pass self (bot) to manager for alerts
-            persistence_manager = DataPersistenceManager(bot=self)
-            logger.info("🔄 Restoring data before cog initialization...")
-            await persistence_manager.startup_restore()
-            logger.info("✅ Data restoration completed")
-        except Exception as e:
-            logger.error(f"⚠️ Data restoration failed: {e}")
+        # Data persistence/backup system removed per user request
+        # try:
+        #     from utils.data_persistence import DataPersistenceManager
+        #     # Pass self (bot) to manager for alerts
+        #     persistence_manager = DataPersistenceManager(bot=self)
+        #     logger.info("🔄 Restoring data before cog initialization...")
+        #     await persistence_manager.startup_restore()
+        #     logger.info("✅ Data restoration completed")
+        # except Exception as e:
+        #     logger.error(f"⚠️ Data restoration failed: {e}")
         
         # Initialize databases AFTER data restoration
         try:
@@ -226,13 +227,13 @@ async def on_ready():
         if guild.id in AUTHORIZED_SERVERS:
             logger.info(f"✅ Bot is operating in authorized server: {guild.name} (ID: {guild.id})")
     
-    # Start periodic backup task (every 6 hours)
-    try:
-        from utils.data_persistence import start_periodic_backup
-        await start_periodic_backup(bot)
-        logger.info("🔄 Periodic backup system started")
-    except Exception as e:
-        logger.error(f"⚠️ Periodic backup system failed to start: {e}")
+    # Start periodic backup task (every 6 hours) - REMOVED per user request
+    # try:
+    #     from utils.data_persistence import start_periodic_backup
+    #     await start_periodic_backup(bot)
+    #     logger.info("🔄 Periodic backup system started")
+    # except Exception as e:
+    #     logger.error(f"⚠️ Periodic backup system failed to start: {e}")
     
     # Sync slash commands
     try:

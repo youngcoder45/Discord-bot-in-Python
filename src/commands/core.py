@@ -60,8 +60,8 @@ class Core(commands.Cog):
             "logging_cog": "commands.logging",
             "staff_points": "commands.staff_points",
             "diagnostics": "commands.diagnostics",
-            "data": "commands.data_management",
-            "data_management": "commands.data_management",
+            # "data": "commands.data_management", # Removed
+            # "data_management": "commands.data_management", # Removed
             "protection": "commands.protection",
             "spam": "commands.spam_catch",
             "spam_catch": "commands.spam_catch",
@@ -560,11 +560,6 @@ class HelpDropdown(discord.ui.Select):
                 value="threads"
             ),
             discord.SelectOption(
-                label="Data Management",
-                description="Backup, restore, and data operations",
-                value="data"
-            ),
-            discord.SelectOption(
                 label="Diagnostics",
                 description="Bot health, testing, and troubleshooting",
                 value="diagnostics"
@@ -595,7 +590,7 @@ class HelpDropdown(discord.ui.Select):
             "tickets": self.get_tickets_embed(),
             "embeds": self.get_embeds_embed(),
             "threads": self.get_threads_embed(),
-            "data": self.get_data_embed(),
+            # "data": self.get_data_embed(),
             "diagnostics": self.get_diagnostics_embed()
         }
         return embeds.get(category, self.get_core_embed())
@@ -917,37 +912,8 @@ class HelpDropdown(discord.ui.Select):
         return embed
     
     def get_data_embed(self):
-        """Data management embed"""
-        embed = discord.Embed(
-            title="Data Management",
-            description="Backup, restore, and data operation commands",
-            color=0x6C757D
-        )
-        
-        commands = [
-            ("**`/data backup`**", "Create immediate backup of all bot data *(Admin)*"),
-            ("**`/data restore`**", "Restore data from backup (DANGEROUS) *(Admin)*"),
-            ("**`/data status`**", "Show backup and persistence status"),
-            ("**`/data export`**", "Export data as downloadable file *(Admin)*")
-        ]
-        
-        for cmd, desc in commands:
-            embed.add_field(name=cmd, value=desc, inline=False)
-            
-        embed.add_field(
-            name=" Automatic Backups",
-            value=(
-                "• Every 6 hours automatically\n"
-                "• On bot startup\n"
-                "• GitHub integration\n"
-                "• Local file storage\n"
-                "• Database persistence"
-            ),
-            inline=False
-        )
-        
-        embed.set_footer(text="Data safety is our top priority")
-        return embed
+        return None # Removed
+
     
     def get_advanced_moderation_embed(self):
         """Advanced moderation commands embed"""

@@ -18,7 +18,6 @@ Complete reference of all bot commands organized by category.
 - [User Information](#user-information)
 - [Utility Commands](#utility-commands)
 - [Thread Management](#thread-management)
-- [Data Management](#data-management)
 - [AFK System](#afk-system)
 
 ---
@@ -677,22 +676,6 @@ Complete reference of all bot commands organized by category.
 ```
 /unpin [message_id]
 ?unpin [message_id]
-```
-
----
-
-## Data Management
-
-### `/data` • `?data`
-**Permission:** Administrator  
-**Description:** Manage bot data and backups.
-
-**Subcommands:**
-```
-/data backup - Create backup now
-/data restore - Restore from backup
-/data status - View backup status
-/data export - Export data file
 ```
 
 ---

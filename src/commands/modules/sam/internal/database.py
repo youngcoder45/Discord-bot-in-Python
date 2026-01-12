@@ -63,7 +63,14 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     try:
         yield session
     except Exception:
-        await session.rollback()
+        # Only rollback if the session is still active/in transaction
+        try:
+            await session.rollback()
+        except Exception:
+            pass # Ignore errors during rollback
         raise
     finally:
-        await session.close()
+        try:
+            await session.close()
+        except Exception:
+            pass # Ignore errors during session closure

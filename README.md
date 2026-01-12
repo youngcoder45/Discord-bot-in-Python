@@ -279,16 +279,12 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **Multiple candidate support** (up to 10 candidates per election)
 - **Automatic result calculation** with percentage breakdown
 
-### Data Persistence & Backup System
-**Enterprise-grade data backup and restoration** - Never lose your data on deployments!
-- **`?data status`** / **`/data status`** - Check backup system status and health
-- **`?data backup`** / **`/data backup`** - Create immediate backup (Admin only)
-- **`?data restore`** / **`/data restore`** - Restore from backup with confirmation (Admin only)
-- **`?data export`** / **`/data export`** - Export data as downloadable file (Admin only)
-- **GitHub-based cloud storage** with automatic backups every 6 hours
-- **Local backup files** as fallback storage
-- **Complete data protection** for staff points, elections, and configurations
-- **Zero-downtime deployment** support with automatic data restoration
+### Data Persistence
+**Reliable data storage system**
+- Uses SQLite and JSON for stable data storage
+- Critical data (users, warnings, tickets) is persisted immediately to disk
+- **Note**: Automated cloud backups disabled for performance optimization
+
 
 ### Logging System
 **Guild-specific logging with separate channels per server**
