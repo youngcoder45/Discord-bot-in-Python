@@ -131,7 +131,18 @@ class MemberLogMixin(commands.Cog):
                     if entry.target and entry.target.id == after.id:
                         if entry.reason:
                             reason = entry.reason
-                        if entry.user:
+                            # Check for appended moderator info
+                            if " | By: " in reason:
+                                try:
+                                    parts = reason.split(" | By: ")
+                                    reason = parts[0]
+                                    mod_info = parts[1]
+                                    if "(" in mod_info and ")" in mod_info:
+                                        mod_id_str = mod_info.split("(")[1].split(")")[0]
+                                        moderator_id = int(mod_id_str)
+                                except: pass
+                        
+                        if entry.user and not moderator_id:
                             moderator_id = entry.user.id
                         break
             except: pass
@@ -172,7 +183,18 @@ class MemberLogMixin(commands.Cog):
                         if entry.target and entry.target.id == after.id:
                             if entry.reason:
                                 reason = entry.reason
-                            if entry.user:
+                                # Check for appended moderator info
+                                if " | By: " in reason:
+                                    try:
+                                        parts = reason.split(" | By: ")
+                                        reason = parts[0]
+                                        mod_info = parts[1]
+                                        if "(" in mod_info and ")" in mod_info:
+                                            mod_id_str = mod_info.split("(")[1].split(")")[0]
+                                            moderator_id = int(mod_id_str)
+                                    except: pass
+
+                            if entry.user and not moderator_id:
                                 moderator_id = entry.user.id
                             break
                 except Exception: pass

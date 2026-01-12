@@ -180,7 +180,9 @@ class AdvancedModeration(commands.Cog):
 
         try:
             until = datetime.now(timezone.utc) + timedelta(minutes=duration)
-            await member.timeout(until, reason=reason)
+            # Add moderator info to reason for logging
+            audit_reason = f"{reason} | By: {ctx.author} ({ctx.author.id})"
+            await member.timeout(until, reason=audit_reason)
             
             embed = discord.Embed(
                 title="🔇 Member Muted",
@@ -207,7 +209,8 @@ class AdvancedModeration(commands.Cog):
     async def unmute(self, ctx, member: discord.Member):
         """Remove timeout from a member"""
         try:
-            await member.timeout(None, reason=f"Unmuted by {ctx.author}")
+            audit_reason = f"Unmuted | By: {ctx.author} ({ctx.author.id})"
+            await member.timeout(None, reason=audit_reason)
             
             embed = discord.Embed(
                 title="🔊 Member Unmuted",

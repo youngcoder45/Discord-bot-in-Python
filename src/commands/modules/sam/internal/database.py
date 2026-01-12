@@ -18,6 +18,9 @@ engine: AsyncEngine = create_async_engine(
 if ":memory:" in str(config.database_uri):
     logger.warning("Database is in-memory, data will be lost on restart!")
 
+# Create sessionmaker globally
+async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
 # Dirty hack to enable hot-reloading
 try:
     if not SQLModel.__table_args__.get("extend_existing", False):  # type: ignore
@@ -54,15 +57,13 @@ async def drop_db():
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    A context manager that yields a session to the database. This session will be automatically rolled back if an exception occurs.
-
-    Yields:
-        AsyncGenerator[AsyncSession, None]: A generator that yields a session to the database.
+    A context manager that yields a session to the database.
     """
-    async_session: sessionmaker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)  # type: ignore
-    async with async_session() as session:
-        session: AsyncSession
+    async with async_session_maker() as session:
         try:
             yield session
-        finally:
+        except Exception:
             await session.rollback()
+            raise
+        # No automatic rollback in finally, let the session context manager handle closure.
+        # If user committed, fine. If not, it will be discarded on close.
