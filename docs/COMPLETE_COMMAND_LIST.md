@@ -640,6 +640,31 @@ Complete reference of all bot commands organized by category.
 
 ---
 
+### `?ls`
+**Permission:** None (Public)
+**Description:** Advanced role listing and permission auditing tool. (Prefix only)
+
+**Usage:**
+```
+?ls role <@role/ID>
+?ls perm <PermissionName>
+?ls perms
+?ls noperms
+```
+
+**Subcommands:**
+- **`role`**: View detailed info, key permissions, and raw stats for a role.
+- **`perm`**: List all roles that have a specific permission (e.g., `ManageMessages`).
+- **`perms`**: List all functional roles (roles with >0 permissions).
+- **`noperms`**: List cosmetic roles (roles with 0 permissions).
+
+**Examples:**
+- `?ls role @Admin` - Inspect Admin role
+- `?ls perm AddReactions` - See who can add reactions
+- `?ls perm Administrator` - Find all admin roles
+
+---
+
 ## Thread Management
 
 ### `/close` • `?close`

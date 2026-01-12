@@ -283,6 +283,16 @@ class Core(commands.Cog):
                 embed.add_field(name="Category", value=cmd.cog_name, inline=False)
             elif getattr(cmd, 'aliases', None):
                 embed.add_field(name="Aliases", value=", ".join(f"`{a}`" for a in cmd.aliases), inline=False)
+
+            # Subcommands (if Group)
+            if isinstance(cmd, commands.Group):
+                subcommands = []
+                for sub in cmd.commands:
+                    if not sub.hidden:
+                        subcommands.append(f"`{sub.name}`: {sub.short_doc or 'No description'}")
+                
+                if subcommands:
+                    embed.add_field(name="Subcommands", value="\n".join(subcommands), inline=False)
         
             await ctx.reply(embed=embed, mention_author=False)
             return
@@ -550,8 +560,8 @@ class HelpDropdown(discord.ui.Select):
                 value="tickets"
             ),
             discord.SelectOption(
-                label="Embed Tools",
-                description="Create and edit server announcements",
+                label="Utilities & Embeds",
+                description="Server utilities and announcement tools",
                 value="embeds"
             ),
             discord.SelectOption(
@@ -823,8 +833,8 @@ class HelpDropdown(discord.ui.Select):
     def get_embeds_embed(self):
         """Embed tools embed"""
         embed = discord.Embed(
-            title="Embed Creation Tools",
-            description="Professional embed creation for server announcements",
+            title="Utilities & Embed Tools",
+            description="Professional embed creation and server utility tools",
             color=0x0000ff
         )
         
@@ -832,10 +842,18 @@ class HelpDropdown(discord.ui.Select):
             ("**`/embed`**", "Interactive embed creator with popup form"),
             ("**`/editembed <message_id>`**", "Edit existing embeds made by the bot"),
             ("**`/embedquick <title> <description> [color]`**", "Quick embed creation"),
-            ("**`/embedhelp`**", "Get help with embed creation")
+            ("**`/embedhelp`**", "Get help with embed creation"),
+            ("", ""), # Separator
+            ("**`?ls role <role|id>`**", "View detailed role stats & permissions"),
+            ("**`?ls perm <permission>`**", "Find roles with a specific permission"),
+            ("**`?ls perms`**", "List all functional roles"),
+            ("**`?ls noperms`**", "List cosmetic-only roles")
         ]
         
         for cmd, desc in commands:
+            if not cmd: # Separator
+                embed.add_field(name="\u200b", value="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", inline=False)
+                continue
             embed.add_field(name=cmd, value=desc, inline=False)
             
         embed.add_field(

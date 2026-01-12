@@ -647,13 +647,128 @@ class EmbedBuilder(commands.Cog):
     async def ls_command(self, ctx):
         """List roles based on permissions"""
         embed = discord.Embed(
-            title="Role Listing Help",
-            description="Use `?ls perms` or `?ls noperms` to list roles.",
+            title="Role Listing Tools",
+            description="Inspect roles and permissions on this server.",
             color=self.colors["blue"]
         )
+        embed.add_field(name="?ls role <role>", value="View full details and permissions of a role", inline=False)
+        embed.add_field(name="?ls perm <permission>", value="See which roles have a specific permission", inline=False)
         embed.add_field(name="?ls perms", value="List roles that have permissions", inline=False)
         embed.add_field(name="?ls noperms", value="List cosmetic roles (no permissions)", inline=False)
-        await ctx.send(embed=embed)
+        embed.set_footer(text="Tip: Use Role ID with ?ls role <id> to avoid pinging members!")
+        await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+
+    @ls_command.command(name="role")
+    async def ls_role(self, ctx, role: discord.Role):
+        """View full details and permissions of a specific role"""
+        perms = role.permissions
+
+        # Key Permissions to highlight
+        key_perms = []
+        if perms.administrator: key_perms.append("Administrator")
+        if perms.manage_guild: key_perms.append("Manage Server")
+        if perms.manage_roles: key_perms.append("Manage Roles")
+        if perms.manage_channels: key_perms.append("Manage Channels")
+        if perms.ban_members: key_perms.append("Ban Members")
+        if perms.kick_members: key_perms.append("Kick Members")
+        if perms.manage_messages: key_perms.append("Manage Messages")
+        if perms.mention_everyone: key_perms.append("Mention Everyone")
+        if perms.view_audit_log: key_perms.append("View Audit Log")
+
+        # Create list of enabled permissions
+        enabled_perms = [p[0].replace('_', ' ').title() for p in perms if p[1]]
+        
+        embed = discord.Embed(title=f"Role: {role.name}", color=role.color)
+        embed.add_field(name="ID", value=str(role.id), inline=True)
+        embed.add_field(name="Color", value=str(role.color), inline=True)
+        embed.add_field(name="Position", value=str(role.position), inline=True)
+        embed.add_field(name="Integrated", value=str(role.is_integration()), inline=True)
+        embed.add_field(name="Hoisted", value=str(role.hoist), inline=True)
+        embed.add_field(name="Mentionable", value=str(role.mentionable), inline=True)
+        
+        embed.add_field(name="Members", value=f"{len(role.members)} members", inline=True)
+        embed.add_field(name="Created", value=f"<t:{int(role.created_at.timestamp())}:R>", inline=True)
+        
+        if perms.administrator:
+            embed.add_field(name="⚠️ Fatal Permission", value="**ADMINISTRATOR** (Bypasses all other permissions)", inline=False)
+        
+        if key_perms and not perms.administrator:
+            embed.add_field(name="🔑 Key Permissions", value=", ".join(key_perms), inline=False)
+
+        # Truncate full list if too long
+        perm_list_str = ", ".join(enabled_perms)
+        if len(perm_list_str) > 1000:
+            perm_list_str = perm_list_str[:1000] + "..."
+        
+        if not enabled_perms:
+            perm_list_str = "None (Cosmetic Role)"
+
+        embed.add_field(name="All Permissions", value=perm_list_str, inline=False)
+        
+        await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+
+    @ls_command.command(name="perm")
+    async def ls_perm(self, ctx, *, perm_query: str):
+        """List roles that have a specific permission"""
+        # Normalize query
+        query = perm_query.lower().replace(" ", "_")
+        
+        # Valid permissions map
+        valid_perms = dir(discord.Permissions.none())
+        
+        # Find match
+        matched_perm = None
+        for p in valid_perms:
+            if p.startswith("_") or callable(getattr(discord.Permissions, p, None)):
+                continue
+            if p == query or p.replace("_", "") == query.replace("_", ""):
+                matched_perm = p
+                break
+        
+        if not matched_perm:
+            # Fuzzy-ish fallback
+            matches = [p for p in valid_perms if not p.startswith("_") and query in p]
+            if matches:
+                 await ctx.send(f"Permission `{perm_query}` not found. Did you mean: {', '.join(matches[:5])}?")
+            else:
+                 await ctx.send(f"Permission `{perm_query}` not found.")
+            return
+
+        # Find roles
+        roles_with_perm = []
+        for role in ctx.guild.roles:
+            if role.is_default(): continue
+            # Administrator implies all permissions
+            if role.permissions.administrator or getattr(role.permissions, matched_perm):
+                roles_with_perm.append(role)
+        
+        roles_with_perm.sort(key=lambda r: r.position, reverse=True)
+        
+        embed = discord.Embed(
+            title=f"Roles with '{matched_perm.replace('_', ' ').title()}'",
+            description=f"Found {len(roles_with_perm)} roles.",
+            color=self.colors["red"]
+        )
+        
+        chunk = ""
+        for role in roles_with_perm:
+            # Mark if it's via admin or direct
+            note = " (Admin)" if role.permissions.administrator and matched_perm != "administrator" else ""
+            line = f"{role.mention}{note}\n"
+            
+            if len(chunk) + len(line) > 4000:
+                embed.description = chunk
+                await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+                chunk = line
+                embed = discord.Embed(title="Continued...", color=self.colors["red"])
+            else:
+                chunk += line
+                
+        if chunk:
+            embed.description = chunk
+            await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        elif not roles_with_perm:
+            await ctx.send(f"No roles found with `{matched_perm}`.")
 
     @ls_command.command(name="noperms")
     async def ls_noperms(self, ctx):
@@ -686,7 +801,7 @@ class EmbedBuilder(commands.Cog):
             line = f"{role.mention} (Pos: {role.position})\n"
             if len(chunk) + len(line) > 4000:
                 embed.description = chunk
-                await ctx.send(embed=embed)
+                await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 chunk = line
                 embed = discord.Embed(title="Continued...", color=self.colors["green"])
             else:
@@ -696,7 +811,7 @@ class EmbedBuilder(commands.Cog):
         if chunk:
             embed.description = chunk
             embed.set_footer(text=f"Total: {count} roles")
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
     @ls_command.command(name="perms")
     async def ls_perms(self, ctx):
@@ -725,7 +840,7 @@ class EmbedBuilder(commands.Cog):
             line = f"{role.mention} (Pos: {role.position})\n"
             if len(chunk) + len(line) > 4000:
                 embed.description = chunk
-                await ctx.send(embed=embed)
+                await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 chunk = line
                 embed = discord.Embed(title="Continued...", color=self.colors["red"])
             else:
@@ -735,7 +850,7 @@ class EmbedBuilder(commands.Cog):
         if chunk:
             embed.description = chunk
             embed.set_footer(text=f"Total: {count} roles")
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
 
 async def setup(bot):
