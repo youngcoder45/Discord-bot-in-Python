@@ -59,11 +59,11 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
     A context manager that yields a session to the database.
     """
-    async with async_session_maker() as session:
-        try:
-            yield session
-        except Exception:
-            await session.rollback()
-            raise
-        # No automatic rollback in finally, let the session context manager handle closure.
-        # If user committed, fine. If not, it will be discarded on close.
+    session = async_session_maker()
+    try:
+        yield session
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
