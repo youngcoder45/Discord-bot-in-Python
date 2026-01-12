@@ -59,7 +59,7 @@ COGS_TO_LOAD = [
     'commands.diagnostics',   # Diagnostics (?diag, /diag)
     
     # Logging System (Essential - LOAD FIRST)
-    'commands.logging_cog',       # Centralized logging system for all events
+    'commands.logging',       # Centralized logging system for all events
     'commands.tickets',
     # Moderation & Protection (Essential)
     'commands.modcog',        # Combined moderation commands with warnings system
