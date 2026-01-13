@@ -844,6 +844,9 @@ class HelpDropdown(discord.ui.Select):
             ("**`/embedquick <title> <description> [color]`**", "Quick embed creation"),
             ("**`/embedhelp`**", "Get help with embed creation"),
             ("", ""), # Separator
+            ("**`?ls channels [options]`**", "List channels. Support `?w Role Perm` filtering"),
+            ("**`?ls bots`**", "List all bots"),
+            ("**`?ls boosters`**", "List server boosters"),
             ("**`?ls role <role|id>`**", "View detailed role stats & permissions"),
             ("**`?ls perm <permission>`**", "Find roles with a specific permission"),
             ("**`?ls perms`**", "List all functional roles"),
