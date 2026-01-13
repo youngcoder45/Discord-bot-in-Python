@@ -652,7 +652,8 @@ class EmbedBuilder(commands.Cog):
             color=0x000000
         )
         embed.add_field(name="?ls channels", value="List all channels (categories, text, voice)", inline=False)
-        embed.add_field(name="?ls channels ?w <Target> <Perm>", value="Find channels where User/Role has Permission\n*Ex: ?ls channels ?w Everyone SendMessage*", inline=False)
+        embed.add_field(name="?ls channels ?w <Target> <Perm>", value="Find channels where User/Role has Permission", inline=False)
+        embed.add_field(name="?ls categories [?w ...]", value="List categories (optional: filter by permission)", inline=False)
         embed.add_field(name="?ls role <role>", value="View full details and permissions of a role", inline=False)
         embed.add_field(name="?ls perm <permission>", value="See which roles have a specific permission", inline=False)
         embed.add_field(name="?ls bots", value="List all bots in the server", inline=False)
@@ -900,30 +901,69 @@ class EmbedBuilder(commands.Cog):
                 perm_map = {
                     'sendmessage': 'send_messages',
                     'sendmessages': 'send_messages',
+                    'sendingmessages': 'send_messages',
                     'send': 'send_messages',
                     'view': 'view_channel',
+                    'viewchannel': 'view_channel',
+                    'viewchannels': 'view_channel',
                     'read': 'view_channel',
+                    'readmessage': 'view_channel',
+                    'readmessages': 'view_channel',
                     'connect': 'connect',
                     'speak': 'speak',
                     'manage': 'manage_channels',
                     'admin': 'administrator',
                     'embed': 'embed_links',
-                    'attach': 'attach_files'
+                    'embeds': 'embed_links',
+                    'embedlink': 'embed_links',
+                    'attach': 'attach_files',
+                    'files': 'attach_files',
+                    'file': 'attach_files',
+                    'image': 'attach_files',
+                    'addreaction': 'add_reactions',
+                    'addreactions': 'add_reactions',
+                    'reaction': 'add_reactions',
+                    'history': 'read_message_history',
+                    'managemessage': 'manage_messages',
+                    'managemessages': 'manage_messages'
                 }
                 
                 # Normalize input
-                clean_perm = perm_str.lower().replace(" ", "_")
-                perm_attr = perm_map.get(clean_perm, clean_perm)
+                clean_input = perm_str.lower().replace(" ", "").replace("_", "")
                 
-                # Validate if it's a real permission
-                valid_perms = [p for p in dir(discord.Permissions) if isinstance(getattr(discord.Permissions, p), property)]
+                # Get all real permissions using standard iteration
+                valid_perms = [name for name, value in discord.Permissions()]
                 
-                # Fuzzy matching if not exact
-                if perm_attr not in valid_perms:
-                    # Try to find best match
-                    possible = [p for p in valid_perms if perm_attr in p]
-                    if possible:
-                        perm_attr = possible[0] # Take first match
+                perm_attr = None
+                
+                # 1. Map Check (Trust the map)
+                if clean_input in perm_map:
+                    perm_attr = perm_map[clean_input]
+                
+                # 2. Direct name check (snake case normalized)
+                # This covers "manage_channels" -> "manage_channels"
+                if not perm_attr:
+                     snake_input = perm_str.lower().replace(" ", "_")
+                     if snake_input in valid_perms:
+                         perm_attr = snake_input
+
+                # 3. Stripped check (ignore underscores in real permissions)
+                # This covers "managechannels" -> matches "manage_channels"
+                if not perm_attr:
+                    for vp in valid_perms:
+                        if vp.replace("_", "") == clean_input:
+                            perm_attr = vp
+                            break
+                            
+                # 4. Fuzzy / Substring match (DANGEROUS but helpful)
+                if not perm_attr:
+                    # Finds "manage" -> "manage_channels" (first match)
+                    # Use a priority list if multiple match?
+                    matches = [p for p in valid_perms if clean_input in p.replace("_", "")]
+                    if matches:
+                        # Prefer shorter matches or exact start matches
+                        # e.g. "ban" matches "ban_members"
+                        perm_attr = matches[0] 
                     else:
                         await ctx.send(f"❌ Invalid permission `{perm_str}`.")
                         return
@@ -931,6 +971,10 @@ class EmbedBuilder(commands.Cog):
                 # Filter Channels
                 matched = []
                 for channel in ctx.guild.channels:
+                    # Exclude categories
+                    if isinstance(channel, discord.CategoryChannel):
+                        continue
+                        
                     # channel.permissions_for handles overwrites, roles, admin implications
                     perms = channel.permissions_for(target)
                     if getattr(perms, perm_attr, False):
@@ -946,7 +990,7 @@ class EmbedBuilder(commands.Cog):
                 embed = discord.Embed(
                     title=f"Channel Audit: {perm_attr}",
                     description=f"Showing channels where **{target.mention}** can `{perm_attr}`.",
-                    color=self.colors['green']
+                    color=0x000000
                 )
                 
                 # Build list text
@@ -1012,6 +1056,147 @@ class EmbedBuilder(commands.Cog):
             description = description[:4000] + "\n...(truncated)"
             
         embed.description = description
+        await ctx.send(embed=embed)
+
+    @ls_command.command(name="categories", aliases=["category"])
+    async def ls_categories(self, ctx, *args):
+        """List categories. Usage: ?ls categories [?w <Role/User> <Permission>]"""
+        
+        # Check for ?w argument for filtering
+        full_args = " ".join(args)
+        if "?w" in full_args:
+            # Parse usage: ?ls categories ?w <Target> <Permission>
+            try:
+                # Split everything after ?w
+                params = full_args.split("?w", 1)[1].strip()
+                if not params:
+                    raise ValueError("Missing arguments after ?w")
+                
+                match_parts = params.rsplit(" ", 1)
+                if len(match_parts) < 2:
+                    raise ValueError("Please provide a Target and a Permission")
+                
+                target_str = match_parts[0].strip()
+                perm_str = match_parts[1].strip()
+                
+                # Resolve Target
+                target = None
+                if target_str.lower() in ["everyone", "@everyone", "here", "@here"]:
+                    target = ctx.guild.default_role
+                else:
+                    try:
+                        target = await commands.RoleConverter().convert(ctx, target_str)
+                    except commands.BadArgument:
+                        try:
+                            target = await commands.MemberConverter().convert(ctx, target_str)
+                        except commands.BadArgument:
+                            await ctx.send(f"❌ Could not find Role or Member named `{target_str}`.")
+                            return
+                
+                # Resolve Permission
+                perm_map = {
+                    'sendmessage': 'send_messages',
+                    'sendmessages': 'send_messages',
+                    'sendingmessages': 'send_messages',
+                    'send': 'send_messages',
+                    'view': 'view_channel',
+                    'viewchannel': 'view_channel',
+                    'viewchannels': 'view_channel',
+                    'read': 'view_channel',
+                    'readmessage': 'view_channel',
+                    'readmessages': 'view_channel',
+                    'connect': 'connect',
+                    'speak': 'speak',
+                    'manage': 'manage_channels',
+                    'admin': 'administrator',
+                    'embed': 'embed_links',
+                    'embeds': 'embed_links',
+                    'embedlink': 'embed_links',
+                    'attach': 'attach_files',
+                    'files': 'attach_files',
+                    'file': 'attach_files',
+                    'image': 'attach_files',
+                    'addreaction': 'add_reactions',
+                    'addreactions': 'add_reactions',
+                    'reaction': 'add_reactions',
+                    'history': 'read_message_history',
+                    'managemessage': 'manage_messages',
+                    'managemessages': 'manage_messages'
+                }
+                
+                clean_input = perm_str.lower().replace(" ", "").replace("_", "")
+                valid_perms = [name for name, value in discord.Permissions()]
+                
+                perm_attr = None
+                if clean_input in perm_map:
+                    perm_attr = perm_map[clean_input]
+                
+                if not perm_attr:
+                     snake_input = perm_str.lower().replace(" ", "_")
+                     if snake_input in valid_perms:
+                         perm_attr = snake_input
+
+                if not perm_attr:
+                    for vp in valid_perms:
+                        if vp.replace("_", "") == clean_input:
+                            perm_attr = vp
+                            break
+                            
+                if not perm_attr:
+                    matches = [p for p in valid_perms if clean_input in p.replace("_", "")]
+                    if matches:
+                        perm_attr = matches[0] 
+                    else:
+                        await ctx.send(f"❌ Invalid permission `{perm_str}`.")
+                        return
+
+                # Filter Categories
+                matched = []
+                for channel in ctx.guild.categories:
+                    perms = channel.permissions_for(target)
+                    if getattr(perms, perm_attr, False):
+                        matched.append(channel)
+                
+                matched.sort(key=lambda c: c.position)
+                
+                if not matched:
+                    await ctx.send(f"🚫 No categories found where {target.mention} has `{perm_attr}` permission.")
+                    return
+                
+                embed = discord.Embed(
+                    title=f"Category Audit: {perm_attr}",
+                    description=f"Showing categories where **{target.mention}** can `{perm_attr}`.",
+                    color=0x000000
+                )
+                
+                lines = [f"{c.name.upper()} (`{c.id}`)" for c in matched]
+                full_text = "\n".join(lines)
+                
+                if len(full_text) > 4000:
+                    chunks = [full_text[i:i+4000] for i in range(0, len(full_text), 4000)]
+                    embed.description = chunks[0] + "..."
+                    await ctx.send(embed=embed)
+                else:
+                    embed.description = full_text
+                    await ctx.send(embed=embed)
+                    
+            except Exception as e:
+                await ctx.send(f"Error parsing arguments: {str(e)}")
+            return
+
+        # Default: List all categories
+        categories = sorted(ctx.guild.categories, key=lambda c: c.position)
+        
+        embed = discord.Embed(title=f"Categories in {ctx.guild.name}", color=0x000000)
+        
+        lines = [f"{c.name} (`{c.id}`)" for c in categories]
+        full_text = "\n".join(lines)
+        
+        if len(full_text) > 4000:
+             embed.description = full_text[:4000] + "\n...(truncated)"
+        else:
+             embed.description = full_text or "No categories found."
+             
         await ctx.send(embed=embed)
 
     @ls_command.command(name="bots")
