@@ -5,6 +5,7 @@ from typing import Optional
 import json
 import os
 import logging
+import sqlite3
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
@@ -18,30 +19,71 @@ class ReactionRoles(commands.Cog):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         # src/commands -> src -> root
         self.root_dir = os.path.dirname(os.path.dirname(current_dir))
-        self.data_file = os.path.join(self.root_dir, "data", "reaction_roles.json")
+        self.data_file = os.path.join(self.root_dir, "data", "reaction_roles.db")
         
+        self.init_db()
         self.reaction_roles = self.load_reaction_roles()
     
+    def init_db(self):
+        """Initialize the SQLite database and migrate if needed"""
+        json_file = os.path.join(self.root_dir, "data", "reaction_roles.json")
+        try:
+            os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
+            with sqlite3.connect(self.data_file) as conn:
+                c = conn.cursor()
+                c.execute('''CREATE TABLE IF NOT EXISTS reaction_roles
+                             (message_id TEXT PRIMARY KEY, guild_id INTEGER, channel_id INTEGER, roles TEXT)''')
+                conn.commit()
+                
+                # Migration logic
+                if os.path.exists(json_file):
+                    logger.info("Migrating reaction_roles.json to SQLite...")
+                    try:
+                        with open(json_file, 'r') as f:
+                            data = json.load(f)
+                        
+                        for msg_id, msg_data in data.items():
+                            c.execute("INSERT OR REPLACE INTO reaction_roles VALUES (?, ?, ?, ?)",
+                                      (msg_id, msg_data['guild_id'], msg_data['channel_id'], json.dumps(msg_data['roles'])))
+                        conn.commit()
+                        os.rename(json_file, json_file + ".bak")
+                        logger.info("Migration complete. JSON file backed up.")
+                    except Exception as e:
+                        logger.error(f"Migration failed: {e}")
+        except Exception as e:
+            logger.error(f"Database initialization failed: {e}")
+
     def load_reaction_roles(self):
-        """Load reaction role data from file"""
+        """Load reaction role data from database"""
+        data = {}
         try:
             if os.path.exists(self.data_file):
-                with open(self.data_file, 'r') as f:
-                    data = json.load(f)
-                    logger.info(f"Loaded {len(data)} reaction role messages from {self.data_file}")
-                    return data
-            logger.info(f"No reaction role file found at {self.data_file}, starting fresh.")
-            return {}
+                with sqlite3.connect(self.data_file) as conn:
+                    c = conn.cursor()
+                    c.execute("SELECT message_id, guild_id, channel_id, roles FROM reaction_roles")
+                    for row in c.fetchall():
+                        data[row[0]] = {
+                            "guild_id": row[1],
+                            "channel_id": row[2],
+                            "roles": json.loads(row[3])
+                        }
+            return data
         except Exception as e:
             logger.error(f"Error loading reaction roles: {e}")
             return {}
     
     def save_reaction_roles(self):
-        """Save reaction role data to file"""
+        """Save reaction role data to database"""
         try:
-            os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
-            with open(self.data_file, 'w') as f:
-                json.dump(self.reaction_roles, f, indent=2)
+            with sqlite3.connect(self.data_file) as conn:
+                c = conn.cursor()
+                # Full sync: clear and rewrite to ensure consistency with memory
+                c.execute("DELETE FROM reaction_roles")
+                
+                for msg_id, msg_data in self.reaction_roles.items():
+                    c.execute("INSERT INTO reaction_roles VALUES (?, ?, ?, ?)",
+                              (msg_id, msg_data['guild_id'], msg_data['channel_id'], json.dumps(msg_data['roles'])))
+                conn.commit()
             logger.info(f"Saved reaction roles to {self.data_file}")
         except Exception as e:
             logger.error(f"Error saving reaction roles: {e}")

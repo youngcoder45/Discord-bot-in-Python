@@ -55,17 +55,8 @@ async def _save(path: str, data: Any) -> None:
 
 # Users ----------------------------------------------------------------------
 async def add_or_update_user(user_id: int, username: str) -> None:
-    path = _path('users.json')
-    data = await _load(path)
-    key = str(user_id)
-    if key not in data:
-        data[key] = {
-            'username': username,
-            'first_seen': datetime.now(timezone.utc).isoformat()
-        }
-    else:
-        data[key]['username'] = username
-    await _save(path, data)
+    # Disabled to save space
+    pass
 
 # Warnings ------------------------------------------------------------------
 async def add_warning(user_id: int, moderator_id: int, reason: str) -> None:
