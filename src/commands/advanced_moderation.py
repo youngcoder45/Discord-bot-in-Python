@@ -312,41 +312,6 @@ class AdvancedModeration(commands.Cog):
 
     # Note: slowmode command already exists in modcog.py, so not implementing here to avoid conflicts
 
-    @commands.hybrid_command(name="advmodstats")
-    @commands.has_permissions(manage_messages=True)
-    @app_commands.describe(moderator="Get stats for specific moderator")
-    async def advanced_mod_stats(self, ctx, moderator: Optional[discord.Member] = None):
-        """View moderation statistics"""
-        embed = discord.Embed(
-            title="📊 Moderation Statistics",
-            color=0x0000ff
-        )
-        
-        if moderator:
-            embed.description = f"Statistics for {moderator.mention}"
-            # Add rate limit info for transparency
-            commands_used = {}
-            for key, times in self.command_cooldowns.items():
-                if key.startswith(str(moderator.id)):
-                    command = key.split('_', 1)[1]
-                    commands_used[command] = len([t for t in times if time.time() - t < 3600])  # Last hour
-            
-            if commands_used:
-                stats = "\n".join([f"**{cmd}**: {count} (last hour)" for cmd, count in commands_used.items()])
-                embed.add_field(name="Recent Command Usage", value=stats, inline=False)
-            else:
-                embed.add_field(name="Recent Activity", value="No commands used in the last hour", inline=False)
-        else:
-            embed.description = "Server moderation overview"
-            total_commands = sum(len(times) for times in self.command_cooldowns.values())
-            embed.add_field(name="Total Commands Used", value=str(total_commands), inline=True)
-            
-            # Automod status
-            enabled_features = [f for f, enabled in self.automod_settings.items() if enabled]
-            embed.add_field(name="Active Automod Features", value=", ".join(enabled_features) or "None", inline=False)
-        
-        await ctx.send(embed=embed)
-
     @commands.Cog.listener()
     async def on_message(self, message):
         """Advanced automod message scanning - DISABLED BY USER REQUEST"""
