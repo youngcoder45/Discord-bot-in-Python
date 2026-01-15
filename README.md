@@ -11,6 +11,11 @@
 </div>
 
 ## Features Overview
+### Recent Updates (January 15, 2026)
+- **Bot Optimization** - Removed unused Automod features and statistics commands for better performance.
+- **Command Updates** - `/diag` is now prefix-only (`?diag`) for simplified diagnostics.
+- **Stability Fixes** - Fixed configuration loading issues for local databases.
+
 ### Recent Updates (January 2026)
 - **Log System Refactor** - Migrated to Webhook-based logging to eliminate rate-limit bottlenecks.
 - **Backup System Upgrade** - Switched to active cloud repository with real-time failure alerting.
@@ -42,7 +47,7 @@
 - **`?ping`** / **`/ping`** - Check bot latency and responsiveness
 - **`?info`** / **`/info`** - View detailed user information, warnings, and permissions
 - **`?report`** / **`/report`** - Report a message to moderators (supports ID or Link)
-- **`?diag`** / **`/diag`** - Comprehensive bot diagnostics and health status
+- **`?diag`** - Comprehensive bot diagnostics and health status (Prefix Only)
 - **`?help`** / **`/help`** - Display all available commands with usage
 
 ### Ticket System

@@ -16,14 +16,6 @@ class AdvancedModeration(commands.Cog):
         self.bot = bot
         # Rate limiting for safety
         self.command_cooldowns = defaultdict(list)
-        # Automod disabled by user request
-        self.automod_settings = {
-            'invite_links': True,
-            'excessive_caps': False,
-            'excessive_mentions': False,
-            'banned_words': [],
-            'auto_dehoist': False
-        }
         
     def _check_rate_limit(self, user_id: int, command: str, max_uses: int = 5, window: int = 60) -> bool:
         """Check if user is rate limited for a command (safety mechanism)"""
@@ -38,49 +30,6 @@ class AdvancedModeration(commands.Cog):
         
         user_commands.append(now)
         return True
-
-    @commands.hybrid_command(name="automod")
-    @commands.has_permissions(administrator=True)
-    @app_commands.describe(
-        feature="Automod feature to toggle",
-        status="Enable or disable the feature"
-    )
-    async def automod_config(self, ctx, feature: str, status: bool):
-        """Configure automod features (Admin only)"""
-        valid_features = ['invite_links', 'excessive_caps', 'excessive_mentions', 'auto_dehoist']
-        
-        if feature not in valid_features:
-            embed = discord.Embed(
-                title="❌ Invalid Feature",
-                description=f"Valid features: {', '.join(valid_features)}",
-                color=0xff0000
-            )
-            await ctx.send(embed=embed, ephemeral=True)
-            return
-        
-        self.automod_settings[feature] = status
-        
-        embed = discord.Embed(
-            title="✅ Automod Updated",
-            description=f"**{feature}** has been {'enabled' if status else 'disabled'}",
-            color=0x00ff00
-        )
-        await ctx.send(embed=embed)
-
-    @commands.hybrid_command(name="automodstatus")
-    @commands.has_permissions(manage_messages=True)
-    async def automod_status(self, ctx):
-        """View current automod settings"""
-        embed = discord.Embed(
-            title="🤖 Automod Settings",
-            color=0x0000ff
-        )
-        
-        for feature, enabled in self.automod_settings.items():
-            status = "✅ Enabled" if enabled else "❌ Disabled"
-            embed.add_field(name=feature.replace('_', ' ').title(), value=status, inline=True)
-        
-        await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="tempban")
     @commands.has_permissions(ban_members=True)
@@ -311,18 +260,6 @@ class AdvancedModeration(commands.Cog):
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
     # Note: slowmode command already exists in modcog.py, so not implementing here to avoid conflicts
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        """Advanced automod message scanning - DISABLED BY USER REQUEST"""
-        # All automod features disabled per user request
-        pass
-
-    @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        """Auto-dehoist - DISABLED BY USER REQUEST"""
-        # Auto-dehoist disabled per user request
-        pass
 
 async def setup(bot):
     await bot.add_cog(AdvancedModeration(bot))

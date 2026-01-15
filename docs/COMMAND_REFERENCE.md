@@ -64,7 +64,6 @@ This document provides a comprehensive list of all commands available in the Cod
 | `/tempban`, `?tempban` | Temporarily ban a member | `/tempban <member> <minutes> [reason]` | Ban Members |
 | `/mute`, `?mute` | Timeout a member temporarily | `/mute <member> <minutes> [reason]` | Moderate Members |
 | `/unmute`, `?unmute` | Remove timeout from a member | `/unmute <member>` | Moderate Members |
-| `/automod`, `?automod` | Configure automatic moderation settings | `/automod <feature> <enable/disable>` | Administrator |
 | `/massban`, `?massban` | Ban multiple users at once | `/massban <user_ids> [reason]` | Ban Members |
 
 *Note: Point Moderation system has been removed.*

@@ -963,8 +963,6 @@ class HelpDropdown(discord.ui.Select):
         embed.add_field(
             name=" Anti-Spam & Anti-Raid",
             value=(
-                "**`/automod`** - Configure automatic moderation settings\n"
-                "**`/automodstatus`** - View current automod configuration\n"
                 "**`/antispam`** - Anti-spam protection settings\n"
                 "**`/antiraid`** - Configure anti-raid protection\n\n"
                 "*Automatically detects and prevents mass attacks*"

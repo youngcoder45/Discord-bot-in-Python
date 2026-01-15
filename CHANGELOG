@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2026-01-15]
+
+### Removed
+- **Automated Moderation**:
+    - Completely removed the `/automod` and `/automodstatus` commands.
+    - Removed `automod_settings` configuration and event listeners from `advanced_moderation.py`.
+- **Statistics**:
+    - Removed the `/advmodstats` command.
+
+### Changed
+- **Diagnostics**:
+    - Converted `/diag` to be a prefix-only command (`?diag`) and removed its slash command support.
+- **Configuration**:
+    - Fixed a crash issue in `SAMConfig` by providing a default database URI.
+
 ## [2026-01-09]
 
 ### Removed
