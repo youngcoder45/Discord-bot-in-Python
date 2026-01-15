@@ -53,6 +53,9 @@ class MemberLogMixin(commands.Cog):
         if before.roles != after.roles:
             added_roles = [role for role in after.roles if role not in before.roles]
             removed_roles = [role for role in before.roles if role not in after.roles]
+            
+            # Filter out roles that were deleted from the guild (avoids spam when a role is deleted)
+            removed_roles = [role for role in removed_roles if after.guild.get_role(role.id) is not None]
 
             moderator_id = None
             if added_roles or removed_roles:

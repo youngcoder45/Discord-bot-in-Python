@@ -33,12 +33,11 @@ ENV/
 # PyInstaller
 *.manifest
 *.spec
-
-# Database files (keep structure, not data)
-data/*.db
-data/*.db-journal
-data/*.db-wal
-data/*.db-shm
+# Database files and Data
+data/env/
+data/*
+!data/.gitkeep
+*.db
 *.db-journal
 *.db-wal
 *.db-shm
