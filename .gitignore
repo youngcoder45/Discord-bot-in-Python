@@ -35,6 +35,7 @@ ENV/
 *.spec
 # Database files and Data
 data/env/
+data/*.json
 data/*
 !data/.gitkeep
 *.db
