@@ -10,7 +10,7 @@ class Diagnostics(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="diag", help="Show comprehensive bot diagnostics")
+    @commands.command(name="diag", help="Show comprehensive bot diagnostics")
     async def diag(self, ctx: commands.Context):
         """Show bot diagnostics and health status."""
         uptime = datetime.now(timezone.utc) - getattr(self.bot, 'start_time', datetime.now(timezone.utc))
