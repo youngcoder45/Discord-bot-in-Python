@@ -81,8 +81,11 @@ class LoggingCog(MemberLogMixin, ChannelLogMixin, RoleLogMixin, ModerationLogMix
         # If we wanted to check guild_id, we would do:
         # if guild_id == 1263067254153805905: ...
         
-        # Check specific event type
-        if event_type in LOG_CHANNEL_MAP:
+        # Define the main guild ID
+        CODEVERSE_GUILD_ID = 1263067254153805905
+
+        # Check specific event type only if it is the main guild
+        if guild_id == CODEVERSE_GUILD_ID and event_type in LOG_CHANNEL_MAP:
              return LOG_CHANNEL_MAP[event_type]
         
         # Check prefix mappings if not found exact ? 

@@ -61,8 +61,49 @@ class ChannelLogMixin(commands.Cog):
             before_topic_val = before_topic or "(none)"
             after_topic_val = after_topic or "(none)"
             changes.append(f"Topic: `{before_topic_val[:100]}` → `{after_topic_val[:100]}`")
+            
         if before.overwrites != after.overwrites:
-             changes.append("Permissions Updated (Visibility/Access changed)")
+            overwrite_changes = []
+            # Get all targets (roles/members) involved
+            all_targets = set(before.overwrites.keys()) | set(after.overwrites.keys())
+            
+            for target in all_targets:
+                before_ow = before.overwrites.get(target)
+                after_ow = after.overwrites.get(target)
+                
+                if before_ow != after_ow:
+                    target_name = target.mention if hasattr(target, 'mention') else str(target)
+                    
+                    if before_ow is None:
+                        overwrite_changes.append(f"• **{target_name}**: Overwrite created")
+                    elif after_ow is None:
+                        overwrite_changes.append(f"• **{target_name}**: Overwrite removed")
+                    else:
+                        # Diff the specific permissions
+                        diffs = []
+                        # iter(overwrite) returns (name, value) where value is True, False, or None
+                        before_perms = dict(before_ow)
+                        after_perms = dict(after_ow)
+                        
+                        for p_name, p_value in after_perms.items():
+                             if before_perms.get(p_name) != p_value:
+                                 # Format: "read_messages: Grant"
+                                 val_str = "⬜ Default"
+                                 if p_value is True: val_str = "✅ Allow"
+                                 elif p_value is False: val_str = "❌ Deny"
+                                 
+                                 readable_name = p_name.replace('_', ' ').title()
+                                 diffs.append(f"{readable_name}: {val_str}")
+                        
+                        if diffs:
+                            overwrite_changes.append(f"• **{target_name}**: " + ", ".join(diffs))
+                            
+            if overwrite_changes:
+                # Limit size to avoid hitting embed limits
+                changes_str = "\n".join(overwrite_changes)
+                if len(changes_str) > 1000:
+                    changes_str = changes_str[:997] + "..."
+                changes.append("**Permissions Updated:**\n" + changes_str)
         
         if not changes:
             return
@@ -77,7 +118,8 @@ class ChannelLogMixin(commands.Cog):
                     break
             
             # If mod not found and perms changed, check overwrite logs
-            if not moderator_id and "Permissions Updated (Visibility/Access changed)" in changes:
+            has_perm_changes = any("Permissions Updated" in c for c in changes)
+            if not moderator_id and has_perm_changes:
                 async for entry in after.guild.audit_logs(action=discord.AuditLogAction.overwrite_update, limit=5):
                     if entry.target and entry.target.id == after.id:
                         moderator_id = entry.user.id
