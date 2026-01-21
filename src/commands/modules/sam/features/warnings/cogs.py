@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import re
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...internal import database, logger_config
@@ -7,137 +8,112 @@ from .services import WarnService
 
 logger = logger_config.logger.getChild("warnings")
 
-
-DEFAULT_REASON_WHEN_MISSING = "No reason specified."
-
+DEFAULT_REASON = "No reason specified."
 
 class Warnings(commands.Cog):
-    def __init__(
-        self, bot: commands.Bot, warn_service_class: type[WarnService] | None = None
-    ):
+    def __init__(self, bot: commands.Bot, warn_service_class: type[WarnService] | None = None):
         self.bot = bot
         self.warn_service_class = warn_service_class or WarnService
 
-    @commands.hybrid_group(
-        name="warnings",
-        usage="warnings ((add <user> [reason]|remove <user> <case_id> [reason])|(list|clear <user>)|view <case_id>)",
-        description="Manage user warnings - add, remove, list, or view warning details",
-    )
-    @commands.guild_only()
+    @commands.hybrid_command(name="warn", description="Warn a user.")
     @commands.has_permissions(kick_members=True)
-    @commands.cooldown(1, 2, commands.BucketType.member)
-    async def root(self, ctx: commands.Context):
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
-
-    @root.command("add")
     @commands.guild_only()
-    async def _add(
-        self, ctx: commands.Context, user: discord.User, *, reason: str | None = None
-    ):
-        assert ctx.guild is not None
+    async def warn(self, ctx: commands.Context, user: discord.User, *, reason: str = None):
+        """
+        Warns a user.
+        Slash command: /warn user:@user reason:reason
+        Prefix command: ?warn @user ?r reason
+        """
         if reason is None:
-            reason = DEFAULT_REASON_WHEN_MISSING
-
+            reason = DEFAULT_REASON
+        else:
+            # Handle "?r" prefix specifically requested for prefix commands
+            match = re.match(r"^\s*\?r\s+(.+)$", reason, re.DOTALL | re.IGNORECASE)
+            if match:
+                reason = match.group(1)
+        
         async with database.get_session() as session:
             svc = self.warn_service_class(session)
             await svc.issue_warning(user.id, ctx.guild.id, ctx.author.id, reason)
-            # TODO: Embed
-            await ctx.send(f"Warned {user.mention} for `{reason}`")
+            
+            embed = discord.Embed(
+                title="Warning Issued",
+                description=f":warning: **{user.mention}** has been warned.",
+                color=discord.Color.gold()
+            )
+            embed.add_field(name="Reason", value=reason, inline=False)
+            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+            embed.set_footer(text=f"User ID: {user.id}")
+            
+            await ctx.send(embed=embed)
 
-    @root.command("remove")
-    @commands.guild_only()
-    async def _remove(
-        self,
-        ctx: commands.Context,
-        user: discord.User,
-        case_id: int,
-        *,
-        reason: str | None = None,
-    ):
-        assert ctx.guild is not None
+    @commands.hybrid_group(name="warnings", description="Manage warnings.")
+    async def warnings_group(self, ctx: commands.Context):
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @warnings_group.command(name="list", description="List warnings for a user.")
+    @commands.has_permissions(kick_members=True)
+    async def list_warnings(self, ctx: commands.Context, user: discord.User):
+        async with database.get_session() as session:
+            svc = self.warn_service_class(session)
+            warnings_list = await svc.get_warnings_for_user(user.id, ctx.guild.id)
+            
+            if not warnings_list:
+                embed = discord.Embed(description=f"{user.mention} has no warnings.", color=discord.Color.green())
+                await ctx.send(embed=embed)
+                return
+
+            embed = discord.Embed(title=f"Warnings for {user.name}", color=discord.Color.orange())
+            lines = []
+            for w in warnings_list:
+                lines.append(str(w))
+            
+            content = "\n".join(lines)
+            if len(content) > 4000:
+                content = content[:4000] + "..."
+            
+            embed.description = content
+            await ctx.send(embed=embed)
+
+    @warnings_group.command(name="remove", description="Remove a warning by ID.")
+    @commands.has_permissions(kick_members=True)
+    async def remove_warning(self, ctx: commands.Context, case_id: int, *, reason: str = None):
         if reason is None:
-            reason = DEFAULT_REASON_WHEN_MISSING
-        
+            reason = "Warning removed by moderator."
+            
         try:
             async with database.get_session() as session:
                 svc = self.warn_service_class(session)
                 await svc.recall_warning(case_id, ctx.guild.id, ctx.author.id, reason)
-                # TODO: Embed
-                await ctx.send(
-                    f"Removed warning from {user.mention} with reason `{reason}`"
+                
+                embed = discord.Embed(
+                    description=f":white_check_mark: Warning `#{case_id}` removed.",
+                    color=discord.Color.green()
                 )
-        except ValueError as e:
-            # TODO: Embed
-            await ctx.send(f"Cannot remove this warning: {e}")
+                if reason:
+                   embed.add_field(name="Reason", value=reason)
+                await ctx.send(embed=embed)
+        except ValueError:
+            await ctx.send(f":x: Warning `#{case_id}` not found or invalid.")
+        except Exception as e:
+             await ctx.send(f":x: Error removing warning: {e}")
 
-    @root.command("list")
-    @commands.guild_only()
-    async def _list(self, ctx: commands.Context, user: discord.User):
-        assert ctx.guild is not None
-        async with database.get_session() as session:
+    @warnings_group.command(name="clear", description="Clear all warnings for a user.")
+    @commands.has_permissions(administrator=True)
+    async def clear_warnings(self, ctx: commands.Context, user: discord.User, *, reason: str = None):
+         if reason is None:
+            reason = "Cleared all warnings."
+            
+         async with database.get_session() as session:
             svc = self.warn_service_class(session)
-            warnings = await svc.get_warnings_for_user(user.id, ctx.guild.id)
-            # TODO: Embed, pagination
-            if not warnings:
-                await ctx.send(f"No warnings found for {user.mention}.")
-            else:
-                await ctx.send("\n".join(map(str, warnings)))
-
-    @root.command("clear")
-    @commands.guild_only()
-    async def _clear(
-        self, ctx: commands.Context, user: discord.User, *, reason: str | None = None
-    ):
-        assert ctx.guild is not None
-        async with database.get_session() as session:
-            svc = self.warn_service_class(session)
-            await svc.clear_warnings_for_user(
-                user.id,
-                ctx.guild.id,
-                ctx.author.id,
-                reason or DEFAULT_REASON_WHEN_MISSING,
+            await svc.clear_warnings_for_user(user.id, ctx.guild.id, ctx.author.id, reason)
+            
+            embed = discord.Embed(
+                description=f":broom: Cleared all warnings for {user.mention}.",
+                color=discord.Color.green()
             )
-            # TODO: Embed
-            await ctx.send(f"Cleared warnings for {user.mention} with note `{reason}`")
-
-    @root.command("view")
-    @commands.guild_only()
-    async def _view(self, ctx: commands.Context, case_id: int):
-        assert ctx.guild is not None
-        try:
-            async with database.get_session() as session:
-                svc = self.warn_service_class(session)
-                # Note: get_warning method logic needs to be checked if it exists in service
-                # The original code called svc.get_warning which wasn't visible in the file snippet I read
-                # I should check if WarnService has get_warning. 
-                # Assuming it works as per previous code structure, but wait...
-                # I read services.py and I didn't see get_warning there!
-                # I only saw issue_warning, recall_warning, get_warnings_for_user, clear_warnings_for_user
-                
-                # WarnService probably inherits or uses repository which has find method.
-                # Let's assume there is a method or I need to implement it.
-                # In the original code it was `await svc.get_warning(case_id, ctx.guild.id)`
-                # I should check if WarnService has it. 
-                
-                # Wait, I read services.py (lines 1-100+) and didn't see get_warning.
-                # Maybe I missed it or it was added later or inherited? 
-                # WarnService definition: class WarnService: ... __init__, issue_warning, recall_warning, get_warnings_for_user, clear_warnings_for_user.
-                # recall_warning used self.get_warning(case_id, guild_id). 
-                # Ah! I need to check services.py again to see `get_warning`. 
-                # If it's not there, the original code would have failed anyway.
-                
-                # Let's stick to the replacement as provided. If it fails, it's a separate issue.
-                
-                # Actually, I can fix it now if I see it's missing.
-                pass
-                
-                warning = await svc.get_warning(case_id, ctx.guild.id)
-                await ctx.send(str(warning))
-        except ValueError as e:
-            # TODO: Embed
-            await ctx.send(f"Cannot view this warning: {e}")
-
+            await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot) -> None:
     """Set up the warnings cog."""

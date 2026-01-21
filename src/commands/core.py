@@ -60,8 +60,6 @@ class Core(commands.Cog):
             "logging_cog": "commands.logging",
             "staff_points": "commands.staff_points",
             "diagnostics": "commands.diagnostics",
-            # "data": "commands.data_management", # Removed
-            # "data_management": "commands.data_management", # Removed
             "protection": "commands.protection",
             "spam": "commands.spam_catch",
             "spam_catch": "commands.spam_catch",
