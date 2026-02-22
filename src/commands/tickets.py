@@ -169,6 +169,7 @@ class Tickets(commands.Cog):
         self.ticket_channel_id = None  # Set this to the channel where tickets will be created as threads
         # Note: Logs will be sent to #ticketlog channel in each server (optional)
         self.staff_role_id = 1417900662053671073  # Your staff role ID
+        self.admin_bypass_role_id = 1403059755001577543  # Role with full ticket permissions (no ping)
         
         # Ticket naming
         self.ticket_counter = self._get_ticket_counter()
@@ -726,7 +727,7 @@ class Tickets(commands.Cog):
         if isinstance(interaction.user, discord.Member):
             has_permission = (
                 interaction.user.id == user_id or
-                any(role.id == self.staff_role_id for role in interaction.user.roles) or
+                any(role.id in [self.staff_role_id, self.admin_bypass_role_id] for role in interaction.user.roles) or
                 interaction.user.guild_permissions.administrator
             )
         elif interaction.user.id == user_id:
@@ -801,7 +802,7 @@ class Tickets(commands.Cog):
         is_staff = False
         if isinstance(interaction.user, discord.Member):
             is_staff = (
-                any(role.id == self.staff_role_id for role in interaction.user.roles) or
+                any(role.id in [self.staff_role_id, self.admin_bypass_role_id] for role in interaction.user.roles) or
                 interaction.user.guild_permissions.administrator
             )
         
