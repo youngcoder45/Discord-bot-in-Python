@@ -53,9 +53,9 @@ LOG_CHANNEL_MAP = {
     "TICKET_DELETE": 1438487366305190018,
 
     # Misc Member (Nickname/Username)
-    "NICKNAME_UPDATE": 1263434413581008956,
-    "NICKNAME_CHANGE": 1263434413581008956,
-    "USER_UPDATE": 1263434413581008956,
+    "NICKNAME_UPDATE": None,
+    "NICKNAME_CHANGE": None,
+    "USER_UPDATE": 1454024682700537968,
     
     # Catch-all for related
     "APPEAL_SUBMITTED": 1460207507703070813, # Assuming appeal goes to warning/mod logs? Or maybe kick/ban? User didn't specify. I'll stick to mod logs/warning logs for now.
@@ -67,5 +67,5 @@ LOG_CHANNEL_MAP = {
     "POINT_REMOVE": 1454024682700537968,
     
     # External/System Logs
-    "EXTERNAL_LOG": 1263434413581008956
+    "EXTERNAL_LOG": None
 }
