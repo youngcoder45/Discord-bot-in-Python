@@ -655,6 +655,7 @@ class EmbedBuilder(commands.Cog):
         embed.add_field(name="?ls channels ?w <Target> <Perm>", value="Find channels where User/Role has Permission", inline=False)
         embed.add_field(name="?ls categories [?w ...]", value="List categories (optional: filter by permission)", inline=False)
         embed.add_field(name="?ls role <role>", value="View full details and permissions of a role", inline=False)
+        embed.add_field(name="?ls members <role>", value="List members who have a specific role", inline=False)
         embed.add_field(name="?ls perm <permission>", value="See which roles have a specific permission", inline=False)
         embed.add_field(name="?ls bots", value="List all bots in the server", inline=False)
         embed.add_field(name="?ls boosters", value="List server boosters", inline=False)
@@ -711,6 +712,29 @@ class EmbedBuilder(commands.Cog):
 
         embed.add_field(name="All Permissions", value=perm_list_str, inline=False)
         
+        await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+
+    @ls_command.command(name="members")
+    async def ls_members(self, ctx, *, role: discord.Role):
+        """Show how many people have a specific role and list them if < 20"""
+        count = len(role.members)
+        
+        embed = discord.Embed(
+            title=f"Members in Role: {role.name}",
+            color=role.color
+        )
+        embed.add_field(name="Total Members", value=str(count), inline=False)
+        embed.add_field(name="Role ID", value=str(role.id), inline=False)
+        
+        if count == 0:
+            embed.description = "No members have this role."
+        elif count < 20:
+            member_mentions = [member.mention for member in role.members]
+            # Join with a nice separator
+            embed.description = "\n".join(member_mentions)
+        else:
+            embed.description = f"There are {count} members with this role. (List only shown if < 20)"
+            
         await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
     @ls_command.command(name="perm")
