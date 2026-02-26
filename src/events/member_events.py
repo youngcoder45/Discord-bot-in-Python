@@ -15,11 +15,11 @@ class MemberEvents(commands.Cog):
         try:
             # Create a personalized welcome message
             welcome_text = (
-                f"👋 Welcome {member.mention} to The CodeVerse Hub! 🎉\n"
+                f" Welcome {member.mention} to The CodeVerse Hub! \n"
                 f"We're glad to have you join our **growing** community of developers, techies, and curious minds from around the world.\n\n"
-                f"🚀 **Start your journey:**\n"
+                f" **Start your journey:**\n"
                 f"• <#1263070188589547541> – Start By Introducing Yourself Here !!!\n"
-                f"• <#1263070845098655744> – Learn what we're all about\n"
+                f"• <#1263070845098655744> – Get all Your Roles here!\n"
                 f"• <#1263067254803796030> – Say Hi to everyone!\n"
                 f"• <#1347581046753067050> – Share ideas, ask questions\n"
                 f"• <#1388169643234955354> – Feel Free to ask for help here, our team or any other expert member may help you as soon as possible\n"
