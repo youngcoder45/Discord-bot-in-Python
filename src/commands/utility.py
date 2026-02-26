@@ -844,13 +844,41 @@ class EmbedBuilder(commands.Cog):
             await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
     @ls_command.command(name="perms")
-    async def ls_perms(self, ctx):
-        """List roles that have at least one permission"""
+    async def ls_perms(self, ctx, *, role: discord.Role = None):
+        """List roles that have at least one permission or permissions for a specific role"""
+        
+        if role:
+            # List permissions for the specific role
+            perms = []
+            for perm, value in role.permissions:
+                if value:
+                    perms.append(perm.replace('_', ' ').title())
+            
+            if not perms:
+                await ctx.send(f"{role.mention} has no active permissions.", allowed_mentions=discord.AllowedMentions.none())
+                return
+            
+            perms.sort()
+            
+            perms_chunked = [perms[i:i + 20] for i in range(0, len(perms), 20)]
+
+            for i, chunk in enumerate(perms_chunked):
+                embed = discord.Embed(
+                    title=f"Permissions for {role.name}" if i == 0 else f"Permissions for {role.name} (Continued)",
+                    description="\n".join(f"• {p}" for p in chunk),
+                    color=role.color if role.color.value != 0 else 0x000000
+                )
+                if i == len(perms_chunked) - 1:
+                    embed.set_footer(text=f"Total: {len(perms)} permissions")
+                await ctx.send(embed=embed)
+            return
+
+        # List all roles with permissions
         roles = []
-        for role in ctx.guild.roles:
-            if role.is_default(): continue
-            if role.permissions.value != 0:
-                roles.append(role)
+        for r in ctx.guild.roles:
+            if r.is_default(): continue
+            if r.permissions.value != 0:
+                roles.append(r)
         
         roles.sort(key=lambda r: r.position, reverse=True)
         
@@ -866,8 +894,9 @@ class EmbedBuilder(commands.Cog):
         
         chunk = ""
         count = 0
-        for role in roles:
-            line = f"{role.mention} (Pos: {role.position})\n"
+        
+        for r in roles:
+            line = f"{r.mention} (Pos: {r.position})\n"
             if len(chunk) + len(line) > 4000:
                 embed.description = chunk
                 await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
