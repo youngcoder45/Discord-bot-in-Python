@@ -7,7 +7,7 @@ class RulesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.rules = {
-            "r1": "**R1❯ Follow Discord Terms & Guidelines**\n\nAll server rules are based on Discord’s Terms of Service and Community Guidelines.\nModded clients like Vencord or BetterDiscord are allowed.",
+            "r1": "**R1❯ Follow Discord Terms & Guidelines**\n\nAll server rules are based on Discord's Terms of Service and Community Guidelines.\nModded clients like Vencord or BetterDiscord are allowed.",
             "r2": "**R2❯ No Raids, Doxxing, or Swatting**\n\nDo not participate in, joke about, or threaten raids, doxxing, or swatting.\nAny such threat will result in a permanent ban.\nSharing information related to these actions is also prohibited, even “for awareness”.\nYou may discuss incidents for awareness only, without encouraging the behavior.",
             "r3": "**R3❯ No Scams, Malware, or Malicious Links**\n\nUsing Discord for scams, malware, viruses, IP grabbers, or harmful links is strictly prohibited.\nThis applies both inside the server and in DMs.\nCybersecurity discussions are allowed only in appropriate channels.\nDo not share malware, source code, tutorials, tools, or stream such content.",
             "r4": "**R4❯ No Sharing Personal Information**\n\nLeaking or sharing personal information is not allowed.\nThis includes IP addresses, phone numbers, addresses, legal names, IDs, or similar data.",
