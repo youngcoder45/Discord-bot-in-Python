@@ -1128,16 +1128,6 @@ class ModCog(commands.Cog):
     # Warnings system moved to SAM module (/warn, /unwarn, /warnings)
     # See: commands.modules.sam.features.warnings.cogs
 
-        except ValueError as e:
-            embed = discord.Embed(
-                title="❌ Error",
-                description=f"Cannot view this warning: {e}",
-                color=discord.Color.red()
-            )
-            await ctx.send(embed=embed)
-        finally:
-            await self._close_db_session()
-
     # -------- Shared Error Handler --------
     
     @purge.error
