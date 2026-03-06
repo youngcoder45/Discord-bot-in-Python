@@ -57,7 +57,10 @@ class WarnService:
                 reason,
             )
         )
-        return await self.repo.save(warn)
+        saved_warn = await self.repo.save(warn)
+        # Detach from session to prevent ResourceClosedError
+        await self.repo.session.expunge(saved_warn)
+        return saved_warn
 
     async def recall_warning(
         self, case_id: int, guild_id: int, moderator_id: int, reason: str
@@ -76,19 +79,28 @@ class WarnService:
                 reason,
             )
         )
-        return await self.repo.save(warn)
+        saved_warn = await self.repo.save(warn)
+        # Detach from session to prevent ResourceClosedError
+        await self.repo.session.expunge(saved_warn)
+        return saved_warn
 
     async def get_warnings_for_user(self, user_id: int, guild_id: int) -> list[Warn]:
-        return await self.repo.find_by_user_id_and_guild_id(user_id, guild_id)
+        warnings = await self.repo.find_by_user_id_and_guild_id(user_id, guild_id)
+        # Detach all from session to prevent ResourceClosedError
+        for warn in warnings:
+            await self.repo.session.expunge(warn)
+        return warnings
 
     async def clear_warnings_for_user(
         self, user_id: int, guild_id: int, moderator_id: int, reason: str
     ) -> list[Warn]:
         warnings = await self.repo.find_by_user_id_and_guild_id(user_id, guild_id)
-        for i, warning in enumerate(warnings):
-            warnings[i] = await self.recall_warning(
+        result_warnings = []
+        for warning in warnings:
+            revoked = await self.recall_warning(
                 warning.id, guild_id, moderator_id, reason
             )
+            result_warnings.append(revoked)
         await logging_api.log(
             get_log_action(
                 "Member Warnings Cleared",
@@ -98,7 +110,7 @@ class WarnService:
                 reason,
             )
         )
-        return warnings
+        return result_warnings
 
     async def get_warning(self, case_id: int, guild_id: int) -> Warn:
         warn = await self.repo.get(case_id)
@@ -108,4 +120,6 @@ class WarnService:
             raise ValueError(
                 f"Warning #{case_id} does not belong to the specified guild."
             )
+        # Note: We don't detach here because this is called within service methods
+        # that will detach the final result before returning
         return warn
