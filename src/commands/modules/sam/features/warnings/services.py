@@ -57,10 +57,7 @@ class WarnService:
                 reason,
             )
         )
-        saved_warn = await self.repo.save(warn)
-        # Detach from session to prevent ResourceClosedError
-        await self.repo.session.expunge(saved_warn)
-        return saved_warn
+        return await self.repo.save(warn)
 
     async def recall_warning(
         self, case_id: int, guild_id: int, moderator_id: int, reason: str
@@ -79,17 +76,10 @@ class WarnService:
                 reason,
             )
         )
-        saved_warn = await self.repo.save(warn)
-        # Detach from session to prevent ResourceClosedError
-        await self.repo.session.expunge(saved_warn)
-        return saved_warn
+        return await self.repo.save(warn)
 
     async def get_warnings_for_user(self, user_id: int, guild_id: int) -> list[Warn]:
-        warnings = await self.repo.find_by_user_id_and_guild_id(user_id, guild_id)
-        # Detach all from session to prevent ResourceClosedError
-        for warn in warnings:
-            await self.repo.session.expunge(warn)
-        return warnings
+        return await self.repo.find_by_user_id_and_guild_id(user_id, guild_id)
 
     async def clear_warnings_for_user(
         self, user_id: int, guild_id: int, moderator_id: int, reason: str
@@ -120,6 +110,4 @@ class WarnService:
             raise ValueError(
                 f"Warning #{case_id} does not belong to the specified guild."
             )
-        # Note: We don't detach here because this is called within service methods
-        # that will detach the final result before returning
         return warn
