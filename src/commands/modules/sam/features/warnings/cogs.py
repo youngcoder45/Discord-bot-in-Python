@@ -15,6 +15,32 @@ class Warnings(commands.Cog):
         self.bot = bot
         self.warn_service_class = warn_service_class or WarnService
 
+    async def _send_dm(self, user_id: int, embed: discord.Embed) -> tuple[bool, str]:
+        """
+        Safely send a DM to a user with proper error handling.
+        Returns: (success: bool, status: str)
+        """
+        try:
+            # Try to fetch user from cache first, then from API
+            user = self.bot.get_user(user_id)
+            if user is None:
+                user = await self.bot.fetch_user(user_id)
+            
+            if user is None:
+                return False, "User not found"
+            
+            await user.send(embed=embed)
+            return True, "✅ DM sent successfully"
+            
+        except discord.Forbidden:
+            return False, "⚠️ User has DMs disabled or blocked the bot"
+        except discord.NotFound:
+            return False, "❌ User not found"
+        except Exception as e:
+            logger.error(f"Failed to send DM to user {user_id}: {str(e)}")
+            return False, f"⚠️ Failed to send DM: {type(e).__name__}"
+
+
     @commands.hybrid_command(name="warn", description="Issue a warning to a user.")
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
@@ -32,6 +58,20 @@ class Warnings(commands.Cog):
                 svc = self.warn_service_class(session)
                 warn_obj = await svc.issue_warning(user.id, ctx.guild.id, ctx.author.id, reason)
                 
+                # Send DM to the warned user
+                dm_embed = discord.Embed(
+                    title="⚠️ You Have Been Warned",
+                    description=f"You have received a warning in **{ctx.guild.name}**.",
+                    color=discord.Color.gold()
+                )
+                dm_embed.add_field(name="Case ID", value=f"#{warn_obj.id}", inline=True)
+                dm_embed.add_field(name="Reason", value=reason, inline=False)
+                dm_embed.add_field(name="Moderator", value=str(ctx.author), inline=True)
+                dm_embed.set_footer(text="Please review the rules and avoid further violations.")
+                
+                dm_sent, dm_status = await self._send_dm(user.id, dm_embed)
+                
+                # Send confirmation to moderator
                 embed = discord.Embed(
                     title="⚠️ Warning Issued",
                     description=f"{user.mention} has been warned.",
@@ -40,6 +80,7 @@ class Warnings(commands.Cog):
                 embed.add_field(name="Case ID", value=f"#{warn_obj.id}", inline=True)
                 embed.add_field(name="Reason", value=reason, inline=False)
                 embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+                embed.add_field(name="DM Status", value=dm_status, inline=True)
                 embed.set_footer(text=f"User ID: {user.id}")
                 
                 await ctx.send(embed=embed)
@@ -68,6 +109,19 @@ class Warnings(commands.Cog):
                 svc = self.warn_service_class(session)
                 warn_obj = await svc.recall_warning(case_id, ctx.guild.id, ctx.author.id, reason)
                 
+                # Send DM to the user
+                dm_embed = discord.Embed(
+                    title="✅ Warning Removed",
+                    description=f"A warning has been removed from your record in **{ctx.guild.name}**.",
+                    color=discord.Color.green()
+                )
+                dm_embed.add_field(name="Case ID", value=f"#{warn_obj.id}", inline=True)
+                dm_embed.add_field(name="Removal Reason", value=reason, inline=False)
+                dm_embed.add_field(name="Moderator", value=str(ctx.author), inline=True)
+                dm_embed.set_footer(text="Keep up the good behavior!")
+                
+                dm_sent, dm_status = await self._send_dm(warn_obj.user_id, dm_embed)
+                
                 embed = discord.Embed(
                     title="✅ Warning Removed",
                     description=f"Warning `#{case_id}` has been removed.",
@@ -76,6 +130,7 @@ class Warnings(commands.Cog):
                 embed.add_field(name="Affected User", value=f"<@{warn_obj.user_id}>", inline=True)
                 embed.add_field(name="Removal Reason", value=reason, inline=False)
                 embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+                embed.add_field(name="DM Status", value=dm_status, inline=True)
                 
                 await ctx.send(embed=embed)
         except ValueError as e:
@@ -159,6 +214,19 @@ class Warnings(commands.Cog):
                 svc = self.warn_service_class(session)
                 warn_obj = await svc.recall_warning(case_id, ctx.guild.id, ctx.author.id, reason)
                 
+                # Send DM to the user
+                dm_embed = discord.Embed(
+                    title="✅ Warning Revoked",
+                    description=f"A warning has been revoked from your record in **{ctx.guild.name}**.",
+                    color=discord.Color.green()
+                )
+                dm_embed.add_field(name="Case ID", value=f"#{warn_obj.id}", inline=True)
+                dm_embed.add_field(name="Revoke Reason", value=reason, inline=False)
+                dm_embed.add_field(name="Moderator", value=str(ctx.author), inline=True)
+                dm_embed.set_footer(text="Thank you for your cooperation!")
+                
+                dm_sent, dm_status = await self._send_dm(warn_obj.user_id, dm_embed)
+                
                 embed = discord.Embed(
                     title="✅ Warning Revoked",
                     description=f"Warning `#{case_id}` has been revoked.",
@@ -167,6 +235,7 @@ class Warnings(commands.Cog):
                 embed.add_field(name="Affected User", value=f"<@{warn_obj.user_id}>", inline=True)
                 embed.add_field(name="Revoke Reason", value=reason, inline=False)
                 embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+                embed.add_field(name="DM Status", value=dm_status, inline=True)
                 
                 await ctx.send(embed=embed)
         except ValueError:
@@ -196,6 +265,18 @@ class Warnings(commands.Cog):
                 svc = self.warn_service_class(session)
                 await svc.clear_warnings_for_user(user.id, ctx.guild.id, ctx.author.id, reason)
                 
+                # Send DM to the user
+                dm_embed = discord.Embed(
+                    title="🧹 All Warnings Cleared",
+                    description=f"All your warnings have been cleared in **{ctx.guild.name}**.",
+                    color=discord.Color.green()
+                )
+                dm_embed.add_field(name="Clear Reason", value=reason, inline=False)
+                dm_embed.add_field(name="Moderator", value=str(ctx.author), inline=True)
+                dm_embed.set_footer(text="Your record has been reset. Keep up the good work!")
+                
+                dm_sent, dm_status = await self._send_dm(user.id, dm_embed)
+                
                 embed = discord.Embed(
                     title="🧹 Warnings Cleared",
                     description=f"All warnings for {user.mention} have been cleared.",
@@ -203,6 +284,7 @@ class Warnings(commands.Cog):
                 )
                 embed.add_field(name="Clear Reason", value=reason, inline=False)
                 embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+                embed.add_field(name="DM Status", value=dm_status, inline=True)
                 
                 await ctx.send(embed=embed)
         except Exception as e:
