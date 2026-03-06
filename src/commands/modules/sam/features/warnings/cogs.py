@@ -15,103 +15,201 @@ class Warnings(commands.Cog):
         self.bot = bot
         self.warn_service_class = warn_service_class or WarnService
 
-    @commands.hybrid_command(name="warn", description="Warn a user.")
+    @commands.hybrid_command(name="warn", description="Issue a warning to a user.")
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     async def warn(self, ctx: commands.Context, user: discord.User, *, reason: str = None):
         """
-        Warns a user.
+        Issue a warning to a user.
         Slash command: /warn user:@user reason:reason
-        Prefix command: ?warn @user ?r reason
+        Prefix command: ?warn @user reason
         """
         if reason is None:
             reason = DEFAULT_REASON
-        else:
-            # Handle "?r" prefix specifically requested for prefix commands
-            match = re.match(r"^\s*\?r\s+(.+)$", reason, re.DOTALL | re.IGNORECASE)
-            if match:
-                reason = match.group(1)
         
-        async with database.get_session() as session:
-            svc = self.warn_service_class(session)
-            await svc.issue_warning(user.id, ctx.guild.id, ctx.author.id, reason)
-            
-            embed = discord.Embed(
-                title="Warning Issued",
-                description=f":warning: **{user.mention}** has been warned.",
-                color=discord.Color.gold()
-            )
-            embed.add_field(name="Reason", value=reason, inline=False)
-            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
-            embed.set_footer(text=f"User ID: {user.id}")
-            
-            await ctx.send(embed=embed)
-
-    @commands.hybrid_group(name="warnings", description="Manage warnings.")
-    async def warnings_group(self, ctx: commands.Context):
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
-
-    @warnings_group.command(name="list", description="List warnings for a user.")
-    @commands.has_permissions(kick_members=True)
-    async def list_warnings(self, ctx: commands.Context, user: discord.User):
-        async with database.get_session() as session:
-            svc = self.warn_service_class(session)
-            warnings_list = await svc.get_warnings_for_user(user.id, ctx.guild.id)
-            
-            if not warnings_list:
-                embed = discord.Embed(description=f"{user.mention} has no warnings.", color=discord.Color.green())
-                await ctx.send(embed=embed)
-                return
-
-            embed = discord.Embed(title=f"Warnings for {user.name}", color=discord.Color.orange())
-            lines = []
-            for w in warnings_list:
-                lines.append(str(w))
-            
-            content = "\n".join(lines)
-            if len(content) > 4000:
-                content = content[:4000] + "..."
-            
-            embed.description = content
-            await ctx.send(embed=embed)
-
-    @warnings_group.command(name="remove", description="Remove a warning by ID.")
-    @commands.has_permissions(kick_members=True)
-    async def remove_warning(self, ctx: commands.Context, case_id: int, *, reason: str = None):
-        if reason is None:
-            reason = "Warning removed by moderator."
-            
         try:
             async with database.get_session() as session:
                 svc = self.warn_service_class(session)
-                await svc.recall_warning(case_id, ctx.guild.id, ctx.author.id, reason)
+                warn_obj = await svc.issue_warning(user.id, ctx.guild.id, ctx.author.id, reason)
                 
                 embed = discord.Embed(
-                    description=f":white_check_mark: Warning `#{case_id}` removed.",
+                    title="⚠️ Warning Issued",
+                    description=f"{user.mention} has been warned.",
+                    color=discord.Color.gold()
+                )
+                embed.add_field(name="Case ID", value=f"#{warn_obj.id}", inline=True)
+                embed.add_field(name="Reason", value=reason, inline=False)
+                embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+                embed.set_footer(text=f"User ID: {user.id}")
+                
+                await ctx.send(embed=embed)
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Failed to issue warning: {str(e)}",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="unwarn", description="Remove a warning by ID.")
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    async def unwarn(self, ctx: commands.Context, case_id: int, *, reason: str = None):
+        """
+        Remove a warning by ID.
+        Slash command: /unwarn case_id:123 reason:reason
+        Prefix command: ?unwarn 123 reason
+        """
+        if reason is None:
+            reason = "Warning removed by moderator."
+        
+        try:
+            async with database.get_session() as session:
+                svc = self.warn_service_class(session)
+                warn_obj = await svc.recall_warning(case_id, ctx.guild.id, ctx.author.id, reason)
+                
+                embed = discord.Embed(
+                    title="✅ Warning Removed",
+                    description=f"Warning `#{case_id}` has been removed.",
                     color=discord.Color.green()
                 )
-                if reason:
-                   embed.add_field(name="Reason", value=reason)
+                embed.add_field(name="Affected User", value=f"<@{warn_obj.user_id}>", inline=True)
+                embed.add_field(name="Removal Reason", value=reason, inline=False)
+                embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+                
+                await ctx.send(embed=embed)
+        except ValueError as e:
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Warning `#{case_id}` not found or invalid.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Failed to remove warning: {str(e)}",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @commands.hybrid_group(name="warnings", description="Manage warnings.")
+    @commands.guild_only()
+    async def warnings_group(self, ctx: commands.Context):
+        """Manage warnings for users."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @warnings_group.command(name="view", description="View warnings for a user.")
+    @commands.has_permissions(kick_members=True)
+    async def view_warnings(self, ctx: commands.Context, user: discord.User):
+        """View all warnings for a specific user."""
+        try:
+            async with database.get_session() as session:
+                svc = self.warn_service_class(session)
+                warnings_list = await svc.get_warnings_for_user(user.id, ctx.guild.id)
+                
+                if not warnings_list:
+                    embed = discord.Embed(
+                        description=f"✅ {user.mention} has no warnings.",
+                        color=discord.Color.green()
+                    )
+                    await ctx.send(embed=embed)
+                    return
+
+                active_warnings = [w for w in warnings_list if not w.revoked]
+                revoked_warnings = [w for w in warnings_list if w.revoked]
+
+                embed = discord.Embed(
+                    title=f"Warnings for {user.name}",
+                    color=discord.Color.orange() if active_warnings else discord.Color.green()
+                )
+                
+                if active_warnings:
+                    active_content = "\n".join([str(w) for w in active_warnings])
+                    if len(active_content) > 1024:
+                        active_content = active_content[:1024] + "..."
+                    embed.add_field(name=f"Active Warnings ({len(active_warnings)})", value=active_content, inline=False)
+                
+                if revoked_warnings:
+                    revoked_content = "\n".join([str(w) for w in revoked_warnings])
+                    if len(revoked_content) > 1024:
+                        revoked_content = revoked_content[:1024] + "..."
+                    embed.add_field(name=f"Revoked Warnings ({len(revoked_warnings)})", value=revoked_content, inline=False)
+                
+                embed.set_footer(text=f"Total: {len(active_warnings)} active, {len(revoked_warnings)} revoked")
+                await ctx.send(embed=embed)
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Failed to retrieve warnings: {str(e)}",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @warnings_group.command(name="modify", description="Modify a warning (remove/revoke it).")
+    @commands.has_permissions(kick_members=True)
+    async def modify_warning(self, ctx: commands.Context, case_id: int, *, reason: str = None):
+        """Modify a warning by revoking it."""
+        if reason is None:
+            reason = "Warning revoked by moderator."
+        
+        try:
+            async with database.get_session() as session:
+                svc = self.warn_service_class(session)
+                warn_obj = await svc.recall_warning(case_id, ctx.guild.id, ctx.author.id, reason)
+                
+                embed = discord.Embed(
+                    title="✅ Warning Revoked",
+                    description=f"Warning `#{case_id}` has been revoked.",
+                    color=discord.Color.green()
+                )
+                embed.add_field(name="Affected User", value=f"<@{warn_obj.user_id}>", inline=True)
+                embed.add_field(name="Revoke Reason", value=reason, inline=False)
+                embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+                
                 await ctx.send(embed=embed)
         except ValueError:
-            await ctx.send(f":x: Warning `#{case_id}` not found or invalid.")
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Warning `#{case_id}` not found or invalid.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
         except Exception as e:
-             await ctx.send(f":x: Error removing warning: {e}")
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Failed to modify warning: {str(e)}",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
 
     @warnings_group.command(name="clear", description="Clear all warnings for a user.")
     @commands.has_permissions(administrator=True)
     async def clear_warnings(self, ctx: commands.Context, user: discord.User, *, reason: str = None):
-         if reason is None:
-            reason = "Cleared all warnings."
-            
-         async with database.get_session() as session:
-            svc = self.warn_service_class(session)
-            await svc.clear_warnings_for_user(user.id, ctx.guild.id, ctx.author.id, reason)
-            
+        """Clear all warnings for a user (admin only)."""
+        if reason is None:
+            reason = "All warnings cleared."
+        
+        try:
+            async with database.get_session() as session:
+                svc = self.warn_service_class(session)
+                await svc.clear_warnings_for_user(user.id, ctx.guild.id, ctx.author.id, reason)
+                
+                embed = discord.Embed(
+                    title="🧹 Warnings Cleared",
+                    description=f"All warnings for {user.mention} have been cleared.",
+                    color=discord.Color.green()
+                )
+                embed.add_field(name="Clear Reason", value=reason, inline=False)
+                embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+                
+                await ctx.send(embed=embed)
+        except Exception as e:
             embed = discord.Embed(
-                description=f":broom: Cleared all warnings for {user.mention}.",
-                color=discord.Color.green()
+                title="❌ Error",
+                description=f"Failed to clear warnings: {str(e)}",
+                color=discord.Color.red()
             )
             await ctx.send(embed=embed)
 
