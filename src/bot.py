@@ -82,6 +82,9 @@ COGS_TO_LOAD = [
     'commands.thread',        # Thread/post management (close, lock, pin, etc.)
     'commands.help_thread_notification', # Help thread notification system
     
+    # SAM Module (Script's Advanced Moderation - Essential)
+    'commands.modules.sam',   # Warning/moderation system with logging
+    
     # Event Handlers (Essential)
     'events.member_events',   # Member join/leave event handlers
     'events.message_handler', # Auto-thanks system for staff aura
