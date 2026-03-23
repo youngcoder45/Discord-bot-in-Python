@@ -92,15 +92,18 @@ class ModCog(commands.Cog):
     @commands.hybrid_command(name="purge", description="Delete a number of messages from the current channel or thread.")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.guild_only()
     async def purge(self, ctx: commands.Context, amount: int):
         """Delete messages (prefix: ?purge, slash: /purge). Works in channels and threads!"""
         if amount < 1 or amount > 100:
             return await self._safe_reply(ctx, "❌ Please provide a number between 1 and 100.")
-        
-        # Support both text channels and threads
-        is_thread = isinstance(ctx.channel, discord.Thread)
-        if not isinstance(ctx.channel, (discord.TextChannel, discord.Thread)):
-            return await self._safe_reply(ctx, "❌ This command must be used in a server text channel or thread.")
+
+        if ctx.channel is None:
+            return await self._safe_reply(ctx, "❌ This command must be used in a server channel.")
+
+        # Allow text channels, threads, and voice/stage channel text chats (when supported by the API/library).
+        if not isinstance(ctx.channel, discord.abc.Messageable):
+            return await self._safe_reply(ctx, "❌ This channel doesn't support messages, so I can't purge here.")
         
         if ctx.interaction and not ctx.interaction.response.is_done():
             try:
@@ -108,8 +111,58 @@ class ModCog(commands.Cog):
             except Exception:
                 pass
         try:
-            deleted = await ctx.channel.purge(limit=amount + (0 if ctx.interaction else 1))  # type: ignore
-            count = len(deleted)
+            # For prefix commands, include the invoking message in the fetch window.
+            limit = amount + (0 if ctx.interaction else 1)
+
+            purge_fn = getattr(ctx.channel, "purge", None)
+            if callable(purge_fn):
+                deleted = await purge_fn(limit=limit)  # type: ignore[misc]
+                count = len(deleted)
+            else:
+                # Fallback for messageable channels that don't expose `.purge()`.
+                # We implement a safe version using history + bulk delete when possible.
+                import datetime
+
+                now = discord.utils.utcnow()
+                bulk_threshold = now - datetime.timedelta(days=14)
+
+                fetched = [m async for m in ctx.channel.history(limit=limit)]  # type: ignore[attr-defined]
+                if not ctx.interaction and getattr(ctx, "message", None) is not None:
+                    fetched = [m for m in fetched if m.id != ctx.message.id]
+
+                targets = fetched[:amount]
+                bulk_candidates = [m for m in targets if m.created_at > bulk_threshold]
+                old_messages = [m for m in targets if m.created_at <= bulk_threshold]
+
+                count = 0
+
+                delete_messages_fn = getattr(ctx.channel, "delete_messages", None)
+                if callable(delete_messages_fn) and len(bulk_candidates) > 1:
+                    try:
+                        await delete_messages_fn(bulk_candidates)
+                        count += len(bulk_candidates)
+                    except Exception:
+                        # Fall back to individual deletes if bulk delete isn't supported.
+                        for m in bulk_candidates:
+                            try:
+                                await m.delete()
+                                count += 1
+                            except Exception:
+                                pass
+                else:
+                    for m in bulk_candidates:
+                        try:
+                            await m.delete()
+                            count += 1
+                        except Exception:
+                            pass
+
+                for m in old_messages:
+                    try:
+                        await m.delete()
+                        count += 1
+                    except Exception:
+                        pass
             
             # For slash commands (interactions), ephemeral already auto-hides
             # For prefix commands, send regular message and delete after 5s
