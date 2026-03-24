@@ -3,10 +3,10 @@ Staff Points (Aura) System - Track and reward staff performance
 Only members with the staff role can receive aura.
 Only admins can award aura by saying "thanks".
 """
-import discord
-from discord.ext import commands
-from discord import app_commands
-import aiosqlite
+import discord  # type: ignore[import-not-found]
+from discord.ext import commands  # type: ignore[import-not-found]
+from discord import app_commands  # type: ignore[import-not-found]
+import aiosqlite  # type: ignore[import-not-found]
 import traceback
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -280,9 +280,8 @@ class StaffPoints(commands.Cog):
         """View aura history for a staff member"""
         if not ctx.guild or not isinstance(ctx.author, discord.Member):
             return
-            
-        if member is None:
-            member = ctx.author
+
+        target_member = member if member is not None else ctx.author
             
         if limit < 1 or limit > 50:
             limit = 10
@@ -294,20 +293,20 @@ class StaffPoints(commands.Cog):
                 WHERE guild_id = ? AND user_id = ?
                 ORDER BY timestamp DESC 
                 LIMIT ?
-            """, (ctx.guild.id, member.id, limit)) as cursor:
+            """, (ctx.guild.id, target_member.id, limit)) as cursor:
                 history_rows = list(await cursor.fetchall())
         
         if not history_rows:
-            await ctx.send(f"❌ No aura history found for {member.display_name}.", ephemeral=True)
+            await ctx.send(f"❌ No aura history found for {target_member.display_name}.", ephemeral=True)
             return
         
         embed = discord.Embed(
-            title=f"📜 Aura History - {member.display_name}",
+            title=f"📜 Aura History - {target_member.display_name}",
             color=0x3498db
         )
-        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_thumbnail(url=target_member.display_avatar.url)
 
-        current_points = await self.get_user_points(ctx.guild.id, member.id)
+        current_points = await self.get_user_points(ctx.guild.id, target_member.id)
         embed.add_field(name="Current Aura", value=f"⭐ {current_points} aura", inline=True)
         
         history_text = ""

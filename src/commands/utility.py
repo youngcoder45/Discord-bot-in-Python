@@ -1,16 +1,16 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
+import discord  # type: ignore[import-not-found]
+from discord.ext import commands  # type: ignore[import-not-found]
+from discord import app_commands  # type: ignore[import-not-found]
 from typing import Optional
 import json
 import re
 from datetime import datetime, timezone
 
-class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
+class EmbedEditModal(discord.ui.Modal):
     """Interactive modal for editing existing embeds"""
     
     def __init__(self, cog, original_message, original_embed, webhook=None):
-        super().__init__()
+        super().__init__(title="Edit Existing Embed")
         self.cog = cog
         self.original_message = original_message
         self.original_embed = original_embed
@@ -139,11 +139,11 @@ class EmbedEditModal(discord.ui.Modal, title='Edit Existing Embed'):
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
 
-class EmbedCreatorModal(discord.ui.Modal, title='Create Beautiful Embed'):
+class EmbedCreatorModal(discord.ui.Modal):
     """Interactive modal for creating embeds"""
     
     def __init__(self, cog):
-        super().__init__()
+        super().__init__(title="Create Beautiful Embed")
         self.cog = cog
     
     # Input fields for the modal

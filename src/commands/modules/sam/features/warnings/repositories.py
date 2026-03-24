@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore[import-not-found]
 
 from ...internal.abstract.abstract_repository import AbstractRepository
 from .models import Warn
@@ -11,7 +11,7 @@ class WarnRepository(AbstractRepository[Warn]):
         super().__init__(session, Warn)
 
     async def find_by_guild_id(self, guild_id: int) -> list[Warn]:
-        from sqlmodel import select
+        from sqlmodel import select  # type: ignore[import-not-found]
         statement = select(Warn).where(Warn.guild_id == guild_id)
         result = await self.session.execute(statement)
         return list(result.scalars().all())
@@ -28,7 +28,7 @@ class WarnRepository(AbstractRepository[Warn]):
         Returns:
             A list of Warnings given to a user ID.
         """
-        from sqlmodel import select
+        from sqlmodel import select  # type: ignore[import-not-found]
         statement = select(Warn).where(Warn.guild_id == guild_id, Warn.user_id == user_id)
         result = await self.session.execute(statement)
         return list(result.scalars().all())
@@ -45,7 +45,7 @@ class WarnRepository(AbstractRepository[Warn]):
         Returns:
             A list of Warnings given by a staff ID.
         """
-        from sqlmodel import select
+        from sqlmodel import select  # type: ignore[import-not-found]
         statement = select(Warn).where(Warn.guild_id == guild_id, Warn.moderator_id == staff_id)
         result = await self.session.execute(statement)
         return list(result.scalars().all())
@@ -62,7 +62,7 @@ class WarnRepository(AbstractRepository[Warn]):
         Returns:
             A list of Warnings created after the given date.
         """
-        from sqlmodel import select
+        from sqlmodel import select  # type: ignore[import-not-found]
         statement = select(Warn).where(Warn.guild_id == guild_id, Warn.created_at > date)
         result = await self.session.execute(statement)
         return list(result.scalars().all())

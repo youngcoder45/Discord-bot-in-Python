@@ -1,6 +1,6 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
+import discord  # type: ignore[import-not-found]
+from discord.ext import commands  # type: ignore[import-not-found]
+from discord import app_commands  # type: ignore[import-not-found]
 import sqlite3
 import asyncio
 from typing import Optional
@@ -25,11 +25,11 @@ def init_sticky_db():
     conn.commit()
     conn.close()
 
-class StickyMessageModal(discord.ui.Modal, title="Create Sticky Message"):
+class StickyMessageModal(discord.ui.Modal):
     """Modal for creating sticky messages with markdown support"""
     
     def __init__(self, cog, channel: discord.TextChannel):
-        super().__init__()
+        super().__init__(title="Create Sticky Message")
         self.cog = cog
         self.channel = channel
     
@@ -144,78 +144,97 @@ class StickyMessage(commands.Cog):
 
     @commands.hybrid_command(name="stickymessage")
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     @app_commands.describe(
         channel="The channel where the sticky message should be posted (defaults to current channel)"
     )
     async def sticky_message(self, ctx, channel: Optional[discord.TextChannel] = None):
         """Create or update a sticky message in a channel using a modal"""
-        
-        if channel is None:
-            channel = ctx.channel
-        
-        # Type guard to ensure channel is TextChannel
-        if not isinstance(channel, discord.TextChannel):
+
+        guild = ctx.guild
+        if guild is None:
+            await ctx.send("❌ This command can only be used in servers.")
+            return
+
+        target_channel = channel if isinstance(channel, discord.TextChannel) else (ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None)
+        if target_channel is None:
             embed = discord.Embed(
                 title="❌ Invalid Channel",
                 description="This command can only be used in text channels.",
                 color=0xff0000
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed)
+            return
+
+        if not isinstance(ctx.author, discord.Member):
+            await ctx.send("❌ This command can only be used by server members.")
             return
         
         # Check if user has permissions in the target channel
-        if not channel.permissions_for(ctx.author).manage_messages:
+        if not target_channel.permissions_for(ctx.author).manage_messages:
             embed = discord.Embed(
                 title="❌ Permission Denied",
-                description=f"You don't have `Manage Messages` permission in {channel.mention}.",
+                description=f"You don't have `Manage Messages` permission in {target_channel.mention}.",
                 color=0xff0000
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed)
             return
         
         # Check if bot has permissions in the target channel
-        if not channel.permissions_for(ctx.guild.me).send_messages:
+        bot_member = guild.me
+        if bot_member is None or not target_channel.permissions_for(bot_member).send_messages:
             embed = discord.Embed(
                 title="❌ Bot Permission Error",
-                description=f"I don't have permission to send messages in {channel.mention}.",
+                description=f"I don't have permission to send messages in {target_channel.mention}.",
                 color=0xff0000
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed)
             return
         
         # Open the modal for creating sticky message
-        modal = StickyMessageModal(self, channel)
+        if ctx.interaction is None:
+            await ctx.send("❌ Please use the slash version of this command to open the modal.")
+            return
+
+        modal = StickyMessageModal(self, target_channel)
         await ctx.interaction.response.send_modal(modal)
 
     @commands.hybrid_command(name="removesticky")
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     @app_commands.describe(
         channel="The channel to remove sticky message from (defaults to current channel)"
     )
     async def remove_sticky(self, ctx, channel: Optional[discord.TextChannel] = None):
         """Remove a sticky message from a channel"""
-        
-        if channel is None:
-            channel = ctx.channel
-        
-        # Type guard to ensure channel is TextChannel
-        if not isinstance(channel, discord.TextChannel):
+
+        guild = ctx.guild
+        if guild is None:
+            await ctx.send("❌ This command can only be used in servers.")
+            return
+
+        target_channel = channel if isinstance(channel, discord.TextChannel) else (ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None)
+        if target_channel is None:
             embed = discord.Embed(
                 title="❌ Invalid Channel",
                 description="This command can only be used in text channels.",
                 color=0xff0000
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed)
+            return
+
+        if not isinstance(ctx.author, discord.Member):
+            await ctx.send("❌ This command can only be used by server members.")
             return
         
         # Check if user has permissions in the target channel
-        if not channel.permissions_for(ctx.author).manage_messages:
+        if not target_channel.permissions_for(ctx.author).manage_messages:
             embed = discord.Embed(
                 title="❌ Permission Denied",
-                description=f"You don't have `Manage Messages` permission in {channel.mention}.",
+                description=f"You don't have `Manage Messages` permission in {target_channel.mention}.",
                 color=0xff0000
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed)
             return
         
         try:
@@ -223,16 +242,16 @@ class StickyMessage(commands.Cog):
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
             cursor.execute('SELECT message_id FROM sticky_messages WHERE guild_id = ? AND channel_id = ?',
-                         (ctx.guild.id, channel.id))
+                         (guild.id, target_channel.id))
             result = cursor.fetchone()
             
             if not result:
                 embed = discord.Embed(
                     title="❌ No Sticky Message",
-                    description=f"No sticky message found in {channel.mention}.",
+                    description=f"No sticky message found in {target_channel.mention}.",
                     color=0xff0000
                 )
-                await ctx.send(embed=embed, ephemeral=True)
+                await ctx.send(embed=embed)
                 conn.close()
                 return
             
@@ -240,28 +259,28 @@ class StickyMessage(commands.Cog):
             
             # Delete from database
             cursor.execute('DELETE FROM sticky_messages WHERE guild_id = ? AND channel_id = ?',
-                         (ctx.guild.id, channel.id))
+                         (guild.id, target_channel.id))
             conn.commit()
             conn.close()
             
             # Remove from cache
-            if channel.id in self._message_cache:
-                del self._message_cache[channel.id]
+            if target_channel.id in self._message_cache:
+                del self._message_cache[target_channel.id]
             
             # Try to delete the actual message
             try:
                 if message_id:
-                    message = await channel.fetch_message(message_id)
+                    message = await target_channel.fetch_message(message_id)
                     await message.delete()
             except (discord.NotFound, discord.Forbidden):
                 pass  # Message might already be deleted or we don't have permission
             
             embed = discord.Embed(
                 title="✅ Sticky Message Removed",
-                description=f"Sticky message has been removed from {channel.mention}.",
+                description=f"Sticky message has been removed from {target_channel.mention}.",
                 color=0x00ff00
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed)
             
         except Exception as e:
             embed = discord.Embed(
@@ -269,14 +288,19 @@ class StickyMessage(commands.Cog):
                 description=f"Failed to remove sticky message: {str(e)}",
                 color=0xff0000
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="liststicky")
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     async def list_sticky(self, ctx):
         """List all sticky messages in the current server"""
         
         try:
+            if ctx.guild is None:
+                await ctx.send("❌ This command can only be used in servers.")
+                return
+
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
             cursor.execute('''

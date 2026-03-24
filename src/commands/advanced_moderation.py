@@ -1,6 +1,6 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
+import discord  # type: ignore[import-not-found]
+from discord.ext import commands  # type: ignore[import-not-found]
+from discord import app_commands  # type: ignore[import-not-found]
 import asyncio
 import time
 from collections import defaultdict
@@ -181,23 +181,29 @@ class AdvancedModeration(commands.Cog):
     @commands.has_permissions(manage_channels=True)
     async def hide_channel(self, ctx, channel: Optional[discord.TextChannel] = None):
         """Hide a channel from @everyone"""
-        if channel is None:
-            channel = ctx.channel
-        
+        guild = ctx.guild
+        if guild is None:
+            await ctx.send("❌ This command can only be used in a server.")
+            return
+
+        resolved_channel = channel or ctx.channel
+
         # Type guard to ensure channel is TextChannel
-        if not isinstance(channel, discord.TextChannel):
+        if not isinstance(resolved_channel, discord.TextChannel):
             await ctx.send("❌ This command can only be used in text channels.", ephemeral=True)
             return
+
+        target_channel: discord.TextChannel = resolved_channel
         
         try:
-            overwrite = channel.overwrites_for(ctx.guild.default_role)
+            overwrite = target_channel.overwrites_for(guild.default_role)
             overwrite.view_channel = False
-            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite, 
+            await target_channel.set_permissions(guild.default_role, overwrite=overwrite, 
                                         reason=f"Channel hidden by {ctx.author}")
             
             embed = discord.Embed(
                 title="👁️‍🗨️ Channel Hidden",
-                description=f"**{channel.name}** has been hidden from @everyone",
+                description=f"**{target_channel.name}** has been hidden from @everyone",
                 color=0x95a5a6
             )
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
@@ -208,9 +214,9 @@ class AdvancedModeration(commands.Cog):
             if logging_cog:
                 await logging_cog.log_event(
                     event_type="CHANNEL_UPDATE",
-                    guild_id=ctx.guild.id,
+                    guild_id=guild.id,
                     moderator_id=ctx.author.id,
-                    details=f"**#{channel.name}** was hidden from @everyone"
+                    details=f"**#{target_channel.name}** was hidden from @everyone"
                 )
             
         except discord.Forbidden:
@@ -222,23 +228,29 @@ class AdvancedModeration(commands.Cog):
     @commands.has_permissions(manage_channels=True)
     async def unhide_channel(self, ctx, channel: Optional[discord.TextChannel] = None):
         """Unhide a channel for @everyone"""
-        if channel is None:
-            channel = ctx.channel
-        
+        guild = ctx.guild
+        if guild is None:
+            await ctx.send("❌ This command can only be used in a server.")
+            return
+
+        resolved_channel = channel or ctx.channel
+
         # Type guard to ensure channel is TextChannel
-        if not isinstance(channel, discord.TextChannel):
+        if not isinstance(resolved_channel, discord.TextChannel):
             await ctx.send("❌ This command can only be used in text channels.", ephemeral=True)
             return
+
+        target_channel: discord.TextChannel = resolved_channel
         
         try:
-            overwrite = channel.overwrites_for(ctx.guild.default_role)
+            overwrite = target_channel.overwrites_for(guild.default_role)
             overwrite.view_channel = True
-            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite, 
+            await target_channel.set_permissions(guild.default_role, overwrite=overwrite, 
                                         reason=f"Channel unhidden by {ctx.author}")
             
             embed = discord.Embed(
                 title="👁️ Channel Unhidden",
-                description=f"**{channel.name}** is now visible to @everyone",
+                description=f"**{target_channel.name}** is now visible to @everyone",
                 color=0x00ff00
             )
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
@@ -249,9 +261,9 @@ class AdvancedModeration(commands.Cog):
             if logging_cog:
                 await logging_cog.log_event(
                     event_type="CHANNEL_UPDATE",
-                    guild_id=ctx.guild.id,
+                    guild_id=guild.id,
                     moderator_id=ctx.author.id,
-                    details=f"**#{channel.name}** is now visible to @everyone"
+                    details=f"**#{target_channel.name}** is now visible to @everyone"
                 )
             
         except discord.Forbidden:

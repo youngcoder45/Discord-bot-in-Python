@@ -3,16 +3,17 @@ Comprehensive moderation commands for server management
 Merges functionality from moderation.py, moderation_extended.py, and sam warnings module.
 """
 
-import discord
+import discord  # type: ignore[import-not-found]
 import asyncio
 import json
 import os
 import re
 import sqlite3
-from discord.ext import commands
-from discord import app_commands
+from discord.ext import commands  # type: ignore[import-not-found]
+from discord import app_commands  # type: ignore[import-not-found]
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, cast
+from collections.abc import Awaitable, Callable
 from utils.helpers import create_success_embed, create_error_embed, create_warning_embed, log_action
 
 # Bot owner ID for restricted commands
@@ -20,7 +21,7 @@ BOT_OWNER_ID = 955695820999639120
 
 # SAM Module imports for warnings
 try:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore[import-not-found]
     from .modules.sam.internal import database, logger_config
     from .modules.sam.features.warnings.services import WarnService
     from .modules.sam.features.warnings.models import Warn
@@ -139,7 +140,8 @@ class ModCog(commands.Cog):
                 delete_messages_fn = getattr(ctx.channel, "delete_messages", None)
                 if callable(delete_messages_fn) and len(bulk_candidates) > 1:
                     try:
-                        await delete_messages_fn(bulk_candidates)
+                        delete_messages = cast(Callable[[list[Any]], Awaitable[Any]], delete_messages_fn)
+                        await delete_messages(bulk_candidates)
                         count += len(bulk_candidates)
                     except Exception:
                         # Fall back to individual deletes if bulk delete isn't supported.
@@ -370,7 +372,7 @@ class ModCog(commands.Cog):
                 await user.remove_roles(role, reason=f"Role toggle by {ctx.author}")
                 
                 embed = discord.Embed(
-                    title="➖ Role Removed",
+                    title="Role Removed",
                     description=f"Removed {role.mention} from {user.mention}.",
                     color=discord.Color.orange()
                 )
@@ -378,7 +380,7 @@ class ModCog(commands.Cog):
                 await user.add_roles(role, reason=f"Role toggle by {ctx.author}")
                 
                 embed = discord.Embed(
-                    title="➕ Role Added",
+                    title="Role Added",
                     description=f"Added {role.mention} to {user.mention}.",
                     color=discord.Color.green()
                 )
@@ -414,8 +416,8 @@ class ModCog(commands.Cog):
             await user.add_roles(role, reason=f"Promoted to Moderator by {ctx.author}")
             
             embed = discord.Embed(
-                title="🛡️ Staff Addition",
-                description=f"Successfully Made {user.mention} a Moderator!",
+                title="Staff Addition",
+                description=f"Successfully Made {user.mention} a Staff!",
                 color=discord.Color.blue()
             )
             embed.add_field(name="Role Added", value=role.mention)
@@ -475,7 +477,7 @@ class ModCog(commands.Cog):
             await member.timeout(timeout_until, reason=reason)
             
             embed = discord.Embed(
-                title="⏱️ Member Timed Out",
+                title="Member Timed Out",
                 description=f"{member.mention} has been timed out.",
                 color=discord.Color.orange()
             )
@@ -541,7 +543,7 @@ class ModCog(commands.Cog):
                 )
             else:
                 embed = discord.Embed(
-                    title="⏱️ Slowmode Enabled",
+                    title="Slowmode Enabled",
                     description=f"Slowmode set to **{seconds}** seconds in {ctx.channel.mention}.",
                     color=discord.Color.blue()
                 )
@@ -587,23 +589,22 @@ class ModCog(commands.Cog):
             return
         
         # Handle text channels
-        if channel is None:
-            channel = ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None
         assert ctx.guild is not None
-        
-        if not isinstance(channel, discord.TextChannel):
+
+        target_channel = channel if isinstance(channel, discord.TextChannel) else (ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None)
+        if target_channel is None:
             return await ctx.send("❌ This command can only be used on text channels or threads.")
         
         try:
-            overwrites = channel.overwrites_for(ctx.guild.default_role)
+            overwrites = target_channel.overwrites_for(ctx.guild.default_role)
             overwrites.send_messages = False
-            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Channel locked by {ctx.author}")
+            await target_channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Channel locked by {ctx.author}")
             
-            self.lockdown_channels.add(channel.id)
+            self.lockdown_channels.add(target_channel.id)
             
             embed = discord.Embed(
                 title="🔒 Channel Locked",
-                description=f"{channel.mention} has been locked. Members cannot send messages.",
+                description=f"{target_channel.mention} has been locked. Members cannot send messages.",
                 color=discord.Color.red()
             )
             embed.set_footer(text=f"Locked by {ctx.author}")
@@ -648,22 +649,22 @@ class ModCog(commands.Cog):
             return
         
         # Handle text channels
-        channel = channel or (ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None)
         assert ctx.guild is not None
-        
-        if not isinstance(channel, discord.TextChannel):
+
+        target_channel = channel if isinstance(channel, discord.TextChannel) else (ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None)
+        if target_channel is None:
             return await ctx.send("❌ This command can only be used on text channels or threads.")
         
         try:
-            overwrites = channel.overwrites_for(ctx.guild.default_role)
+            overwrites = target_channel.overwrites_for(ctx.guild.default_role)
             overwrites.send_messages = None  # Reset to default
-            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Channel unlocked by {ctx.author}")
+            await target_channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Channel unlocked by {ctx.author}")
             
-            self.lockdown_channels.discard(channel.id)
+            self.lockdown_channels.discard(target_channel.id)
             
             embed = discord.Embed(
                 title="🔓 Channel Unlocked",
-                description=f"{channel.mention} has been unlocked. Members can send messages again.",
+                description=f"{target_channel.mention} has been unlocked. Members can send messages again.",
                 color=discord.Color.green()
             )
             embed.set_footer(text=f"Unlocked by {ctx.author}")
@@ -760,17 +761,15 @@ class ModCog(commands.Cog):
             return await ctx.send("❌ This command can only be used by the bot owner.")
         
         # Ensure channel is a TextChannel: prefer provided channel, otherwise use ctx.channel if it's a TextChannel
-        if channel is None:
-            if isinstance(ctx.channel, discord.TextChannel):
-                channel = ctx.channel
-            else:
-                return await ctx.send("❌ This command can only be used on text channels.")
+        channel_to_nuke = channel if isinstance(channel, discord.TextChannel) else (ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None)
+        if channel_to_nuke is None:
+            return await ctx.send("❌ This command can only be used on text channels.")
         
         try:
             # Create confirmation message
             embed = discord.Embed(
                 title="⚠️ Confirm Channel Nuke",
-                description=f"Are you sure you want to nuke {channel.mention}?\n\n**This will:**\n• Delete all messages\n• Reset channel position\n• Preserve permissions and settings",
+                description=f"Are you sure you want to nuke {channel_to_nuke.mention}?\n\n**This will:**\n• Delete all messages\n• Reset channel position\n• Preserve permissions and settings",
                 color=discord.Color.red()
             )
             embed.set_footer(text="React with ✅ to confirm or ❌ to cancel")
@@ -790,9 +789,9 @@ class ModCog(commands.Cog):
                     return await ctx.send("❌ Channel nuke cancelled.")
                 
                 # Proceed with nuke
-                position = channel.position
-                new_channel = await channel.clone(reason=f"Channel nuked by {ctx.author}")
-                await channel.delete(reason=f"Channel nuked by {ctx.author}")
+                position = channel_to_nuke.position
+                new_channel = await channel_to_nuke.clone(reason=f"Channel nuked by {ctx.author}")
+                await channel_to_nuke.delete(reason=f"Channel nuked by {ctx.author}")
                 await new_channel.edit(position=position)
                 
                 embed = discord.Embed(
@@ -910,75 +909,75 @@ class ModCog(commands.Cog):
     @commands.guild_only()
     async def userinfo(self, ctx: commands.Context, user: Optional[Union[discord.Member, discord.User]] = None):
         """Get comprehensive user information"""
-        user = user or ctx.author
+        target_user = user if user is not None else ctx.author
         assert ctx.guild is not None
         
         embed = discord.Embed(
-            title=f"User Information: {user}",
-            color=user.color if isinstance(user, discord.Member) and user.color != discord.Color.default() else discord.Color.blue(),
+            title=f"User Information: {target_user}",
+            color=target_user.color if isinstance(target_user, discord.Member) and target_user.color != discord.Color.default() else discord.Color.blue(),
             timestamp=datetime.now(tz=timezone.utc)
         )
         
-        if user.avatar:
-            embed.set_thumbnail(url=user.avatar.url)
+        if target_user.avatar:
+            embed.set_thumbnail(url=target_user.avatar.url)
         
         # Basic Info
-        embed.add_field(name="👤 Username", value=str(user), inline=True)
-        embed.add_field(name="🆔 User ID", value=f"`{user.id}`", inline=True)
-        embed.add_field(name="🤖 Bot", value="Yes" if user.bot else "No", inline=True)
+        embed.add_field(name="Username", value=str(target_user), inline=True)
+        embed.add_field(name="User ID", value=f"`{target_user.id}`", inline=True)
+        embed.add_field(name="Bot", value="Yes" if target_user.bot else "No", inline=True)
         
         # Account Creation
         embed.add_field(
-            name="📅 Account Created",
-            value=f"<t:{int(user.created_at.timestamp())}:F>\n(<t:{int(user.created_at.timestamp())}:R>)",
+            name="Account Created",
+            value=f"<t:{int(target_user.created_at.timestamp())}:F>\n(<t:{int(target_user.created_at.timestamp())}:R>)",
             inline=False
         )
         
         # Member-specific info
-        if isinstance(user, discord.Member):
+        if isinstance(target_user, discord.Member):
             # Join date
-            if user.joined_at:
+            if target_user.joined_at:
                 embed.add_field(
-                    name="📥 Joined Server",
-                    value=f"<t:{int(user.joined_at.timestamp())}:F>\n(<t:{int(user.joined_at.timestamp())}:R>)",
+                    name="Joined Server",
+                    value=f"<t:{int(target_user.joined_at.timestamp())}:F>\n(<t:{int(target_user.joined_at.timestamp())}:R>)",
                     inline=False
                 )
             
             # Roles
-            if len(user.roles) > 1:
-                roles = [role.mention for role in reversed(user.roles[1:])][:20]
+            if len(target_user.roles) > 1:
+                roles = [role.mention for role in reversed(target_user.roles[1:])][:20]
                 embed.add_field(
-                    name=f"🎭 Roles [{len(user.roles) - 1}]",
+                    name=f"Roles [{len(target_user.roles) - 1}]",
                     value=" ".join(roles) if roles else "None",
                     inline=False
                 )
             
             # Status
             status_emoji = {
-                discord.Status.online: "🟢 Online",
-                discord.Status.idle: "🟡 Idle",
-                discord.Status.dnd: "🔴 Do Not Disturb",
-                discord.Status.offline: "⚫ Offline"
+                discord.Status.online: "Online",
+                discord.Status.idle: "Idle",
+                discord.Status.dnd: "Do Not Disturb",
+                discord.Status.offline: "Offline"
             }
-            embed.add_field(name="📊 Status", value=status_emoji.get(user.status, "Unknown"), inline=True)
+            embed.add_field(name="Status", value=status_emoji.get(target_user.status, "Unknown"), inline=True)
             
             # Highest role
-            if user.top_role != ctx.guild.default_role:
-                embed.add_field(name="⬆️ Highest Role", value=user.top_role.mention, inline=True)
+            if target_user.top_role != ctx.guild.default_role:
+                embed.add_field(name="⬆Highest Role", value=target_user.top_role.mention, inline=True)
             
             # Boost status
-            if user.premium_since:
+            if target_user.premium_since:
                 embed.add_field(
-                    name="💎 Boosting Since",
-                    value=f"<t:{int(user.premium_since.timestamp())}:R>",
+                    name="Boosting Since",
+                    value=f"<t:{int(target_user.premium_since.timestamp())}:R>",
                     inline=True
                 )
             
             # Timeout status
-            if user.timed_out_until:
+            if target_user.timed_out_until:
                 embed.add_field(
-                    name="⏱️ Timed Out Until",
-                    value=f"<t:{int(user.timed_out_until.timestamp())}:F>",
+                    name="Timed Out Until",
+                    value=f"<t:{int(target_user.timed_out_until.timestamp())}:F>",
                     inline=False
                 )
         
@@ -988,16 +987,16 @@ class ModCog(commands.Cog):
     @app_commands.describe(user="User to get avatar from (defaults to yourself)")
     async def avatar(self, ctx: commands.Context, user: Optional[Union[discord.Member, discord.User]] = None):
         """Get a user's avatar in high resolution"""
-        user = user or ctx.author
+        target_user = user if user is not None else ctx.author
         
         embed = discord.Embed(
-            title=f"{user}'s Avatar",
+            title=f"{target_user}'s Avatar",
             color=discord.Color.blue()
         )
         
-        if user.avatar:
-            embed.set_image(url=user.avatar.url)
-            embed.add_field(name="🔗 Links", value=f"[PNG]({user.avatar.replace(format='png', size=1024).url}) | [JPG]({user.avatar.replace(format='jpg', size=1024).url}) | [WEBP]({user.avatar.replace(format='webp', size=1024).url})", inline=False)
+        if target_user.avatar:
+            embed.set_image(url=target_user.avatar.url)
+            embed.add_field(name="Links", value=f"[PNG]({target_user.avatar.replace(format='png', size=1024).url}) | [JPG]({target_user.avatar.replace(format='jpg', size=1024).url}) | [WEBP]({target_user.avatar.replace(format='webp', size=1024).url})", inline=False)
         else:
             embed.description = "This user has no custom avatar."
         
@@ -1017,20 +1016,20 @@ class ModCog(commands.Cog):
         )
         
         # Basic info
-        embed.add_field(name="🎭 Name", value=role.name, inline=True)
-        embed.add_field(name="🆔 ID", value=f"`{role.id}`", inline=True)
-        embed.add_field(name="🎨 Color", value=str(role.color), inline=True)
+        embed.add_field(name="Name", value=role.name, inline=True)
+        embed.add_field(name="ID", value=f"`{role.id}`", inline=True)
+        embed.add_field(name="Color", value=str(role.color), inline=True)
         
         # Position
-        embed.add_field(name="📊 Position", value=f"{role.position}/{len(ctx.guild.roles)}", inline=True)
+        embed.add_field(name="Position", value=f"{role.position}/{len(ctx.guild.roles)}", inline=True)
         
         # Members
         member_count = len(role.members)
-        embed.add_field(name="👥 Members", value=str(member_count), inline=True)
+        embed.add_field(name="Members", value=str(member_count), inline=True)
         
         # Created
         embed.add_field(
-            name="📅 Created",
+            name="Created",
             value=f"<t:{int(role.created_at.timestamp())}:F>\n(<t:{int(role.created_at.timestamp())}:R>)",
             inline=False
         )
@@ -1038,13 +1037,13 @@ class ModCog(commands.Cog):
         # Properties
         properties = []
         if role.hoist:
-            properties.append("📌 Hoisted")
+            properties.append("Hoisted")
         if role.mentionable:
-            properties.append("💬 Mentionable")
+            properties.append("Mentionable")
         if role.managed:
-            properties.append("🤖 Managed")
+            properties.append("Managed")
         if role.is_premium_subscriber():
-            properties.append("💎 Booster Role")
+            properties.append("Booster Role")
         
         if properties:
             embed.add_field(name="⚙️ Properties", value="\n".join(properties), inline=False)
@@ -1052,22 +1051,22 @@ class ModCog(commands.Cog):
         # Key permissions
         key_perms = []
         if role.permissions.administrator:
-            key_perms.append("👑 Administrator")
+            key_perms.append("Administrator")
         if role.permissions.manage_guild:
-            key_perms.append("⚙️ Manage Server")
+            key_perms.append("Manage Server")
         if role.permissions.manage_roles:
-            key_perms.append("🎭 Manage Roles")
+            key_perms.append("Manage Roles")
         if role.permissions.manage_channels:
-            key_perms.append("📝 Manage Channels")
+            key_perms.append("Manage Channels")
         if role.permissions.kick_members:
-            key_perms.append("👢 Kick Members")
+            key_perms.append("Kick Members")
         if role.permissions.ban_members:
-            key_perms.append("🔨 Ban Members")
+            key_perms.append("Ban Members")
         if role.permissions.moderate_members:
-            key_perms.append("⏱️ Timeout Members")
+            key_perms.append("Timeout Members")
         
         if key_perms:
-            embed.add_field(name="🔑 Key Permissions", value="\n".join(key_perms), inline=False)
+            embed.add_field(name="Key Permissions", value="\n".join(key_perms), inline=False)
         
         await ctx.send(embed=embed)
     
@@ -1141,8 +1140,12 @@ class ModCog(commands.Cog):
         )
         
         owner = guild.owner or (guild.get_member(guild.owner_id) if guild.owner_id else None)
-        owner_mention = owner.mention if isinstance(owner, (discord.Member, discord.User)) else "Unknown"
-        owner_display = str(owner) if owner else "Unknown"
+        if owner is None:
+            owner_mention = "Unknown"
+            owner_display = "Unknown"
+        else:
+            owner_mention = owner.mention
+            owner_display = str(owner)
         embed.add_field(
             name="👑 Server Owner",
             value=f"{owner_mention}\n{owner_display}",

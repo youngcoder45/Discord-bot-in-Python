@@ -1,4 +1,4 @@
-import discord
+import discord  # type: ignore[import-not-found]
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
@@ -11,6 +11,23 @@ class LogFormatter:
     async def create_log_embed(self, log_item: Dict[str, Any]) -> Optional[discord.Embed]:
         """Create an appropriate embed for the log item"""
         event_type = log_item.get("event_type", "UNKNOWN")
+
+        def _fmt_mention(obj: Any) -> str:
+            mention = getattr(obj, "mention", None)
+            if isinstance(mention, str):
+                return mention
+            if obj is None:
+                return "Unknown User"
+            return str(obj)
+
+        def _avatar_url(obj: Any) -> Optional[str]:
+            avatar = getattr(obj, "avatar", None)
+            url = getattr(avatar, "url", None)
+            return url if isinstance(url, str) else None
+
+        def _created_at(obj: Any) -> Optional[datetime]:
+            created_at = getattr(obj, "created_at", None)
+            return created_at if isinstance(created_at, datetime) else None
         
         # Tickets -> Return None to signal "No Embed" if configured, 
         # BUT the caller needs to know it's a no-embed text message.
@@ -29,8 +46,8 @@ class LogFormatter:
         timestamp = log_item.get("timestamp", datetime.now(timezone.utc))
         
         # Resolve user and moderator objects
-        user = None
-        moderator = None
+        user: Any = None
+        moderator: Any = None
         
         if user_id:
             try:
@@ -50,25 +67,28 @@ class LogFormatter:
         # Configure embed based on event type
         if event_type.startswith("MEMBER_JOIN"):
             embed.title = "Member Joined"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} joined the server"
+            embed.description = f"{_fmt_mention(user)} joined the server"
             embed.color = discord.Color(0x2B2D31) # Standard Dark
             
             # Add account creation date if available
-            if isinstance(user, discord.User):
-                account_age = (datetime.now(timezone.utc) - user.created_at).days
+            created_at = _created_at(user)
+            if created_at is not None:
+                account_age = (datetime.now(timezone.utc) - created_at).days
                 embed.add_field(name="Account Age", value=f"{account_age} days", inline=True)
-                embed.add_field(name="Created On", value=f"<t:{int(user.created_at.timestamp())}:F>", inline=True)
-                
-                if user.avatar:
-                    embed.set_thumbnail(url=user.avatar.url)
+                embed.add_field(name="Created On", value=f"<t:{int(created_at.timestamp())}:F>", inline=True)
+
+                avatar_url = _avatar_url(user)
+                if avatar_url:
+                    embed.set_thumbnail(url=avatar_url)
         
         elif event_type.startswith("MEMBER_LEAVE"):
             embed.title = "Member Left"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} left the server"
+            embed.description = f"{_fmt_mention(user)} left the server"
             embed.color = discord.Color(0x2B2D31)
             
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
         
         elif event_type == "EXTERNAL_LOG":
             # For logs coming from external modules like SAM
@@ -99,54 +119,57 @@ class LogFormatter:
 
         elif event_type.startswith("BAN"):
             embed.title = "Member Banned"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was banned"
+            embed.description = f"{_fmt_mention(user)} was banned"
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Reason", value=details, inline=False)
                 
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
         
         elif event_type.startswith("UNBAN"):
             embed.title = "Member Unbanned"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was unbanned"
+            embed.description = f"{_fmt_mention(user)} was unbanned"
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Reason", value=details, inline=False)
             
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
         
         elif event_type.startswith("KICK"):
             embed.title = "Member Kicked"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was kicked"
+            embed.description = f"{_fmt_mention(user)} was kicked"
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Reason", value=details, inline=False)
                 
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
         
         elif event_type.startswith("TIMEOUT") or event_type.startswith("MUTE"):
             if "APPLIED" in event_type:
                 embed.title = "Member Timed Out"
-                embed.description = f"{user.mention if isinstance(user, discord.User) else user} was timed out"
+                embed.description = f"{_fmt_mention(user)} was timed out"
                 embed.color = discord.Color(0x2B2D31)
                 
                 if moderator:
-                    embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                    embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
                 
                 if "duration" in log_item:
                     duration = log_item.get("duration", "Unknown")
@@ -161,32 +184,33 @@ class LogFormatter:
                     embed.add_field(name="Reason", value=details, inline=False)
             elif "EXPIRED" in event_type:
                 embed.title = "Timeout Expired"
-                embed.description = f"{user.mention if isinstance(user, discord.User) else user}'s timeout naturally expired"
+                embed.description = f"{_fmt_mention(user)}'s timeout naturally expired"
                 embed.color = discord.Color(0x95a5a6)
 
                 if details:
                     embed.add_field(name="Details", value=details, inline=False)
             elif "REMOVED" in event_type:
                 embed.title = "Timeout Removed"
-                embed.description = f"{user.mention if isinstance(user, discord.User) else user} had their timeout removed early"
+                embed.description = f"{_fmt_mention(user)} had their timeout removed early"
                 embed.color = discord.Color(0xff9900)
 
                 if moderator:
-                    embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                    embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
 
                 if details:
                     embed.add_field(name="Reason", value=details, inline=False)
             
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
         
         elif event_type.startswith("WARN"):
             embed.title = "Warning Issued"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} was warned"
+            embed.description = f"{_fmt_mention(user)} was warned"
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
             
             if "case_id" in log_item:
                 case_id = log_item.get("case_id")
@@ -195,22 +219,24 @@ class LogFormatter:
             if details:
                 embed.add_field(name="Reason", value=details, inline=False)
                 
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
 
         elif "ROLE_UPDATE_MEMBER" in event_type or "ROLE_ADD" in event_type or "ROLE_REMOVE" in event_type:
             embed.title = "Role Updated"
-            embed.description = f"Role change for {user.mention if isinstance(user, discord.User) else user}"
+            embed.description = f"Role change for {_fmt_mention(user)}"
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Updated By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Updated By", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
                 
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
 
         # Voice Logs
         elif event_type.startswith("VOICE_"):
@@ -224,11 +250,11 @@ class LogFormatter:
             }
             
             embed.title = title_map.get(event_type, "Voice Event")
-            embed.description = f"Voice event for {user.mention if isinstance(user, discord.User) else user}"
+            embed.description = f"Voice event for {_fmt_mention(user)}"
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="By", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
@@ -240,7 +266,7 @@ class LogFormatter:
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Created By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Created By", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
@@ -251,7 +277,7 @@ class LogFormatter:
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Deleted By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Deleted By", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
@@ -262,7 +288,7 @@ class LogFormatter:
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Updated By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Updated By", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Changes", value=details, inline=False)
@@ -274,7 +300,7 @@ class LogFormatter:
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Created By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Created By", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
@@ -285,7 +311,7 @@ class LogFormatter:
             embed.color = discord.Color(0x2B2D31)
             
             if moderator:
-                embed.add_field(name="Deleted By", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Deleted By", value=_fmt_mention(moderator), inline=True)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
@@ -293,25 +319,27 @@ class LogFormatter:
         # Member Updates
         elif event_type.startswith("NICKNAME_"):
             embed.title = "Nickname Changed"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} changed nickname"
+            embed.description = f"{_fmt_mention(user)} changed nickname"
             embed.color = discord.Color(0x2B2D31)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
                 
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
 
         elif event_type.startswith("USER_UPDATE"):
             embed.title = "Username Changed"
-            embed.description = f"{user.mention if isinstance(user, discord.User) else user} changed username"
+            embed.description = f"{_fmt_mention(user)} changed username"
             embed.color = discord.Color(0x2B2D31)
             
             if details:
                 embed.add_field(name="Details", value=details, inline=False)
                 
-            if isinstance(user, discord.User) and user.avatar:
-                embed.set_thumbnail(url=user.avatar.url)
+            avatar_url = _avatar_url(user)
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
 
         else:
             # Default
@@ -320,10 +348,10 @@ class LogFormatter:
             embed.color = discord.Color(0x2B2D31)
             
             if user:
-                embed.add_field(name="User", value=f"{user.mention if isinstance(user, discord.User) else user}", inline=True)
+                embed.add_field(name="User", value=_fmt_mention(user), inline=True)
             
             if moderator:
-                embed.add_field(name="Moderator", value=f"{moderator.mention if isinstance(moderator, discord.User) else moderator}", inline=True)
+                embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
         
         # Add footer with log ID if available
         if "log_id" in log_item:

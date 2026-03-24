@@ -1,7 +1,8 @@
-import discord
-from discord.ext import commands
+import discord  # type: ignore[import-not-found]
+from discord.ext import commands  # type: ignore[import-not-found]
 import re
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore[import-not-found]
+from typing import Optional
 
 from ...internal import database, logger_config
 from .services import WarnService
@@ -44,7 +45,7 @@ class Warnings(commands.Cog):
     @commands.hybrid_command(name="warn", description="Issue a warning to a user.")
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
-    async def warn(self, ctx: commands.Context, user: discord.User, *, reason: str = None):
+    async def warn(self, ctx: commands.Context, user: discord.User, *, reason: Optional[str] = None):
         """
         Issue a warning to a user.
         Slash command: /warn user:@user reason:reason
@@ -95,7 +96,7 @@ class Warnings(commands.Cog):
     @commands.hybrid_command(name="unwarn", description="Remove a warning by ID.")
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
-    async def unwarn(self, ctx: commands.Context, case_id: int, *, reason: str = None):
+    async def unwarn(self, ctx: commands.Context, case_id: int, *, reason: Optional[str] = None):
         """
         Remove a warning by ID.
         Slash command: /unwarn case_id:123 reason:reason
@@ -204,7 +205,7 @@ class Warnings(commands.Cog):
 
     @warnings_group.command(name="modify", description="Modify a warning (remove/revoke it).")
     @commands.has_permissions(kick_members=True)
-    async def modify_warning(self, ctx: commands.Context, case_id: int, *, reason: str = None):
+    async def modify_warning(self, ctx: commands.Context, case_id: int, *, reason: Optional[str] = None):
         """Modify a warning by revoking it."""
         if reason is None:
             reason = "Warning revoked by moderator."
@@ -255,7 +256,7 @@ class Warnings(commands.Cog):
 
     @warnings_group.command(name="clear", description="Clear all warnings for a user.")
     @commands.has_permissions(administrator=True)
-    async def clear_warnings(self, ctx: commands.Context, user: discord.User, *, reason: str = None):
+    async def clear_warnings(self, ctx: commands.Context, user: discord.User, *, reason: Optional[str] = None):
         """Clear all warnings for a user (admin only)."""
         if reason is None:
             reason = "All warnings cleared."
