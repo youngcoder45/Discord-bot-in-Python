@@ -1,6 +1,6 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
+import discord  # type: ignore[import-not-found]
+from discord.ext import commands  # type: ignore[import-not-found]
+from discord import app_commands  # type: ignore[import-not-found]
 import sqlite3
 import sys
 import asyncio
@@ -117,17 +117,17 @@ class AppealModal(discord.ui.Modal):
             appeal_id = cur.lastrowid
             conn.close()
             
-            print(f"[Appeals] ✅ Appeal #{appeal_id} submitted by {interaction.user} ({interaction.user.id}) - {self.punishment_type} in {self.guild.name}")
+            print(f"[Appeals] Appeal #{appeal_id} submitted by {interaction.user} ({interaction.user.id}) - {self.punishment_type} in {self.guild.name}")
             
             # Send confirmation to user
             success_embed = discord.Embed(
-                title="✅ Appeal Submitted Successfully",
+                title=" Appeal Submitted Successfully",
                 description="Your appeal has been submitted to our moderation team.",
                 color=0x00ff00
             )
-            success_embed.add_field(name="📋 Appeal ID", value=f"#{appeal_id}", inline=True)
-            success_embed.add_field(name="📊 Status", value="Pending Review", inline=True)
-            success_embed.add_field(name="⏱️ Review Time", value="24-48 hours", inline=True)
+            success_embed.add_field(name=" Appeal ID", value=f"#{appeal_id}", inline=True)
+            success_embed.add_field(name=" Status", value="Pending Review", inline=True)
+            success_embed.add_field(name=" Review Time", value="24-48 hours", inline=True)
             success_embed.set_footer(text=f"{self.guild.name} • Professional Moderation")
             
             await interaction.response.send_message(embed=success_embed, ephemeral=False)
@@ -137,7 +137,7 @@ class AppealModal(discord.ui.Modal):
                 await self._send_staff_notification(appeal_id, interaction.user, appeal_content)
             
         except Exception as e:
-            print(f"[Appeals] ❌ Error submitting appeal: {e}")
+            print(f"[Appeals] Error submitting appeal: {e}")
             await interaction.response.send_message(
                 embed=create_error_embed(
                     "Submission Error",
@@ -178,15 +178,15 @@ class AppealModal(discord.ui.Modal):
         
         if staff_channel:
             staff_embed = discord.Embed(
-                title="📨 New Appeal Submitted",
+                title=" New Appeal Submitted",
                 description=f"Appeal #{appeal_id} from {user}",
                 color=0x0000ff
             )
             trimmed = content[:800] + ("..." if len(content) > 800 else "")
-            staff_embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
-            staff_embed.add_field(name="⚠️ Punishment", value=f"{self.punishment_type.title()} in {self.guild.name}", inline=True)
-            staff_embed.add_field(name="📝 Appeal Content", value=f"```{trimmed}```", inline=False)
-            staff_embed.add_field(name="🔧 Review", value="Use the buttons below to approve or deny this appeal", inline=False)
+            staff_embed.add_field(name=" User", value=f"{user} ({user.id})", inline=True)
+            staff_embed.add_field(name=" Punishment", value=f"{self.punishment_type.title()} in {self.guild.name}", inline=True)
+            staff_embed.add_field(name=" Appeal Content", value=f"```{trimmed}```", inline=False)
+            staff_embed.add_field(name=" Review", value="Use the buttons below to approve or deny this appeal", inline=False)
             
             # Create view with approve/deny buttons
             view = AppealReviewView(self.cog, appeal_id, user.id, content, self.punishment_type, self.guild.name)
@@ -196,7 +196,7 @@ class AppealModal(discord.ui.Modal):
                 allowed_mentions = discord.AllowedMentions(everyone=True, users=False, roles=False, replied_user=False)
                 await staff_channel.send(content="@here", embed=staff_embed, view=view, allowed_mentions=allowed_mentions)
             except Exception as e:
-                print(f"[Appeals] ❌ Failed to send staff notification: {e}")
+                print(f"[Appeals] Failed to send staff notification: {e}")
 
 
 class AppealApproveModal(discord.ui.Modal):
@@ -258,7 +258,7 @@ class AppealApproveModal(discord.ui.Modal):
             await self._process_appeal_approval(interaction, reason)
             
         except Exception as e:
-            print(f"[Appeals] ❌ Error in approval modal: {e}")
+            print(f"[Appeals] Error in approval modal: {e}")
             await interaction.followup.send(
                 embed=create_error_embed("Processing Error", "There was an error processing the approval."),
                 ephemeral=True
@@ -319,7 +319,7 @@ class AppealApproveModal(discord.ui.Modal):
         else:
             # Send success message
             display_target = member or user or f"User {self.user_id}"
-            embed = discord.Embed(title='✅ Appeal Approved', color=0x00ff00)
+            embed = discord.Embed(title=' Appeal Approved', color=0x00ff00)
             embed.add_field(name='Appeal ID', value=f"#{self.appeal_id}", inline=True)
             embed.add_field(name='User', value=f'{display_target} ({self.user_id})', inline=True)
             embed.add_field(name='Action', value=action_taken or 'Completed', inline=True)
@@ -334,15 +334,15 @@ class AppealApproveModal(discord.ui.Modal):
             if user:
                 try:
                     dm = discord.Embed(
-                        title="✅ Appeal Approved",
+                        title=" Appeal Approved",
                         description=f"## Your appeal has been reviewed and **approved**\n\nWelcome back to **{guild.name if guild else 'the server'}**! We're glad to have you return.",
                         color=0x00ff00
                     )
-                    dm.add_field(name="📋 Appeal ID", value=f"`#{self.appeal_id}`", inline=True)
-                    dm.add_field(name="📊 Result", value=f"**{action_taken or 'Processed'}**", inline=True)
-                    dm.add_field(name="📝 Staff Response", value=f"```{reason}```", inline=False)
+                    dm.add_field(name=" Appeal ID", value=f"`#{self.appeal_id}`", inline=True)
+                    dm.add_field(name=" Result", value=f"**{action_taken or 'Processed'}**", inline=True)
+                    dm.add_field(name=" Staff Response", value=f"```{reason}```", inline=False)
                     dm.add_field(
-                        name="🚀 Moving Forward",
+                        name=" Moving Forward",
                         value="Please review our community guidelines and ensure compliance with all server rules. We appreciate your cooperation.",
                         inline=False
                     )
@@ -438,7 +438,7 @@ class AppealDenyModal(discord.ui.Modal):
             conn.close()
             
             # Send response
-            embed = discord.Embed(title='❌ Appeal Denied', color=0xff0000)
+            embed = discord.Embed(title=' Appeal Denied', color=0xff0000)
             embed.add_field(name='Appeal ID', value=f"#{self.appeal_id}", inline=True)
             embed.add_field(name='User ID', value=str(self.user_id), inline=True)
             embed.add_field(name='Denied By', value=interaction.user.mention, inline=True)
@@ -452,15 +452,15 @@ class AppealDenyModal(discord.ui.Modal):
             try:
                 user = await self.cog.bot.fetch_user(self.user_id)
                 embed_dm = discord.Embed(
-                    title="❌ Appeal Denied",
+                    title=" Appeal Denied",
                     description=f"## Your appeal has been reviewed\n\nAfter careful consideration, your appeal for **{interaction.guild.name if interaction.guild else 'the server'}** has been denied.",
                     color=0xff0000
                 )
-                embed_dm.add_field(name="📋 Appeal ID", value=f"`#{self.appeal_id}`", inline=True)
-                embed_dm.add_field(name="👮 Reviewed By", value=str(interaction.user), inline=True)
-                embed_dm.add_field(name="📝 Staff Response", value=f"```{reason}```", inline=False)
+                embed_dm.add_field(name=" Appeal ID", value=f"`#{self.appeal_id}`", inline=True)
+                embed_dm.add_field(name=" Reviewed By", value=str(interaction.user), inline=True)
+                embed_dm.add_field(name=" Staff Response", value=f"```{reason}```", inline=False)
                 embed_dm.add_field(
-                    name="🔄 Submit Another Appeal",
+                    name=" Submit Another Appeal",
                     value="You may submit a new appeal after reflecting on the feedback provided. Click the button below to submit another appeal.",
                     inline=False
                 )
@@ -480,7 +480,7 @@ class AppealDenyModal(discord.ui.Modal):
                 pass
 
         except Exception as e:
-            print(f"[Appeals] ❌ Error in denial modal: {e}")
+            print(f"[Appeals] Error in denial modal: {e}")
             await interaction.followup.send(
                 embed=create_error_embed("Processing Error", "There was an error processing the denial."),
                 ephemeral=True
@@ -557,7 +557,7 @@ class AppealReviewView(discord.ui.View):
             print(f"[Appeals] Error checking punishment status: {e}")
             return True, f"Error checking punishment status: {e}"
     
-    @discord.ui.button(label="Approve", style=discord.ButtonStyle.green, emoji="✅")
+    @discord.ui.button(label="Approve", style=discord.ButtonStyle.green, emoji=None)
     async def approve_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Open approval modal"""
         # Check role permission
@@ -600,7 +600,7 @@ class AppealReviewView(discord.ui.View):
         modal = AppealApproveModal(self.cog, self.appeal_id, self.user_id, self.punishment_type, self.guild_name)
         await interaction.response.send_modal(modal)
     
-    @discord.ui.button(label="Deny", style=discord.ButtonStyle.red, emoji="❌")
+    @discord.ui.button(label="Deny", style=discord.ButtonStyle.red, emoji=None)
     async def deny_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Open denial modal"""
         # Check role permission
@@ -655,12 +655,12 @@ class AppealButtonView(discord.ui.View):
         self.reason = reason
         self.user_id = user_id
     
-    @discord.ui.button(label="Send Appeal", style=discord.ButtonStyle.primary, emoji="📝")
+    @discord.ui.button(label="Send Appeal", style=discord.ButtonStyle.primary, emoji=None)
     async def send_appeal_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Open appeal modal"""
         if interaction.user.id != self.user_id:
             await interaction.response.send_message(
-                "❌ This button is not for you.", ephemeral=True
+                " This button is not for you.", ephemeral=True
             )
             return
         
@@ -738,13 +738,13 @@ class Appeals(commands.Cog):
                             approve_button = discord.ui.Button(
                                 label="Appeal Resolved", 
                                 style=discord.ButtonStyle.gray, 
-                                emoji="✅", 
+                                emoji=None,
                                 disabled=True
                             )
                             deny_button = discord.ui.Button(
                                 label="Appeal Resolved", 
                                 style=discord.ButtonStyle.gray, 
-                                emoji="❌", 
+                                emoji=None,
                                 disabled=True
                             )
                             
@@ -791,15 +791,15 @@ class Appeals(commands.Cog):
             is_ban_removal = "no longer banned" in status_message.lower()
             
             if is_natural_expiry:
-                title = "⏰ Appeal Auto-Resolved - Timeout Naturally Expired"
+                title = " Appeal Auto-Resolved - Timeout Naturally Expired"
                 color = 0x95a5a6  # Gray for natural expiration
                 description = f"Appeal #{appeal_id} has been automatically resolved because the timeout naturally expired."
             elif is_ban_removal:
-                title = "🔓 Appeal Auto-Resolved - Ban Removed"
+                title = " Appeal Auto-Resolved - Ban Removed"
                 color = 0x0000ff  # Blue for ban removal
                 description = f"Appeal #{appeal_id} has been automatically resolved because the ban was removed."
             else:
-                title = "⚠️ Appeal Auto-Resolved - Punishment Invalid"
+                title = " Appeal Auto-Resolved - Punishment Invalid"
                 color = 0xf39c12  # Orange for other cases
                 description = f"Appeal #{appeal_id} has been automatically resolved because the punishment is no longer valid."
             
@@ -814,25 +814,25 @@ class Appeals(commands.Cog):
             )
             
             log_embed.add_field(
-                name="👤 User",
+                name=" User",
                 value=str(user),
                 inline=True
             )
             
             log_embed.add_field(
-                name="📋 Appeal ID",
+                name=" Appeal ID",
                 value=f"#{appeal_id}",
                 inline=True
             )
             
             log_embed.add_field(
-                name="📝 Details",
+                name=" Details",
                 value=status_message,
                 inline=False
             )
             
             log_embed.add_field(
-                name="🔄 Action",
+                name=" Action",
                 value="Appeal buttons have been automatically disabled",
                 inline=False
             )
@@ -842,7 +842,7 @@ class Appeals(commands.Cog):
             # Send to appeals channel
             print(f"[Appeals] Sending log embed to {appeals_channels[0].name}")
             await appeals_channels[0].send(embed=log_embed)
-            print(f"[Appeals] 📝 Successfully logged punishment expiry for appeal #{appeal_id} to {appeals_channels[0].name}")
+            print(f"[Appeals] Successfully logged punishment expiry for appeal #{appeal_id} to {appeals_channels[0].name}")
             
         except Exception as e:
             print(f"[Appeals] Error logging punishment expiry for appeal #{appeal_id}: {e}")
@@ -879,20 +879,20 @@ class Appeals(commands.Cog):
             
             # Modern appeal form with button
             embed = discord.Embed(
-                title="⚖️ Moderation Appeal System",
+                title=" Moderation Appeal System",
                 description=f"## You have been **{action_type}** from {guild.name}\n\nWe understand mistakes happen. You have the right to appeal this decision.",
                 color=0x5865F2
             )
             
             if reason and reason != "No reason provided":
                 embed.add_field(
-                    name="📋 Reason for Action",
+                    name=" Reason for Action",
                     value=f"```{reason}```",
                     inline=False
                 )
             
             embed.add_field(
-                name="📝 How to Submit Your Appeal",
+                name=" How to Submit Your Appeal",
                 value=(
                     "**Click the button below** to open the appeal form.\n\n"
                     "The form will ask you to:\n"
@@ -904,13 +904,13 @@ class Appeals(commands.Cog):
             )
             
             embed.add_field(
-                name="⏱️ Processing Time",
+                name=" Processing Time",
                 value="Staff typically review appeals within 24-48 hours.",
                 inline=True
             )
             
             embed.add_field(
-                name="📬 Next Steps",
+                name=" Next Steps",
                 value="Your appeal will be forwarded to our moderation team.",
                 inline=True
             )
@@ -926,16 +926,16 @@ class Appeals(commands.Cog):
             
             await user.send(embed=embed, view=view)
             dm_success = True
-            print(f"[Appeals] ✅ Sent appeal form with button to {user} ({user.id}) for {action_type} in {guild.name}")
+            print(f"[Appeals] Sent appeal form with button to {user} ({user.id}) for {action_type} in {guild.name}")
             
             # Log success to appeals channel
             await self._log_dm_success(user, guild, action_type, reason or "No reason provided")
         except discord.Forbidden:
             dm_error = "DMs are closed or bot is blocked"
-            print(f"[Appeals] ❌ Cannot DM {user} ({user.id}) - DMs closed or bot blocked")
+            print(f"[Appeals] Cannot DM {user} ({user.id}) - DMs closed or bot blocked")
         except Exception as e:
             dm_error = str(e)
-            print(f"[Appeals] ❌ DM error to {user} ({user.id}): {e}")
+            print(f"[Appeals] DM error to {user} ({user.id}): {e}")
         
         # Log DM failure to appeals channel
         if not dm_success and dm_error:
@@ -947,17 +947,17 @@ class Appeals(commands.Cog):
             ch = self.bot.get_channel(cid)
             if ch:
                 embed = discord.Embed(
-                    title="⚠️ Appeal DM Failed",
+                    title=" Appeal DM Failed",
                     description=f"**Could not send appeal form to {user.mention}**\n\nUser will NOT be able to submit an appeal via DM.",
                     color=0xff0000
                 )
-                embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
-                embed.add_field(name="🏛️ Guild", value=guild.name, inline=True)
-                embed.add_field(name="⚠️ Action", value=action_type.title(), inline=True)
-                embed.add_field(name="📋 Reason", value=reason or "No reason provided", inline=False)
-                embed.add_field(name="❌ Error", value=f"```{error}```", inline=False)
+                embed.add_field(name=" User", value=f"{user} ({user.id})", inline=True)
+                embed.add_field(name=" Guild", value=guild.name, inline=True)
+                embed.add_field(name=" Action", value=action_type.title(), inline=True)
+                embed.add_field(name=" Reason", value=reason or "No reason provided", inline=False)
+                embed.add_field(name=" Error", value=f"```{error}```", inline=False)
                 embed.add_field(
-                    name="💡 Note", 
+                    name=" Note", 
                     value="This user's DMs are blocked. They cannot submit appeals through the bot. Consider alternative appeal methods or manual review.",
                     inline=False
                 )
@@ -965,7 +965,7 @@ class Appeals(commands.Cog):
                 embed.set_footer(text="Appeals System - DM Delivery Failed")
                 try:
                     await ch.send(embed=embed)
-                    print(f"[Appeals] 📝 Logged DM failure to channel {cid}")
+                    print(f"[Appeals] Logged DM failure to channel {cid}")
                 except Exception as e:
                     print(f"[Appeals] Failed to send DM failure log to channel {cid}: {e}")
                 break
@@ -976,14 +976,14 @@ class Appeals(commands.Cog):
             ch = self.bot.get_channel(cid)
             if ch:
                 embed = discord.Embed(
-                    title="📧 Appeal DM Sent",
+                    title=" Appeal DM Sent",
                     description=f"Successfully sent appeal form to {user.mention}",
                     color=0x00ff00
                 )
-                embed.add_field(name="👤 User", value=f"{user} ({user.id})", inline=True)
-                embed.add_field(name="🏛️ Guild", value=guild.name, inline=True)
-                embed.add_field(name="⚠️ Action", value=action_type.title(), inline=True)
-                embed.add_field(name="📋 Reason", value=reason or "No reason provided", inline=False)
+                embed.add_field(name=" User", value=f"{user} ({user.id})", inline=True)
+                embed.add_field(name=" Guild", value=guild.name, inline=True)
+                embed.add_field(name=" Action", value=action_type.title(), inline=True)
+                embed.add_field(name=" Reason", value=reason or "No reason provided", inline=False)
                 embed.timestamp = datetime.now(timezone.utc)
                 embed.set_footer(text="Appeals System")
                 try:
@@ -1033,7 +1033,7 @@ class Appeals(commands.Cog):
         except Exception as e:
             print(f"[Appeals] Error fetching ban audit logs: {e}")
         
-        print(f"[Appeals] 🚫 Ban detected for {user} ({user.id}) in {guild.name}: {reason}")
+        print(f"[Appeals] Ban detected for {user} ({user.id}) in {guild.name}: {reason}")
         
         # Send appeal form (logs will be sent by _send_appeal_form)
         await self._send_appeal_form(user, guild, "banned", reason)
@@ -1072,13 +1072,13 @@ class Appeals(commands.Cog):
                     if was_natural_expiry:
                         print(f"[Appeals] Natural timeout expiry detected for user {after.id} with pending appeal #{appeal[0]}")
                         action_text = "Natural timeout expiry"
-                        log_title = "⏰ Natural Timeout Expiry Detected"
+                        log_title = " Natural Timeout Expiry Detected"
                         log_description = f"User {after.mention} (`{after.id}`) had their timeout naturally expire while having a pending appeal."
                         color = 0x95a5a6  # Gray for natural expiry
                     else:
                         print(f"[Appeals] Manual timeout removal detected for user {after.id} with pending appeal #{appeal[0]}")
                         action_text = "Manual timeout removal"
-                        log_title = "⚠️ Manual Timeout Removal Detected"
+                        log_title = " Manual Timeout Removal Detected"
                         log_description = f"User {after.mention} (`{after.id}`) had their timeout manually removed while having a pending appeal."
                         color = 0xff9900  # Orange for manual removal
                     
@@ -1137,7 +1137,7 @@ class Appeals(commands.Cog):
             except Exception as e:
                 print(f"[Appeals] Error fetching timeout audit logs: {e}")
             
-            print(f"[Appeals] ⏱️ Timeout APPLIED to {after} ({after.id}): before={before_timeout}, after={after_timeout}, reason={reason}")
+            print(f"[Appeals] Timeout APPLIED to {after} ({after.id}): before={before_timeout}, after={after_timeout}, reason={reason}")
             
             # Send appeal form (logs will be sent by _send_appeal_form)
             await self._send_appeal_form(after, after.guild, "timed out", reason)
@@ -1153,18 +1153,18 @@ class Appeals(commands.Cog):
             if appeals:
                 for (appeal_id,) in appeals:
                     cursor.execute('UPDATE unban_requests SET status = "approved" WHERE id = ?', (appeal_id,))
-                    print(f"[Appeals] ✅ Auto-approved appeal #{appeal_id} - timeout removed for {after} ({after.id})")
+                    print(f"[Appeals] Auto-approved appeal #{appeal_id} - timeout removed for {after} ({after.id})")
                 
                 conn.commit()
                 
                 # Try to DM the user about approval
                 try:
                     dm = discord.Embed(
-                        title="✅ Appeal Automatically Approved",
+                        title=" Appeal Automatically Approved",
                         description=f"## Your appeal has been automatically approved\n\nYour timeout in **{after.guild.name}** has been removed.",
                         color=0x00ff00
                     )
-                    dm.add_field(name="📋 Result", value="**Timeout removed**", inline=True)
+                    dm.add_field(name=" Result", value="**Timeout removed**", inline=True)
                     dm.set_footer(text=f"{after.guild.name} • Moderation System")
                     await after.send(embed=dm)
                 except Exception:
@@ -1285,7 +1285,7 @@ class Appeals(commands.Cog):
         
         # Ask for confirmation
         confirm_embed = discord.Embed(
-            title="⚠️ Cancel Appeal?",
+            title=" Cancel Appeal?",
             description=f"Are you sure you want to cancel appeal **#{appeal_id}**?\n\nYou can submit a new appeal after this is cancelled.",
             color=0xf39c12
         )
@@ -1299,10 +1299,10 @@ class Appeals(commands.Cog):
                 self.user_id_val = user_id
                 self.author_id = author_id
             
-            @discord.ui.button(label="✅ Yes, Cancel", style=discord.ButtonStyle.red)
+            @discord.ui.button(label=" Yes, Cancel", style=discord.ButtonStyle.red)
             async def confirm(self, button_interaction: discord.Interaction, button: discord.ui.Button):
                 if button_interaction.user.id != self.author_id:
-                    await button_interaction.response.send_message("❌ This button is not for you.", ephemeral=True)
+                    await button_interaction.response.send_message(" This button is not for you.", ephemeral=True)
                     return
                 
                 self.confirmed = True
@@ -1315,18 +1315,18 @@ class Appeals(commands.Cog):
                 conn.close()
                 
                 result_embed = discord.Embed(
-                    title="✅ Appeal Cancelled",
+                    title=" Appeal Cancelled",
                     description=f"Your appeal **#{self.appeal_id_val}** has been cancelled successfully.\n\nYou can submit a new appeal at any time.",
                     color=0x00ff00
                 )
                 await button_interaction.response.send_message(embed=result_embed, ephemeral=True)
                 
-                print(f"[Appeals] 🗑️ Appeal #{self.appeal_id_val} cancelled by {button_interaction.user} ({self.author_id})")
+                print(f"[Appeals] Appeal #{self.appeal_id_val} cancelled by {button_interaction.user} ({self.author_id})")
             
-            @discord.ui.button(label="❌ No, Keep It", style=discord.ButtonStyle.green)
+            @discord.ui.button(label=" No, Keep It", style=discord.ButtonStyle.green)
             async def cancel(self, button_interaction: discord.Interaction, button: discord.ui.Button):
                 if button_interaction.user.id != self.author_id:
-                    await button_interaction.response.send_message("❌ This button is not for you.", ephemeral=True)
+                    await button_interaction.response.send_message(" This button is not for you.", ephemeral=True)
                     return
                 
                 result_embed = discord.Embed(
@@ -1378,7 +1378,7 @@ class Appeals(commands.Cog):
                         if entry.target and entry.target.id == user.id:
                             # Create log message
                             log_embed = discord.Embed(
-                                title="⚠️ Manual Unban Detected",
+                                title=" Manual Unban Detected",
                                 description=f"User {user.mention} (`{user.id}`) was manually unbanned while having a pending appeal.",
                                 color=0xff9900
                             )
@@ -1410,7 +1410,7 @@ class Appeals(commands.Cog):
         """Check all pending appeals for validity"""
         try:
             # Send initial processing message
-            processing_msg = await ctx.send("🔍 Checking pending appeals...")
+            processing_msg = await ctx.send(" Checking pending appeals...")
             
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
@@ -1420,7 +1420,7 @@ class Appeals(commands.Cog):
             
             if not pending_appeals:
                 embed = discord.Embed(
-                    title="✅ Appeal Check Complete",
+                    title=" Appeal Check Complete",
                     description="No pending appeals found.",
                     color=0x00ff00
                 )
@@ -1457,18 +1457,18 @@ class Appeals(commands.Cog):
                         invalid_appeals.append((appeal_id, user_id, "User left the server"))
             
             embed = discord.Embed(
-                title="📋 Appeal Validity Check",
+                title=" Appeal Validity Check",
                 description=f"Found {len(pending_appeals)} pending appeals",
                 color=0x0000ff
             )
             
             if valid_appeals:
                 valid_text = "\\n".join([f"#{aid}: <@{uid}> - {status}" for aid, uid, status in valid_appeals[:10]])
-                embed.add_field(name=f"✅ Valid Appeals ({len(valid_appeals)})", value=valid_text, inline=False)
+                embed.add_field(name=f" Valid Appeals ({len(valid_appeals)})", value=valid_text, inline=False)
             
             if invalid_appeals:
                 invalid_text = "\\n".join([f"#{aid}: <@{uid}> - {status}" for aid, uid, status in invalid_appeals[:10]])
-                embed.add_field(name=f"⚠️ Invalid Appeals ({len(invalid_appeals)})", value=invalid_text, inline=False)
+                embed.add_field(name=f" Invalid Appeals ({len(invalid_appeals)})", value=invalid_text, inline=False)
                 
                 # Auto-resolve invalid appeals
                 conn = sqlite3.connect(DATABASE_NAME)
@@ -1479,7 +1479,7 @@ class Appeals(commands.Cog):
                 conn.commit()
                 conn.close()
                 
-                embed.add_field(name="🔄 Action Taken", value="Invalid appeals have been automatically resolved", inline=False)
+                embed.add_field(name=" Action Taken", value="Invalid appeals have been automatically resolved", inline=False)
             
             if len(valid_appeals) > 10 or len(invalid_appeals) > 10:
                 embed.set_footer(text="Showing first 10 of each category")
