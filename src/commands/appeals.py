@@ -6,6 +6,7 @@ import sys
 import asyncio
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from typing import Any
 
 # Add parent directory to path to import config
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -52,13 +53,21 @@ async def _safe_ctx_send(
     view: discord.ui.View | None = None,
     ephemeral: bool = False,
 ):
+    send_kwargs: dict[str, Any] = {}
+    if content is not None:
+        send_kwargs["content"] = content
+    if embed is not None:
+        send_kwargs["embed"] = embed
+    if view is not None:
+        send_kwargs["view"] = view
+
     interaction = getattr(ctx, "interaction", None)
     if ephemeral and interaction is not None:
         try:
-            return await interaction.response.send_message(content=content, embed=embed, view=view, ephemeral=True)
+            return await interaction.response.send_message(**send_kwargs, ephemeral=True)
         except discord.InteractionResponded:
-            return await interaction.followup.send(content=content, embed=embed, view=view, ephemeral=True)
-    return await ctx.send(content=content, embed=embed, view=view)
+            return await interaction.followup.send(**send_kwargs, ephemeral=True)
+    return await ctx.send(**send_kwargs)
 
 
 class AppealModal(discord.ui.Modal):

@@ -1,13 +1,90 @@
 from discord.ext import commands
+import asyncio
 import logging, discord, os, re
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
+# Channel that should get automatic intro reactions
+INTRODUCTION_CHANNEL_ID = 1263070188589547541
+INTRO_REACTIONS = ["👋🏻", "🔥", "❤️"]
+
 class MessageHandler(commands.Cog):
     """Simplified message handler with auto-thanks points."""
     def __init__(self, bot):
         self.bot = bot
+
+    async def _add_intro_reactions(self, message: discord.Message) -> None:
+        for emoji in INTRO_REACTIONS:
+            try:
+                await message.add_reaction(emoji)
+            except discord.Forbidden:
+                logger.warning(
+                    "Missing permission to add reactions in channel_id=%s guild_id=%s",
+                    getattr(message.channel, 'id', None),
+                    getattr(message.guild, 'id', None),
+                )
+                return
+            except discord.HTTPException:
+                # Non-fatal (rate limit / already reacted / transient API issue)
+                continue
+
+    @commands.command(name="introreact", hidden=True)
+    @commands.has_permissions(manage_messages=True)
+    async def introreact(self, ctx: commands.Context, limit: str = "all"):
+        """Backfill intro reactions in the introductions channel.
+
+        Usage:
+          `?introreact` (all messages; can take a long time)
+          `?introreact 500` (only last 500 messages)
+        """
+        if not ctx.guild:
+            return
+
+        channel = ctx.guild.get_channel(INTRODUCTION_CHANNEL_ID)
+        if channel is None:
+            try:
+                channel = await ctx.guild.fetch_channel(INTRODUCTION_CHANNEL_ID)
+            except Exception:
+                channel = None
+
+        if channel is None:
+            await ctx.reply("❌ I can't access the introductions channel in this server.", mention_author=False)
+            return
+
+        history_limit = None
+        if limit and limit.lower() != "all":
+            try:
+                history_limit = max(1, int(limit))
+            except ValueError:
+                await ctx.reply("❌ Invalid limit. Use `all` or a number (e.g. `?introreact 500`).", mention_author=False)
+                return
+
+        status = await ctx.reply(
+            f"⏳ Adding reactions in {channel.mention} (limit={history_limit or 'all'})...",
+            mention_author=False,
+        )
+
+        scanned = 0
+        processed = 0
+        try:
+            async for msg in channel.history(limit=history_limit, oldest_first=True):
+                scanned += 1
+                if msg.author.bot:
+                    continue
+
+                await self._add_intro_reactions(msg)
+                processed += 1
+
+                # Conservative pacing to avoid long bursts hitting global rate limits
+                if processed % 25 == 0:
+                    await asyncio.sleep(1)
+
+            await status.edit(content=f"✅ Done. Scanned {scanned} messages; reacted to {processed}.")
+        except discord.Forbidden:
+            await status.edit(content="❌ Missing permissions to read history and/or add reactions.")
+        except Exception as e:
+            await status.edit(content=f"❌ Stopped due to error: {e}")
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -15,6 +92,10 @@ class MessageHandler(commands.Cog):
         # Ignore bot messages or DMs
         if message.author.bot or not message.guild:
             return
+
+        # Auto-react in introductions channel
+        if getattr(message.channel, 'id', None) == INTRODUCTION_CHANNEL_ID:
+            await self._add_intro_reactions(message)
         
         # Check for thanks mentions
         await self.check_thanks_mention(message)
