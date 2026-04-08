@@ -137,20 +137,6 @@ class Protection(commands.Cog):
                             break
             except:
                 pass
-        
-        # Check for new accounts
-        account_age = (datetime.now(member.created_at.tzinfo) - member.created_at).days
-        if account_age < NEW_ACCOUNT_THRESHOLD:
-            try:
-                embed = discord.Embed(
-                    title="Welcome",
-                    description=f"Welcome to **{member.guild.name}**! Your account is {account_age} days old. Please familiarize yourself with our community guidelines.",
-                    color=0x0000ff
-                )
-                embed.set_footer(text="New Account Detection")
-                await member.send(embed=embed)
-            except:
-                pass
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, user):

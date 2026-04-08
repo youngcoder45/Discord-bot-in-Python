@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from utils.json_store import add_or_update_user
 
 class MemberEvents(commands.Cog):
     def __init__(self, bot):
@@ -9,8 +8,6 @@ class MemberEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Handle member join: track user and send welcome DM."""
-        await add_or_update_user(member.id, str(member))
-        
         # Send welcome DM
         try:
             # Create a personalized welcome message

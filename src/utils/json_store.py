@@ -1,7 +1,6 @@
 """Simple JSON-based persistence layer (replaces SQLite).
 
 Data model (all optional – created lazily):
-  data/users.json                 { user_id: {"username": str, "first_seen": iso } }
   data/warnings.json              { user_id: [ {"moderator": id, "reason": str, "ts": iso} ] }
   data/challenge_submissions.json { challenge_id: [ {"user_id": id, "link": str, "ts": iso} ] }
   data/qotd_submissions.json      { question_id: [ {"user_id": id, "answer": str, "ts": iso} ] }
@@ -52,11 +51,6 @@ async def _save(path: str, data: Any) -> None:
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         os.replace(tmp, path)
-
-# Users ----------------------------------------------------------------------
-async def add_or_update_user(user_id: int, username: str) -> None:
-    # Disabled to save space
-    pass
 
 # Warnings ------------------------------------------------------------------
 async def add_warning(user_id: int, moderator_id: int, reason: str) -> None:
@@ -111,11 +105,11 @@ async def get_qotd_submissions(question_id: str) -> List[dict]:
 
 # Generic helpers ------------------------------------------------------------
 async def health_snapshot() -> Dict[str, int]:
-    users = await _load(_path('users.json'))
-    return { 'users': len(users) }
+    warnings = await _load(_path('warnings.json'))
+    return { 'warnings_users': len(warnings) }
 
 __all__ = [
-    'add_or_update_user', 'add_warning', 'get_warnings',
+    'add_warning', 'get_warnings',
     'add_challenge_submission', 'get_challenge_submissions',
     'add_qotd_submission', 'get_qotd_submissions', 'health_snapshot'
 ]

@@ -20,9 +20,6 @@ def initialize_all_databases():
         # Initialize staff_points.db
         init_staff_points_db()
         
-        # Initialize main bot database
-        init_main_bot_db()
-        
         logger.info("✅ All databases initialized successfully")
         return True
         
@@ -79,36 +76,6 @@ def init_staff_points_db():
     conn.commit()
     conn.close()
     logger.info("✅ staff_points.db initialized")
-
-def init_main_bot_db():
-    """Initialize main bot database for general data"""
-    db_path = "data/codeverse_bot.db"
-    
-    conn = sqlite3.connect(db_path)
-    
-    # Elections table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS elections (
-            guild_id INTEGER PRIMARY KEY,
-            title TEXT NOT NULL,
-            candidates TEXT NOT NULL,
-            votes TEXT DEFAULT '{}',
-            end_time TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # General settings table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS bot_settings (
-            guild_id INTEGER PRIMARY KEY,
-            settings_json TEXT DEFAULT '{}'
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    logger.info("✅ codeverse_bot.db initialized")
 
 if __name__ == "__main__":
     # Allow running this file directly for testing

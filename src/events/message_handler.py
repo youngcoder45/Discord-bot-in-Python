@@ -164,12 +164,6 @@ class MessageHandler(commands.Cog):
                 await message.reply(embed=embed, mention_author=False)
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
-        """Handle new member joins (no DM, simplified)."""
-        # Welcome messages removed per user request
-        pass
-
-    @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         """Global command error handler"""
         # Don't handle errors that are already handled by command-specific handlers

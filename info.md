@@ -73,7 +73,7 @@ These are the extensions the bot tries to load on startup:
 ### Protection / Anti-abuse
 - `commands.protection`
   - Anti-spam / anti-raid / anti-nuke style controls.
-  - “New account” detection and a conditional join DM for very new accounts.
+  - Anti-raid join-flood detection and anti-nuke rate limiting.
 - `commands.spam_catch`
   - Channel-level spam catching (e.g., auto-timeout for posting in protected channels).
 
@@ -137,7 +137,7 @@ There are multiple join listeners:
   - Message contains several hard-coded channel mentions (channel IDs baked into the string).
 
 - `commands.protection` also has a join listener
-  - Sends a **separate DM** only when the account age is below the configured threshold.
+  - Tracks join bursts for raid detection (does not DM).
 
 - `events.message_handler:on_member_join`
   - Explicitly “no DM” and does nothing, but it does **not** stop other listeners from DMing.
@@ -158,15 +158,11 @@ The bot initializes (at least) the following DB files under `data/`:
 - `data/staff_points.db`
   - `staff_points`, `points_history`, `staff_config` tables.
 
-- `data/codeverse_bot.db`
-  - `elections` and `bot_settings` tables (note: elections/settings tables exist even if no exposed “elections” feature is currently active via commands).
-
 Other cogs also use SQLite-backed persistence (tickets, appeals, reaction roles, sticky messages, logging), either in their own DB files or in tables created on demand.
 
 ### JSON store (limited)
 - `src/utils/json_store.py` implements a small JSON persistence layer under `data/`:
   - `warnings.json` is active and used by `commands.core` user-info output.
-  - `users.json` user tracking exists but is currently **disabled** (`add_or_update_user` is a `pass`).
   - Challenge/QOTD submission stores exist but depend on features that may not currently be exposed.
 
 ---
