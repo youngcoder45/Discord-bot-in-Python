@@ -166,7 +166,7 @@ Other cogs also use SQLite-backed persistence (tickets, appeals, reaction roles,
   - Challenge/QOTD submission stores exist but depend on features that may not currently be exposed.
 
 ---
-
+<!-- 
 ## Dashboard (dash/)
 
 This repo contains a separate dashboard project:
@@ -176,7 +176,7 @@ This repo contains a separate dashboard project:
 
 Status (based on code/docs): it’s a real scaffold with auth + pages, but many integrations are incomplete or placeholders compared to the bot’s actual runtime features.
 
----
+--- -->
 
 ## Classification (important / ok-to-keep / bloat)
 
