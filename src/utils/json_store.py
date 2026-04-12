@@ -14,7 +14,7 @@ import json
 import os
 import asyncio
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 _LOCKS: Dict[str, asyncio.Lock] = {}
 _BASE = os.path.join('data')
@@ -108,8 +108,37 @@ async def health_snapshot() -> Dict[str, int]:
     warnings = await _load(_path('warnings.json'))
     return { 'warnings_users': len(warnings) }
 
+# Guild settings ------------------------------------------------------------
+async def get_guild_prefix(guild_id: int) -> Optional[str]:
+    """Return the configured prefix for a guild, or None if not set."""
+    path = _path('guild_settings.json')
+    data = await _load(path)
+    settings = data.get(str(guild_id), {})
+    prefix = settings.get('prefix')
+    if isinstance(prefix, str) and prefix:
+        return prefix
+    return None
+
+async def set_guild_prefix(guild_id: int, prefix: str) -> None:
+    """Set (or overwrite) the configured prefix for a guild."""
+    path = _path('guild_settings.json')
+    data = await _load(path)
+    key = str(guild_id)
+    settings = data.get(key)
+    if not isinstance(settings, dict):
+        settings = {}
+    settings['prefix'] = prefix
+    data[key] = settings
+    await _save(path, data)
+
 __all__ = [
-    'add_warning', 'get_warnings',
-    'add_challenge_submission', 'get_challenge_submissions',
-    'add_qotd_submission', 'get_qotd_submissions', 'health_snapshot'
+    'add_warning',
+    'get_warnings',
+    'add_challenge_submission',
+    'get_challenge_submissions',
+    'add_qotd_submission',
+    'get_qotd_submissions',
+    'health_snapshot',
+    'get_guild_prefix',
+    'set_guild_prefix',
 ]

@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from commands.modules.sam import bridge as sam_bridge
+from utils.json_store import get_guild_prefix
 import atexit
 
 # Load environment variables once at startup
@@ -26,6 +27,18 @@ AUTHORIZED_SERVERS = [
     1410939321812258928,  # Server 1
     1263067254153805905   # Server 2 (Original guild ID)
 ]
+
+# Default prefix (can be overridden per-guild via /prefix)
+DEFAULT_PREFIX = '$'
+
+async def _dynamic_prefix(bot: commands.Bot, message: discord.Message):
+    """Return mention + per-guild prefix (falls back to DEFAULT_PREFIX)."""
+    prefix = DEFAULT_PREFIX
+    if message.guild:
+        stored = await get_guild_prefix(message.guild.id)
+        if stored:
+            prefix = stored
+    return commands.when_mentioned_or(prefix)(bot, message)
 
 # Command restriction decorator
 def authorized_servers_only():
@@ -93,8 +106,8 @@ COGS_TO_LOAD = [
 class CodeVerseBot(commands.Bot):
     def __init__(self):
         """Initialize the bot with desired prefix and intents."""
-        # Prefix changed from '!' to '?' per request and intents configured
-        super().__init__(command_prefix='?', intents=intents, help_command=None)
+        # Default prefix is '$' (per-guild overrides supported via /prefix)
+        super().__init__(command_prefix=_dynamic_prefix, intents=intents, help_command=None)
         self.start_time = datetime.now(timezone.utc)
         self.instance_id = INSTANCE_ID
 
@@ -252,7 +265,7 @@ async def on_ready():
     except Exception as e:
         logger.error(f"Failed to sync slash commands: {e}")
     
-    # Both prefix (?ping) and slash (/ping) commands are now available
+    # Both prefix ($ping) and slash (/ping) commands are now available
 
 @bot.event
 async def on_guild_join(guild):
@@ -293,7 +306,7 @@ async def on_message(message):
     # Block prefix commands in unauthorized servers
     if message.guild and message.guild.id not in AUTHORIZED_SERVERS:
         # Check if this looks like a command attempt
-        if message.content.startswith('?'):
+        if message.content.startswith(DEFAULT_PREFIX):
             embed = discord.Embed(
                 title="🚫 Unauthorized Server",
                 description="This bot can only be used in authorized servers.",

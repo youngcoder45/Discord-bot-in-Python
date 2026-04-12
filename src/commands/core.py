@@ -5,6 +5,9 @@ from discord import app_commands
 from datetime import datetime, timezone
 from typing import Optional
 from utils.json_store import get_warnings
+from utils.json_store import get_guild_prefix, set_guild_prefix
+
+DEFAULT_PREFIX = '$'
 
 REPORT_CHANNEL_ID = 1418492683277570109
 
@@ -88,6 +91,37 @@ class Core(commands.Cog):
             await msg.edit(content=f"Failed to load `{cog_name}`: {str(e)}")
         except Exception as e:
             await msg.edit(content=f"Error loading `{cog_name}`: {str(e)}")
+
+    @commands.hybrid_command(name="prefix", help="View or change the bot prefix")
+    @app_commands.describe(new_prefix="New prefix to use in this server")
+    async def prefix(self, ctx: commands.Context, new_prefix: Optional[str] = None):
+        """View or change the bot's command prefix for this guild."""
+        if ctx.guild is None:
+            await ctx.reply(f"Current prefix: `{DEFAULT_PREFIX}` (prefix changes are only supported in servers).", mention_author=False)
+            return
+
+        current = await get_guild_prefix(ctx.guild.id) or DEFAULT_PREFIX
+
+        if new_prefix is None:
+            await ctx.reply(
+                f"Current prefix for **{ctx.guild.name}**: `{current}`\n"
+                f"To change it: `/prefix <new_prefix>`",
+                mention_author=False,
+            )
+            return
+
+        # Permission gate only when changing
+        if not getattr(ctx.author, 'guild_permissions', None) or not ctx.author.guild_permissions.manage_guild:
+            await ctx.reply("You need the **Manage Server** permission to change the prefix.", mention_author=False)
+            return
+
+        new_prefix = new_prefix.strip()
+        if not (1 <= len(new_prefix) <= 5) or any(ch.isspace() for ch in new_prefix):
+            await ctx.reply("Prefix must be 1–5 characters and contain no spaces.", mention_author=False)
+            return
+
+        await set_guild_prefix(ctx.guild.id, new_prefix)
+        await ctx.reply(f"Prefix updated for **{ctx.guild.name}**: `{current}` → `{new_prefix}`", mention_author=False)
 
     @commands.hybrid_command(name="ping", help="Check if the bot is responsive")
     async def ping(self, ctx: commands.Context):

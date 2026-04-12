@@ -31,7 +31,7 @@ MASS_KICK_THRESHOLD = int(os.getenv('MASS_KICK_THRESHOLD', 5))  # kicks in short
 NUKE_TIME_WINDOW = int(os.getenv('NUKE_TIME_WINDOW', 300))  # 5 minutes
 
 # Bot settings
-COMMAND_PREFIX = os.getenv('COMMAND_PREFIX', '!')
+COMMAND_PREFIX = os.getenv('COMMAND_PREFIX', '$')
 STATUS_MESSAGE = os.getenv('STATUS_MESSAGE', 'Professional Moderation | !help')
 
 # Database settings
