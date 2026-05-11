@@ -29,7 +29,7 @@ AUTHORIZED_SERVERS = [
 ]
 
 # Default prefix (can be overridden per-guild via /prefix)
-DEFAULT_PREFIX = '$'
+DEFAULT_PREFIX = '?'
 
 async def _dynamic_prefix(bot: commands.Bot, message: discord.Message):
     """Return mention + per-guild prefix (falls back to DEFAULT_PREFIX)."""
