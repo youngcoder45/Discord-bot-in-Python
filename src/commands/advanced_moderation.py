@@ -58,19 +58,7 @@ class AdvancedModeration(commands.Cog):
             return
 
         try:
-            # Send DM before ban
-            try:
-                embed = discord.Embed(
-                    title="Temporary Ban Notice",
-                    description=f"You have been temporarily banned from **{ctx.guild.name}**",
-                    color=0xff0000
-                )
-                embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
-                embed.add_field(name="Reason", value=reason, inline=False)
-                embed.add_field(name="Unban Time", value=f"<t:{int(time.time() + duration * 60)}:F>", inline=False)
-                await member.send(embed=embed)
-            except:
-                pass
+            # Note: per server policy we do not DM users for ban actions.
             
             # Ban the member
             await member.ban(reason=f"Tempban ({duration}m): {reason}")

@@ -22,7 +22,6 @@ def create_ban_embed(guild_name: str, reason: str) -> discord.Embed:
         color=0xff0000
     )
     embed.add_field(name="Final Violation", value=reason, inline=False)
-    embed.add_field(name="Appeal Process", value="Reply to this message with your appeal to request an unban review.", inline=False)
     embed.set_footer(text="Professional Moderation System")
     return embed
 

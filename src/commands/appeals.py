@@ -133,6 +133,18 @@ class AppealModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         """Handle appeal submission"""
         try:
+            # CVH Policy: bans are not appealable via the bot.
+            if self.punishment_type.lower() in ["ban", "banned"]:
+                await interaction.response.send_message(
+                    embed=create_error_embed(
+                        "Ban Appeals Disabled",
+                        "Ban appeals are not accepted via the bot. Only timeouts can be appealed.",
+                        guild_name=self.guild.name,
+                    ),
+                    ephemeral=True,
+                )
+                return
+
             # Check if user still has punishment
             is_punished = await self._check_punishment_active(interaction.user)
             if not is_punished:
@@ -722,6 +734,18 @@ class AppealButtonView(discord.ui.View):
                 "This button is not for you.", ephemeral=True
             )
             return
+
+        # CVH Policy: bans are not appealable via the bot.
+        if str(self.punishment_type).lower() in ["ban", "banned"]:
+            await interaction.response.send_message(
+                embed=create_error_embed(
+                    "Ban Appeals Disabled",
+                    "Ban appeals are not accepted via the bot. Only timeouts can be appealed.",
+                    guild_name=self.guild.name,
+                ),
+                ephemeral=True,
+            )
+            return
         
         # Check if user already has a pending appeal
         conn = sqlite3.connect(DATABASE_NAME)
@@ -1055,7 +1079,10 @@ class Appeals(commands.Cog):
     # ---------------- Listeners ----------------
     @commands.Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
-        """Handle ban events and send appeals - PRIMARY ban handler"""
+        """Handle ban events.
+
+        CVH Policy: ban appeals are disabled, so we do NOT DM an appeal form on bans.
+        """
         if user.bot or (self.bot.user and user.id == self.bot.user.id):
             return
         
@@ -1094,9 +1121,7 @@ class Appeals(commands.Cog):
             print(f"[Appeals] Error fetching ban audit logs: {e}")
         
         print(f"[Appeals] Ban detected for {user} ({user.id}) in {guild.name}: {reason}")
-        
-        # Send appeal form (logs will be sent by _send_appeal_form)
-        await self._send_appeal_form(user, guild, "banned", reason)
+        # Intentionally no DM appeal form for bans.
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
