@@ -15,6 +15,9 @@ class MessageHandler(commands.Cog):
         self.bot = bot
 
     async def _add_intro_reactions(self, message: discord.Message) -> None:
+        if getattr(message, 'reference', None) and getattr(message.reference, 'message_id', None):
+            return
+
         for emoji in INTRO_REACTIONS:
             try:
                 await message.add_reaction(emoji)
@@ -96,10 +99,10 @@ class MessageHandler(commands.Cog):
         # Auto-react in introductions channel
         if getattr(message.channel, 'id', None) == INTRODUCTION_CHANNEL_ID:
             await self._add_intro_reactions(message)
-        
+
         # Check for thanks mentions
         await self.check_thanks_mention(message)
-        
+
         # NOTE: Don't call process_commands here - the bot already does this automatically
         # Calling it here would cause duplicate responses for prefix commands
 
@@ -118,11 +121,11 @@ class MessageHandler(commands.Cog):
         author_member = message.guild.get_member(message.author.id)
         if not author_member:
             return
-        
+
         # Only server owner and admins can award aura
         is_owner = author_member.id == message.guild.owner_id
         is_admin = author_member.guild_permissions.administrator
-        
+
         if not (is_owner or is_admin):
             return
 
@@ -169,10 +172,10 @@ class MessageHandler(commands.Cog):
         # Don't handle errors that are already handled by command-specific handlers
         if hasattr(ctx.command, 'on_error'):
             return
-        
+
         if isinstance(error, commands.CommandNotFound):
             return  # Ignore command not found errors
-        
+
         # For slash commands, check if interaction was already responded to
         if hasattr(ctx, 'interaction') and ctx.interaction and ctx.interaction.response.is_done():
             try:
@@ -186,7 +189,7 @@ class MessageHandler(commands.Cog):
             except:
                 pass  # If followup also fails, just ignore
             return
-        
+
         if isinstance(error, commands.MissingPermissions):
             embed = discord.Embed(
                 title="❌ Missing Permissions",
@@ -194,7 +197,7 @@ class MessageHandler(commands.Cog):
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed, delete_after=10)
-        
+
         elif isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(
                 title="❌ Missing Argument",
@@ -203,16 +206,16 @@ class MessageHandler(commands.Cog):
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed, delete_after=15)
-        
+
         elif isinstance(error, commands.BadArgument):
             embed = discord.Embed(
-                title="❌ Invalid Argument", 
+                title="❌ Invalid Argument",
                 description="Invalid argument provided!\n"
                            f"Use `?help {ctx.command}` for usage information.",
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed, delete_after=15)
-        
+
         elif isinstance(error, commands.CommandOnCooldown):
             embed = discord.Embed(
                 title="⏰ Command on Cooldown",
@@ -220,7 +223,7 @@ class MessageHandler(commands.Cog):
                 color=discord.Color.orange()
             )
             await ctx.send(embed=embed, delete_after=10)
-        
+
         elif isinstance(error, commands.MemberNotFound):
             embed = discord.Embed(
                 title="❌ Member Not Found",
@@ -228,11 +231,11 @@ class MessageHandler(commands.Cog):
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed, delete_after=10)
-        
+
         else:
             # Log unexpected errors
             print(f"Unhandled error in command {ctx.command}: {error}")
-            
+
             embed = discord.Embed(
                 title="❌ An Error Occurred",
                 description="An unexpected error occurred while processing your command.\n"
@@ -243,7 +246,7 @@ class MessageHandler(commands.Cog):
                 await ctx.send(embed=embed, delete_after=15)
             except:
                 pass  # If sending fails, just ignore
-    
+
     # AFK and XP systems removed per request.
 
 async def setup(bot):
