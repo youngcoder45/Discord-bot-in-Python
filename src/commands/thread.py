@@ -1,17 +1,21 @@
 ﻿# Cog to manage threads and posts in a Discord server
-import discord
-from discord.ext import commands
-from typing import Optional
 import asyncio
 import sqlite3
 from datetime import datetime, timezone
+from typing import Optional
+
+import discord
+from discord.ext import commands
 
 from utils.database import DATABASE_NAME
 from utils.embeds import create_error_embed, create_success_embed
 
 
 class ThreadCloser(commands.Cog):
-    """Cog to manage threads and posts in a Discord server."""
+    """Cog to manage threads and posts in a Discord server.
+
+    Extended: if used inside a ticket channel, it closes the ticket (transcript + delete).
+    """
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -20,72 +24,83 @@ class ThreadCloser(commands.Cog):
         """Helper to check if channel is a thread."""
         return channel if isinstance(channel, discord.Thread) else None
 
-    async def _resolve_thread(self, ctx: commands.Context, thread_id: Optional[int] = None) -> Optional[discord.Thread]:
+    async def _resolve_thread(
+        self, ctx: commands.Context, thread_id: Optional[int] = None
+    ) -> Optional[discord.Thread]:
         """Resolve a thread from current channel or by ID."""
         if thread_id is None:
             thread = self._get_thread(ctx.channel)
             if thread is None:
-                await ctx.reply("Please provide a thread ID or run this command inside a thread.")
+                await ctx.reply(
+                    "❌ Please provide a thread ID or run this command inside a thread."
+                )
+                return None
             return thread
         else:
             thread = None
             if ctx.guild is not None:
                 try:
-                    thread = getattr(ctx.guild, 'get_thread', lambda _id: None)(thread_id)
+                    thread = getattr(ctx.guild, "get_thread", lambda _id: None)(
+                        thread_id
+                    )
                 except Exception:
                     thread = None
             if thread is None:
                 thread = self.bot.get_channel(thread_id)
             if thread is None or not isinstance(thread, discord.Thread):
-                await ctx.reply("Thread not found or invalid ID.")
+                await ctx.reply("❌ Thread not found or invalid ID.")
                 return None
             return thread
 
-    async def _is_ticket_thread(self, thread: discord.Thread) -> tuple[bool, Optional[dict]]:
+    async def _is_ticket_thread(
+        self, thread: discord.Thread
+    ) -> tuple[bool, Optional[dict]]:
         """Check if thread is a ticket and return ticket info"""
         try:
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
             cursor.execute(
                 'SELECT ticket_id, user_id, category FROM tickets WHERE ticket_thread_id = ? AND status = "open"',
-                (thread.id,)
+                (thread.id,),
             )
             result = cursor.fetchone()
             conn.close()
-            
+
             if result:
                 ticket_id, user_id, category = result
                 return True, {
-                    'ticket_id': ticket_id,
-                    'user_id': user_id,
-                    'category': category
+                    "ticket_id": ticket_id,
+                    "user_id": user_id,
+                    "category": category,
                 }
             return False, None
         except Exception:
             return False, None
 
-    async def _close_ticket_thread(self, ctx: commands.Context, thread: discord.Thread, ticket_info: dict):
+    async def _close_ticket_thread(
+        self, ctx: commands.Context, thread: discord.Thread, ticket_info: dict
+    ):
         """Close a ticket thread"""
-        ticket_id = ticket_info['ticket_id']
-        user_id = ticket_info['user_id']
-        category = ticket_info['category']
+        ticket_id = ticket_info["ticket_id"]
+        user_id = ticket_info["user_id"]
+        category = ticket_info["category"]
         staff_role_id = 1417900662053671073  # Staff role ID from tickets.py
-        
+
         # Check permissions (ticket owner or staff)
         has_permission = False
         if isinstance(ctx.author, discord.Member):
             has_permission = (
-                ctx.author.id == user_id or
-                any(role.id == staff_role_id for role in ctx.author.roles) or
-                ctx.author.guild_permissions.administrator
+                ctx.author.id == user_id
+                or any(role.id == staff_role_id for role in ctx.author.roles)
+                or ctx.author.guild_permissions.administrator
             )
         elif ctx.author.id == user_id:
             has_permission = True
-        
+
         if not has_permission:
             await ctx.reply("❌ Only the ticket owner or staff can close this ticket.")
             return
-        
+
         # Delegate to ticket cog's full force-close flow when available so we get logs, transcript, and DM
         tickets_cog = self.bot.get_cog("Tickets")
         if tickets_cog:
@@ -102,89 +117,137 @@ class ThreadCloser(commands.Cog):
         cursor = conn.cursor()
         cursor.execute(
             'UPDATE tickets SET status = "closed", closed_at = CURRENT_TIMESTAMP, close_reason = ? WHERE ticket_id = ?',
-            (f"Closed by {ctx.author} (via ?close)", ticket_id)
+            (f"Closed by {ctx.author} (via ?close)", ticket_id),
         )
         conn.commit()
         conn.close()
-        
+
         embed = discord.Embed(
             title="Ticket Closed",
             description=f"This ticket has been closed by {ctx.author.mention}",
-            color=0xff0000
+            color=0xFF0000,
         )
         embed.add_field(
             name="Next Steps",
             value="This thread will be archived and locked in 10 seconds.\nA transcript has been saved.",
-            inline=False
+            inline=False,
         )
         embed.set_footer(text=f"Ticket ID: {ticket_id} | Closed via ?close command")
         embed.timestamp = datetime.now(timezone.utc)
-        
+
         await ctx.send(embed=embed)
-        
+
         await asyncio.sleep(10)
         try:
             await thread.edit(archived=True, locked=True)
-            print(f"[Thread] Closed ticket thread '{thread.name}' (ID: {thread.id}, Ticket: #{ticket_id}) by {ctx.author}")
+            print(
+                f"[Thread] Closed ticket thread '{thread.name}' (ID: {thread.id}, Ticket: #{ticket_id}) by {ctx.author}"
+            )
         except Exception as e:
             print(f"[Thread] Error closing ticket thread {thread.id}: {e}")
 
-    @commands.command(name="close", aliases=["close_thread", "archive"], help="Close (archive) a thread.")
-    async def close_thread(self, ctx: commands.Context, thread_id: Optional[int] = None):
-        """Close (archive) a thread by ID or in current thread. Works for both regular threads and tickets."""
+    @commands.command(
+        name="close",
+        aliases=["close_thread", "archive"],
+        help="Close (archive) a thread.",
+    )
+    async def close_thread(
+        self, ctx: commands.Context, thread_id: Optional[int] = None
+    ):
+        """Close a thread (archive) or, if run in a ticket channel, close the ticket (transcript + delete)."""
+
+        # Ticket channels: allow ?close inside the ticket channel to close/delete it.
+        if thread_id is None and isinstance(ctx.channel, discord.TextChannel):
+            try:
+                conn = sqlite3.connect(DATABASE_NAME)
+                cursor = conn.cursor()
+                cursor.execute(
+                    'SELECT ticket_id FROM tickets WHERE ticket_channel_id = ? AND status = "open"',
+                    (ctx.channel.id,),
+                )
+                row = cursor.fetchone()
+                conn.close()
+
+                if row:
+                    ticket_id = row[0]
+                    tickets_cog = self.bot.get_cog("Tickets")
+                    if tickets_cog:
+                        await tickets_cog.force_close_ticket(
+                            ctx,
+                            ticket_id,
+                            reason="Closed via ?close command",
+                            announce_in_channel=False,
+                            announce_in_ticket=True,
+                        )
+                        return
+
+                    await ctx.reply("❌ Ticket system is not available right now.")
+                    return
+            except Exception:
+                pass
+
         thread = await self._resolve_thread(ctx, thread_id)
         if thread is None:
             return
-        
-        # Check if this is a ticket thread
+
+        # Check if this is a ticket thread (legacy)
         is_ticket, ticket_info = await self._is_ticket_thread(thread)
-        
+
         if is_ticket and ticket_info:
-            # Handle ticket closure with proper permissions and database updates
             await self._close_ticket_thread(ctx, thread, ticket_info)
             return
-        
+
         # Handle regular thread closure
         # Check permissions: only mods (manage_threads) or original poster can close
         is_mod = False
         if isinstance(ctx.author, discord.Member):
             is_mod = ctx.author.guild_permissions.manage_threads
-        
+
         is_original_poster = thread.owner_id == ctx.author.id
-        
+
         if not (is_mod or is_original_poster):
-            await ctx.reply("❌ Only moderators or the thread creator can close this thread.")
+            await ctx.reply(
+                "❌ Only moderators or the thread creator can close this thread."
+            )
             return
-        
+
         try:
             # Create embed for close message
             embed = discord.Embed(
                 title="Thread Closed",
-                description=f"This thread has been closed and archived.",
-                color=discord.Color.red()
+                description="This thread has been closed and archived.",
+                color=discord.Color.red(),
             )
             embed.add_field(name="Thread Name", value=thread.name, inline=False)
             embed.add_field(name="Closed By", value=ctx.author.mention, inline=True)
-            embed.set_footer(text=f"Closed at {discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
-            
+            embed.set_footer(
+                text=f"Closed at {discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            )
+
             # Send close message first
             await ctx.send(embed=embed)
-            
+
             # Small delay to ensure message is sent before archiving
             await asyncio.sleep(0.5)
-            
+
             # Then archive the thread (so bot message doesn't reopen it)
             await thread.edit(archived=True)
-            print(f"[Thread] Archived '{thread.name}' (ID: {thread.id}) by {ctx.author}")
+            print(
+                f"[Thread] Archived '{thread.name}' (ID: {thread.id}) by {ctx.author}"
+            )
         except discord.Forbidden:
             await ctx.reply("❌ I do not have permission to archive this thread.")
         except Exception as e:
             await ctx.reply(f"❌ Error archiving thread: {e}")
             print(f"[Thread] Error archiving {thread.id}: {e}")
 
-    @commands.command(name="pin", help="Pin a message in thread/post or current channel.")
+    @commands.command(
+        name="pin", help="Pin a message in thread/post or current channel."
+    )
     @commands.has_permissions(manage_messages=True)
-    async def pin_message(self, ctx: commands.Context, message_id: Optional[int] = None):
+    async def pin_message(
+        self, ctx: commands.Context, message_id: Optional[int] = None
+    ):
         """Pin a message by ID or reply to message. If message_id not provided, reply to a message to pin it."""
         try:
             message = None
@@ -192,7 +255,7 @@ class ThreadCloser(commands.Cog):
                 try:
                     message = await ctx.channel.fetch_message(message_id)
                 except discord.NotFound:
-                    await ctx.reply(f" Message with ID {message_id} not found.")
+                    await ctx.reply(f"❌ Message with ID {message_id} not found.")
                     return
             elif ctx.message.reference is not None:
                 try:
@@ -200,28 +263,40 @@ class ThreadCloser(commands.Cog):
                     if ref_msg_id:
                         message = await ctx.channel.fetch_message(ref_msg_id)
                 except discord.NotFound:
-                    await ctx.reply(" Referenced message not found.")
+                    await ctx.reply("❌ Referenced message not found.")
                     return
             else:
-                await ctx.reply(" Please provide a message ID or reply to a message to pin.")
+                await ctx.reply(
+                    "❌ Please provide a message ID or reply to a message to pin."
+                )
                 return
             if message is None:
-                await ctx.reply(" Message could not be resolved.")
+                await ctx.reply("❌ Message could not be resolved.")
                 return
             await message.pin()
-            channel_str = getattr(ctx.channel, 'mention', f"#{getattr(ctx.channel, 'name', 'unknown')}")
-            await ctx.reply(f" Message pinned in {channel_str}.")
-            channel_name = getattr(ctx.channel, 'name', 'unknown')
+            channel_str = getattr(
+                ctx.channel, "mention", f"#{getattr(ctx.channel, 'name', 'unknown')}"
+            )
+            await ctx.reply(f"📌 Message pinned in {channel_str}.")
+            channel_name = getattr(ctx.channel, "name", "unknown")
             if message:
-                print(f"[Thread] Pinned message {message.id} in {channel_name} by {ctx.author}")
+                print(
+                    f"[Thread] Pinned message {message.id} in {channel_name} by {ctx.author}"
+                )
         except discord.Forbidden:
-            await ctx.reply(" I do not have permission to pin messages in this channel.")
+            await ctx.reply(
+                "❌ I do not have permission to pin messages in this channel."
+            )
         except Exception as e:
-            await ctx.reply(f" Error pinning message: {e}")
+            await ctx.reply(f"❌ Error pinning message: {e}")
 
-    @commands.command(name="unpin", help="Unpin a message in thread/post or current channel.")
+    @commands.command(
+        name="unpin", help="Unpin a message in thread/post or current channel."
+    )
     @commands.has_permissions(manage_messages=True)
-    async def unpin_message(self, ctx: commands.Context, message_id: Optional[int] = None):
+    async def unpin_message(
+        self, ctx: commands.Context, message_id: Optional[int] = None
+    ):
         """Unpin a message by ID or reply to message. If message_id not provided, reply to a pinned message to unpin it."""
         try:
             message = None
@@ -229,7 +304,7 @@ class ThreadCloser(commands.Cog):
                 try:
                     message = await ctx.channel.fetch_message(message_id)
                 except discord.NotFound:
-                    await ctx.reply(f" Message with ID {message_id} not found.")
+                    await ctx.reply(f"❌ Message with ID {message_id} not found.")
                     return
             elif ctx.message.reference is not None:
                 try:
@@ -237,22 +312,30 @@ class ThreadCloser(commands.Cog):
                     if ref_msg_id:
                         message = await ctx.channel.fetch_message(ref_msg_id)
                 except discord.NotFound:
-                    await ctx.reply(" Referenced message not found.")
+                    await ctx.reply("❌ Referenced message not found.")
                     return
             else:
-                await ctx.reply(" Please provide a message ID or reply to a message to unpin.")
+                await ctx.reply(
+                    "❌ Please provide a message ID or reply to a message to unpin."
+                )
                 return
             if message is None:
-                await ctx.reply(" Message could not be resolved.")
+                await ctx.reply("❌ Message could not be resolved.")
                 return
             await message.unpin()
-            channel_str = getattr(ctx.channel, 'mention', f"#{getattr(ctx.channel, 'name', 'unknown')}")
-            await ctx.reply(f" Message unpinned from {channel_str}.")
-            channel_name = getattr(ctx.channel, 'name', 'unknown')
+            channel_str = getattr(
+                ctx.channel, "mention", f"#{getattr(ctx.channel, 'name', 'unknown')}"
+            )
+            await ctx.reply(f"📌 Message unpinned from {channel_str}.")
+            channel_name = getattr(ctx.channel, "name", "unknown")
             if message:
-                print(f"[Thread] Unpinned message {message.id} in {channel_name} by {ctx.author}")
+                print(
+                    f"[Thread] Unpinned message {message.id} in {channel_name} by {ctx.author}"
+                )
         except discord.Forbidden:
-            await ctx.reply(" I do not have permission to unpin messages in this channel.")
+            await ctx.reply(
+                "❌ I do not have permission to unpin messages in this channel."
+            )
         except Exception as e:
             await ctx.reply(f"❌ Error unpinning message: {e}")
 
