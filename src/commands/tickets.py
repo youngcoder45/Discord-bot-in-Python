@@ -1041,10 +1041,13 @@ class Tickets(commands.Cog):
         partner_role: Optional[discord.Role] = None,
     ):
         """Create a persistent ticket panel"""
+        # Defer the response to prevent timeout issues
+        await ctx.defer(ephemeral=True)
+        
         target_channel = channel or ctx.channel
 
         if not isinstance(target_channel, discord.TextChannel):
-            await ctx.send(
+            await ctx.followup.send(
                 embed=create_error_embed(
                     "Invalid Channel", "Please provide a valid text channel."
                 ),
@@ -1116,7 +1119,7 @@ class Tickets(commands.Cog):
 
         self.ticket_channel_id = target_channel.id
 
-        await ctx.send(
+        await ctx.followup.send(
             embed=create_success_embed(
                 "Panel Created", f"Ticket panel created in {target_channel.mention}."
             ),
