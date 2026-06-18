@@ -1184,6 +1184,53 @@ class ModCog(commands.Cog):
     # Warnings system moved to SAM module (/warn, /unwarn, /warnings)
     # See: commands.modules.sam.features.warnings.cogs
 
+    # -------- Verification Command --------
+
+    @app_commands.command(name="verify", description="Verify a user by assigning a verification role")
+    @app_commands.describe(user="The user to verify")
+    async def verify(self, interaction: discord.Interaction, user: discord.User):
+        """Verify a user by assigning a verification role."""
+        # Check if invoker has the required admin/bypass role
+        admin_bypass_role_id = 1403059755001577543
+        
+        if not isinstance(interaction.user, discord.Member):
+            await interaction.response.send_message(
+                "❌ You do not have permission to use this command.",
+                ephemeral=True
+            )
+            return
+        
+        if not any(role.id == admin_bypass_role_id for role in interaction.user.roles) and not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message(
+                "❌ You do not have permission to use this command.",
+                ephemeral=True
+            )
+            return
+        
+        # Get target member
+        if not isinstance(user, discord.Member):
+            try:
+                target_member = await interaction.guild.fetch_member(user.id)
+            except discord.NotFound:
+                await interaction.response.send_message(
+                    f"❌ User {user.mention} is not a member of this server.",
+                    ephemeral=True
+                )
+                return
+        else:
+            target_member = user
+        
+        # Create the verification view
+        view = VerificationView(target_member, self.bot)
+        
+        embed = discord.Embed(
+            title="Verification Panel",
+            description=f"Select a verification type for {target_member.mention}:",
+            color=0x2B2D31
+        )
+        
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
     # -------- Shared Error Handler --------
     
     @purge.error
@@ -1201,6 +1248,146 @@ class ModCog(commands.Cog):
             print(f"[ModCog] Interaction expired for {ctx.command}: {error}")
         else:
             await self._safe_reply(ctx, f"⚠️ An error occurred: {error}")
+
+
+class VerificationView(discord.ui.View):
+    """View for verification role selection and confirmation."""
+    
+    VERIFICATION_ROLES = {
+        "stream_verify": {
+            "label": "Stream Verify",
+            "role_id": 1417578146407911455,
+            "value": "stream_verify"
+        },
+        "voice_verification": {
+            "label": "Voice Verification",
+            "role_id": 1414651719995883560,
+            "value": "voice_verification"
+        },
+        "embed_verification": {
+            "label": "Embed Verification",
+            "role_id": 1486406987091677315,
+            "value": "embed_verification"
+        },
+        "join_vc_verification": {
+            "label": "Join VC Verification",
+            "role_id": 1345308261133455430,
+            "value": "join_vc_verification"
+        },
+    }
+    
+    def __init__(self, target_member: discord.Member, bot: discord.Client):
+        super().__init__(timeout=300)  # 5 minute timeout
+        self.target_member = target_member
+        self.bot = bot
+        self.selected_verification = None
+        
+    @discord.ui.select(
+        placeholder="Select a verification type...",
+        min_values=1,
+        max_values=1,
+        options=[
+            discord.SelectOption(label="Stream Verify", value="stream_verify"),
+            discord.SelectOption(label="Voice Verification", value="voice_verification"),
+            discord.SelectOption(label="Embed Verification", value="embed_verification"),
+            discord.SelectOption(label="Join VC Verification", value="join_vc_verification"),
+        ]
+    )
+    async def select_verification(self, interaction: discord.Interaction, select: discord.ui.Select):
+        """Handle verification type selection."""
+        self.selected_verification = select.values[0]
+        
+        # Update the embed to show selection
+        embed = discord.Embed(
+            title="Verification Panel",
+            description=f"Selected: **{self.VERIFICATION_ROLES[self.selected_verification]['label']}** for {self.target_member.mention}",
+            color=0x2B2D31
+        )
+        
+        await interaction.response.defer()
+    
+    @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
+    async def save_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Handle saving the verification."""
+        # Check if a verification type was selected
+        if not self.selected_verification:
+            await interaction.response.send_message(
+                "❌ Please select a verification type before saving.",
+                ephemeral=True
+            )
+            return
+        
+        await interaction.response.defer()
+        
+        role_id = self.VERIFICATION_ROLES[self.selected_verification]["role_id"]
+        role = interaction.guild.get_role(role_id)
+        
+        if not role:
+            await interaction.followup.send(
+                f"❌ Verification role not found (ID: {role_id})",
+                ephemeral=True
+            )
+            return
+        
+        # Check if user already has the role
+        if role in self.target_member.roles:
+            await interaction.followup.send(
+                f"ℹ️ {self.target_member.mention} already possesses the **{role.name}** role.",
+                ephemeral=True
+            )
+            return
+        
+        # Try to assign the role
+        try:
+            await self.target_member.add_roles(role, reason=f"Verification by {interaction.user}")
+            
+            # Update embed with confirmation
+            embed = discord.Embed(
+                title="✅ Verification Complete",
+                description=f"Successfully assigned **{role.name}** to {self.target_member.mention}",
+                color=0x00FF00
+            )
+            embed.add_field(name="Verification Type", value=self.VERIFICATION_ROLES[self.selected_verification]["label"], inline=False)
+            embed.add_field(name="Verified By", value=interaction.user.mention, inline=False)
+            embed.timestamp = datetime.now(timezone.utc)
+            
+            # Disable all components
+            for item in self.children:
+                item.disabled = True
+            
+            await interaction.response.edit_message(embed=embed, view=self)
+            
+        except discord.Forbidden:
+            await interaction.followup.send(
+                f"❌ I cannot assign the **{role.name}** role due to hierarchy restrictions.",
+                ephemeral=True
+            )
+        except Exception as e:
+            await interaction.followup.send(
+                f"❌ An error occurred while assigning the role: {str(e)}",
+                ephemeral=True
+            )
+    
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Handle cancellation."""
+        embed = discord.Embed(
+            title="Verification Cancelled",
+            description="The verification process has been cancelled.",
+            color=0xFF0000
+        )
+        
+        # Disable all components
+        for item in self.children:
+            item.disabled = True
+        
+        await interaction.response.edit_message(embed=embed, view=self)
+    
+    async def on_timeout(self):
+        """Handle view timeout."""
+        # Disable all components
+        for item in self.children:
+            item.disabled = True
 
 
 async def setup(bot: commands.Bot):
