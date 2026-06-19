@@ -1021,7 +1021,7 @@ class HelpDropdown(discord.ui.Select):
                 "**`/unlockdown [#channel]`** - Unlock channel *(Admin)*\n"
                 "**`?hide [#channel]`** - Hide channel from @everyone *(Manage Channels)*\n"
                 "**`?unhide [#channel]`** - Unhide channel for @everyone *(Manage Channels)*\n"
-                "**`/rr <title> <#channel> <description> <emoji1> <role1>...`** - Create reaction roles *(Manage Roles)*\n"
+                "**`/rr <title> <#channel> <description> <role1> [role_toggle]...`** - Create reaction roles *(Manage Roles)*\n"
                 "**`/slowmode <seconds> [#channel]`** - Set channel slowmode *(Manage Channels)*\n"
                 "**`/massban <user_ids> [reason]`** - Ban multiple users *(Ban Members)*\n"
                 "**`/nuke [#channel]`** - Clone and replace channel *(OWNER ONLY)*"

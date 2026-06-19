@@ -33,6 +33,10 @@ class ReactionRoles(commands.Cog):
                 c = conn.cursor()
                 c.execute('''CREATE TABLE IF NOT EXISTS reaction_roles
                              (message_id TEXT PRIMARY KEY, guild_id INTEGER, channel_id INTEGER, roles TEXT)''')
+                c.execute("PRAGMA table_info(reaction_roles)")
+                columns = {row[1] for row in c.fetchall()}
+                if "role_toggle" not in columns:
+                    c.execute("ALTER TABLE reaction_roles ADD COLUMN role_toggle INTEGER DEFAULT 0")
                 conn.commit()
                 
                 # Migration logic
@@ -43,8 +47,18 @@ class ReactionRoles(commands.Cog):
                             data = json.load(f)
                         
                         for msg_id, msg_data in data.items():
-                            c.execute("INSERT OR REPLACE INTO reaction_roles VALUES (?, ?, ?, ?)",
-                                      (msg_id, msg_data['guild_id'], msg_data['channel_id'], json.dumps(msg_data['roles'])))
+                            c.execute(
+                                """INSERT OR REPLACE INTO reaction_roles
+                                   (message_id, guild_id, channel_id, roles, role_toggle)
+                                   VALUES (?, ?, ?, ?, ?)""",
+                                (
+                                    msg_id,
+                                    msg_data['guild_id'],
+                                    msg_data['channel_id'],
+                                    json.dumps(msg_data['roles']),
+                                    int(msg_data.get('role_toggle', False))
+                                )
+                            )
                         conn.commit()
                         os.rename(json_file, json_file + ".bak")
                         logger.info("Migration complete. JSON file backed up.")
@@ -60,12 +74,13 @@ class ReactionRoles(commands.Cog):
             if os.path.exists(self.data_file):
                 with sqlite3.connect(self.data_file) as conn:
                     c = conn.cursor()
-                    c.execute("SELECT message_id, guild_id, channel_id, roles FROM reaction_roles")
+                    c.execute("SELECT message_id, guild_id, channel_id, roles, role_toggle FROM reaction_roles")
                     for row in c.fetchall():
                         data[row[0]] = {
                             "guild_id": row[1],
                             "channel_id": row[2],
-                            "roles": json.loads(row[3])
+                            "roles": json.loads(row[3]),
+                            "role_toggle": bool(row[4])
                         }
             return data
         except Exception as e:
@@ -81,8 +96,18 @@ class ReactionRoles(commands.Cog):
                 c.execute("DELETE FROM reaction_roles")
                 
                 for msg_id, msg_data in self.reaction_roles.items():
-                    c.execute("INSERT INTO reaction_roles VALUES (?, ?, ?, ?)",
-                              (msg_id, msg_data['guild_id'], msg_data['channel_id'], json.dumps(msg_data['roles'])))
+                    c.execute(
+                        """INSERT INTO reaction_roles
+                           (message_id, guild_id, channel_id, roles, role_toggle)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (
+                            msg_id,
+                            msg_data['guild_id'],
+                            msg_data['channel_id'],
+                            json.dumps(msg_data['roles']),
+                            int(msg_data.get('role_toggle', False))
+                        )
+                    )
                 conn.commit()
             logger.info(f"Saved reaction roles to {self.data_file}")
         except Exception as e:
@@ -109,6 +134,7 @@ class ReactionRoles(commands.Cog):
         role8="Eighth role (optional)",
         role9="Ninth role (optional)",
         role10="Tenth role (optional)",
+        role_toggle="Allow only one role from this reaction-role message at a time",
         emoji1="Custom emoji for role 1 (optional, defaults to 1️⃣)",
         emoji2="Custom emoji for role 2 (optional, defaults to 2️⃣)",
         emoji3="Custom emoji for role 3 (optional, defaults to 3️⃣)",
@@ -137,6 +163,7 @@ class ReactionRoles(commands.Cog):
         role8: Optional[discord.Role] = None,
         role9: Optional[discord.Role] = None,
         role10: Optional[discord.Role] = None,
+        role_toggle: bool = False,
         emoji1: Optional[str] = None,
         emoji2: Optional[str] = None,
         emoji3: Optional[str] = None,
@@ -223,7 +250,10 @@ class ReactionRoles(commands.Cog):
             role_list = "\n".join([f"{emoji} {role.mention}" for emoji, role in role_pairs])
             embed.description = f"{description}\n\n**React to get roles:**\n{role_list}"
             
-            embed.set_footer(text="React with the emojis below to get/remove roles!")
+            footer_text = "React with the emojis below to get/remove roles!"
+            if role_toggle:
+                footer_text += " One role from this group may be active at a time."
+            embed.set_footer(text=footer_text)
             
             # Send the message
             message = await channel.send(embed=embed)
@@ -240,7 +270,8 @@ class ReactionRoles(commands.Cog):
             message_data = {
                 "channel_id": channel.id,
                 "guild_id": interaction.guild.id,  # Already checked above
-                "roles": {}
+                "roles": {},
+                "role_toggle": role_toggle
             }
             
             for emoji, role in role_pairs:
@@ -254,6 +285,7 @@ class ReactionRoles(commands.Cog):
                 title="✅ Reaction Role Created",
                 description=f"Reaction role message created in {channel.mention}!\n"
                            f"[Jump to message]({message.jump_url})\n\n"
+                           f"**Role Toggle:** {'Enabled' if role_toggle else 'Disabled'}\n\n"
                            f"**Added {len(role_pairs)} role(s):**\n" +
                            "\n".join([f"{emoji} {role.mention}" for emoji, role in role_pairs]),
                 color=discord.Color.green()
@@ -301,6 +333,21 @@ class ReactionRoles(commands.Cog):
             role = guild.get_role(role_id)
             if not role:
                 return
+            
+            if data.get("role_toggle", False):
+                previous_roles = []
+                for configured_role_id in data["roles"].values():
+                    if configured_role_id == role_id:
+                        continue
+                    configured_role = guild.get_role(configured_role_id)
+                    if configured_role and configured_role in member.roles:
+                        previous_roles.append(configured_role)
+                
+                if previous_roles:
+                    await member.remove_roles(
+                        *previous_roles,
+                        reason="Reaction role toggle replacement"
+                    )
             
             # Check if member already has the role
             if role not in member.roles:
@@ -374,9 +421,11 @@ class ReactionRoles(commands.Cog):
                 channel = interaction.guild.get_channel(data["channel_id"])
                 if channel:
                     role_count = len(data["roles"])
+                    toggle_status = "Enabled" if data.get("role_toggle", False) else "Disabled"
                     guild_rr.append(f"• **Message ID:** `{message_id}`\n"
                                   f"  **Channel:** {channel.mention}\n"
-                                  f"  **Roles:** {role_count}")
+                                  f"  **Roles:** {role_count}\n"
+                                  f"  **Role Toggle:** {toggle_status}")
         
         if not guild_rr:
             embed = discord.Embed(

@@ -4,12 +4,15 @@
 .env.production
 *.key
 *.pem
-/dash 
+/dash
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.agents
+*.venv
+*.codex
 .Python
 build/
 develop-eggs/

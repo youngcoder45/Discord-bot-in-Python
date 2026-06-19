@@ -116,14 +116,15 @@
 
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
-| `/rr <title> <#channel> <description> <emoji1> <role1> [emoji2] [role2]...` | Create reaction role message (up to 10 roles) | Manage Roles |
+| `/rr <title> <#channel> <description> <role1> [role2]... [role_toggle] [emoji1]...` | Create reaction role message (up to 10 roles) | Manage Roles |
 | `/rrlist` | List all active reaction role messages in server | Manage Roles |
 | `/rrremove <message_id>` | Remove reaction role tracking for a message | Manage Roles |
 
 **Features:**
 - ✅ **Up to 10 Roles** - Support for multiple emoji-role pairs per message
 - ✅ **Automatic Assignment** - Instantly adds/removes roles on reaction
-- ✅ **Data Persistence** - Survives bot restarts with JSON storage
+- ✅ **Optional Role Toggle** - Limit members to one role from a specific reaction-role message
+- ✅ **Data Persistence** - Survives bot restarts with SQLite storage
 - ✅ **Permission Validation** - Checks role hierarchy and bot permissions
 - ✅ **Embed Integration** - Works with `/editembed` for easy editing
 - ✅ **Real-time Tracking** - Live reaction monitoring and role management
