@@ -81,9 +81,14 @@ class TicketConfirmationView(discord.ui.View):
 class TicketControlView(discord.ui.View):
     """Persistent view with ticket control buttons"""
 
-    def __init__(self, cog: "Tickets"):
+    def __init__(self, cog: "Tickets" = None):
         super().__init__(timeout=None)
         self.cog = cog
+
+    async def _get_cog(self) -> Optional["Tickets"]:
+        if self.cog is not None:
+            return self.cog
+        return None
 
     @discord.ui.button(
         label="Close Ticket",
@@ -93,7 +98,11 @@ class TicketControlView(discord.ui.View):
     async def close_ticket(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await self.cog.handle_close_ticket(interaction)
+        cog = await self._get_cog()
+        if cog is None:
+            await interaction.response.send_message("Ticket system unavailable.", ephemeral=True)
+            return
+        await cog.handle_close_ticket(interaction)
 
     @discord.ui.button(
         label="Claim Ticket",
@@ -103,7 +112,11 @@ class TicketControlView(discord.ui.View):
     async def claim_ticket(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await self.cog.handle_claim_ticket(interaction)
+        cog = await self._get_cog()
+        if cog is None:
+            await interaction.response.send_message("Ticket system unavailable.", ephemeral=True)
+            return
+        await cog.handle_claim_ticket(interaction)
 
 
 class TicketPanelView(discord.ui.View):
@@ -183,6 +196,8 @@ class Tickets(commands.Cog):
     async def _restore_persistent_views(self):
         await self.bot.wait_until_ready()
 
+        await self._restore_ticket_control_views()
+
         try:
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
@@ -233,6 +248,38 @@ class Tickets(commands.Cog):
 
         except Exception as e:
             logger.error(f"Error restoring persistent ticket views: {e}")
+
+    async def _restore_ticket_control_views(self):
+        """Restore TicketControlView for all open tickets so close/claim buttons survive restarts."""
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT ticket_channel_id, welcome_message_id FROM tickets WHERE status = "open" AND ticket_channel_id IS NOT NULL AND welcome_message_id IS NOT NULL'
+            )
+            tickets = cursor.fetchall()
+            conn.close()
+
+            restored = 0
+            for channel_id, msg_id in tickets:
+                channel = self.bot.get_channel(channel_id)
+                if channel is None or not isinstance(channel, discord.TextChannel):
+                    continue
+                try:
+                    await channel.fetch_message(msg_id)
+                    view = TicketControlView(self)
+                    self.bot.add_view(view, message_id=msg_id)
+                    restored += 1
+                except discord.NotFound:
+                    # Welcome message deleted, skip
+                    continue
+                except Exception as e:
+                    logger.error(f"Error restoring control view for ticket channel {channel_id}: {e}")
+
+            if restored:
+                logger.info(f"Restored {restored} ticket control views")
+        except Exception as e:
+            logger.error(f"Error restoring ticket control views: {e}")
 
     def _init_database(self):
         conn = sqlite3.connect(DATABASE_NAME)
@@ -325,6 +372,15 @@ class Tickets(commands.Cog):
             )
             """
         )
+
+        # Migration: add welcome_message_id column if missing
+        try:
+            cursor.execute("PRAGMA table_info(tickets)")
+            cols = [row[1] for row in cursor.fetchall()]
+            if "welcome_message_id" not in cols:
+                cursor.execute("ALTER TABLE tickets ADD COLUMN welcome_message_id INTEGER")
+        except Exception as e:
+            print(f"[Tickets] Migration for welcome_message_id failed: {e}")
 
         # Migration: copy legacy ticket_thread_id into ticket_channel_id if needed
         try:
@@ -725,11 +781,24 @@ class Tickets(commands.Cog):
 
         view = TicketControlView(self)
         staff_mention = staff_role.mention if staff_role else "@Staff"
-        await ticket_channel.send(
+        welcome_msg = await ticket_channel.send(
             content=f"{user.mention} | Staff: {staff_mention}",
             embed=embed,
             view=view,
         )
+
+        # Store welcome_message_id for persistent view restoration
+        try:
+            conn2 = sqlite3.connect(DATABASE_NAME)
+            cur2 = conn2.cursor()
+            cur2.execute(
+                "UPDATE tickets SET welcome_message_id = ? WHERE ticket_id = ?",
+                (welcome_msg.id, ticket_id),
+            )
+            conn2.commit()
+            conn2.close()
+        except Exception as e:
+            print(f"[Tickets] Failed to store welcome_message_id: {e}")
 
         await interaction.followup.send(
             embed=create_success_embed(
@@ -782,18 +851,7 @@ class Tickets(commands.Cog):
 
         ticket_id, user_id, category = result
 
-        has_permission = False
-        if isinstance(interaction.user, discord.Member):
-            has_permission = (
-                interaction.user.id == user_id
-                or any(
-                    role.id in [self.staff_role_id, self.admin_bypass_role_id]
-                    for role in interaction.user.roles
-                )
-                or interaction.user.guild_permissions.administrator
-            )
-        elif interaction.user.id == user_id:
-            has_permission = True
+        has_permission = self._is_staff_or_owner(interaction, user_id)
 
         if not has_permission:
             conn.close()
@@ -844,6 +902,55 @@ class Tickets(commands.Cog):
         except Exception as e:
             print(f"[Tickets] Failed to delete ticket channel: {e}")
 
+    def _is_staff_or_owner(
+        self, interaction: discord.Interaction, user_id: int
+    ) -> bool:
+        """Check if the user is the ticket owner or has a staff/admin role."""
+        if isinstance(interaction.user, discord.Member):
+            if interaction.user.id == user_id:
+                return True
+            guild = interaction.guild
+            allowed_roles = {self.staff_role_id, self.admin_bypass_role_id}
+            # Also check dynamically configured support/report/partner roles
+            for role_getter in (
+                self._get_support_team_role,
+                self._get_report_team_role,
+                self._get_partner_team_role,
+            ):
+                try:
+                    role = role_getter(guild)
+                    if role:
+                        allowed_roles.add(role.id)
+                except Exception:
+                    pass
+            return (
+                any(r.id in allowed_roles for r in interaction.user.roles)
+                or interaction.user.guild_permissions.administrator
+            )
+        return interaction.user.id == user_id
+
+    def _is_staff(self, interaction: discord.Interaction) -> bool:
+        """Check if the user has a staff/admin role."""
+        if isinstance(interaction.user, discord.Member):
+            guild = interaction.guild
+            allowed_roles = {self.staff_role_id, self.admin_bypass_role_id}
+            for role_getter in (
+                self._get_support_team_role,
+                self._get_report_team_role,
+                self._get_partner_team_role,
+            ):
+                try:
+                    role = role_getter(guild)
+                    if role:
+                        allowed_roles.add(role.id)
+                except Exception:
+                    pass
+            return (
+                any(r.id in allowed_roles for r in interaction.user.roles)
+                or interaction.user.guild_permissions.administrator
+            )
+        return False
+
     async def handle_claim_ticket(self, interaction: discord.Interaction):
         if (
             not isinstance(interaction.channel, discord.TextChannel)
@@ -859,17 +966,7 @@ class Tickets(commands.Cog):
 
         channel = interaction.channel
 
-        is_staff = False
-        if isinstance(interaction.user, discord.Member):
-            is_staff = (
-                any(
-                    role.id in [self.staff_role_id, self.admin_bypass_role_id]
-                    for role in interaction.user.roles
-                )
-                or interaction.user.guild_permissions.administrator
-            )
-
-        if not is_staff:
+        if not self._is_staff(interaction):
             await interaction.response.send_message(
                 embed=create_error_embed(
                     "No Permission", "Only staff members can claim tickets."
@@ -1688,16 +1785,53 @@ class Tickets(commands.Cog):
     @commands.hybrid_command(name="forceclose")
     @commands.has_permissions(manage_messages=True)
     @app_commands.describe(
-        ticket_id="The ID of the ticket to force close", reason="Reason"
+        ticket_id="The ID of the ticket to force close (from embed footer)",
+        channel="The ticket channel to force close (alternative to ticket_id)",
+        reason="Reason for force closing",
     )
     async def forceclose_command(
         self,
         ctx,
-        ticket_id: int,
+        ticket_id: Optional[int] = None,
         *,
+        channel: Optional[discord.TextChannel] = None,
         reason: str = "Force closed by staff",
     ):
-        """Hybrid command wrapper for force_close_ticket."""
+        """Force close a ticket by ID or channel.
+
+        Provide either **ticket_id** (from the embed footer) or a **channel** mention/link.
+        """
+        if ticket_id is None and channel is None:
+            await ctx.send(
+                embed=create_error_embed(
+                    "Missing Argument",
+                    "You must provide either a **ticket ID** (from the embed footer) or a **ticket channel**.",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        # If channel was provided instead of ticket_id, look it up
+        if ticket_id is None and channel is not None:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT ticket_id FROM tickets WHERE ticket_channel_id = ? AND status = "open"',
+                (channel.id,),
+            )
+            row = cursor.fetchone()
+            conn.close()
+            if not row:
+                await ctx.send(
+                    embed=create_error_embed(
+                        "Ticket Not Found",
+                        f"No open ticket found for channel {channel.mention}.",
+                    ),
+                    ephemeral=True,
+                )
+                return
+            ticket_id = row[0]
+
         await self.force_close_ticket(
             ctx,
             ticket_id,

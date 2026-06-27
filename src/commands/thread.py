@@ -1,4 +1,4 @@
-﻿# Cog to manage threads and posts in a Discord server
+# Cog to manage threads and posts in a Discord server
 import asyncio
 import sqlite3
 from datetime import datetime, timezone
@@ -84,14 +84,27 @@ class ThreadCloser(commands.Cog):
         ticket_id = ticket_info["ticket_id"]
         user_id = ticket_info["user_id"]
         category = ticket_info["category"]
-        staff_role_id = 1417900662053671073  # Staff role ID from tickets.py
 
         # Check permissions (ticket owner or staff)
         has_permission = False
         if isinstance(ctx.author, discord.Member):
+            allowed_role_ids = {1417900662053671073, 1403059755001577543}
+            tickets_cog = self.bot.get_cog("Tickets")
+            if tickets_cog and ctx.guild:
+                for role_getter in (
+                    tickets_cog._get_support_team_role,
+                    tickets_cog._get_report_team_role,
+                    tickets_cog._get_partner_team_role,
+                ):
+                    try:
+                        role = role_getter(ctx.guild)
+                        if role:
+                            allowed_role_ids.add(role.id)
+                    except Exception:
+                        pass
             has_permission = (
                 ctx.author.id == user_id
-                or any(role.id == staff_role_id for role in ctx.author.roles)
+                or any(r.id in allowed_role_ids for r in ctx.author.roles)
                 or ctx.author.guild_permissions.administrator
             )
         elif ctx.author.id == user_id:
@@ -146,31 +159,72 @@ class ThreadCloser(commands.Cog):
         except Exception as e:
             print(f"[Thread] Error closing ticket thread {thread.id}: {e}")
 
+    async def _lookup_ticket_by_channel(self, channel_id: int) -> Optional[int]:
+        """Look up an open ticket by channel ID (ticket_channel_id)."""
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT ticket_id, user_id FROM tickets WHERE ticket_channel_id = ? AND status = "open"',
+                (channel_id,),
+            )
+            row = cursor.fetchone()
+            conn.close()
+            return row
+        except Exception as e:
+            print(f"[Thread] Error looking up ticket by channel: {e}")
+            return None
+
     @commands.command(
         name="close",
         aliases=["close_thread", "archive"],
-        help="Close (archive) a thread.",
+        help="Close (archive) a thread or close a ticket channel.",
     )
     async def close_thread(
         self, ctx: commands.Context, thread_id: Optional[int] = None
     ):
         """Close a thread (archive) or, if run in a ticket channel, close the ticket (transcript + delete)."""
 
-        # Ticket channels: allow ?close inside the ticket channel to close/delete it.
-        if thread_id is None and isinstance(ctx.channel, discord.TextChannel):
-            try:
-                conn = sqlite3.connect(DATABASE_NAME)
-                cursor = conn.cursor()
-                cursor.execute(
-                    'SELECT ticket_id FROM tickets WHERE ticket_channel_id = ? AND status = "open"',
-                    (ctx.channel.id,),
-                )
-                row = cursor.fetchone()
-                conn.close()
+        channel = ctx.channel
 
-                if row:
-                    ticket_id = row[0]
+        # Ticket channels: allow ?close inside the ticket channel to close/delete it.
+        if thread_id is None:
+            # Check if this is a ticket text channel
+            if isinstance(channel, discord.TextChannel):
+                ticket_row = await self._lookup_ticket_by_channel(channel.id)
+                if ticket_row:
+                    ticket_id, user_id = ticket_row
                     tickets_cog = self.bot.get_cog("Tickets")
+                    # Permission check: ticket owner, staff role, or admin
+                    has_perm = False
+                    if isinstance(ctx.author, discord.Member):
+                        allowed_role_ids = {1417900662053671073, 1403059755001577543}
+                        # Include configured roles from Tickets cog if available
+                        if tickets_cog and ctx.guild:
+                            for role_getter in (
+                                tickets_cog._get_support_team_role,
+                                tickets_cog._get_report_team_role,
+                                tickets_cog._get_partner_team_role,
+                            ):
+                                try:
+                                    role = role_getter(ctx.guild)
+                                    if role:
+                                        allowed_role_ids.add(role.id)
+                                except Exception:
+                                    pass
+                        has_perm = (
+                            ctx.author.id == user_id
+                            or any(
+                                r.id in allowed_role_ids
+                                for r in ctx.author.roles
+                            )
+                            or ctx.author.guild_permissions.administrator
+                        )
+                    elif ctx.author.id == user_id:
+                        has_perm = True
+                    if not has_perm:
+                        await ctx.reply("❌ Only the ticket owner or staff can close this ticket.")
+                        return
                     if tickets_cog:
                         await tickets_cog.force_close_ticket(
                             ctx,
@@ -180,11 +234,14 @@ class ThreadCloser(commands.Cog):
                             announce_in_ticket=True,
                         )
                         return
-
                     await ctx.reply("❌ Ticket system is not available right now.")
                     return
-            except Exception:
-                pass
+            # Check if this is a ticket thread (legacy)
+            elif isinstance(channel, discord.Thread):
+                is_ticket, ticket_info = await self._is_ticket_thread(channel)
+                if is_ticket and ticket_info:
+                    await self._close_ticket_thread(ctx, channel, ticket_info)
+                    return
 
         thread = await self._resolve_thread(ctx, thread_id)
         if thread is None:
@@ -192,7 +249,6 @@ class ThreadCloser(commands.Cog):
 
         # Check if this is a ticket thread (legacy)
         is_ticket, ticket_info = await self._is_ticket_thread(thread)
-
         if is_ticket and ticket_info:
             await self._close_ticket_thread(ctx, thread, ticket_info)
             return
