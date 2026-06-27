@@ -748,8 +748,8 @@ class Tickets(commands.Cog):
         conn = sqlite3.connect(DATABASE_NAME)
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO tickets (ticket_channel_id, user_id, category) VALUES (?, ?, ?)",
-            (ticket_channel.id, user.id, category),
+            "INSERT INTO tickets (ticket_channel_id, ticket_thread_id, user_id, category) VALUES (?, ?, ?, ?)",
+            (ticket_channel.id, ticket_channel.id, user.id, category),
         )
         ticket_id = cursor.lastrowid
         conn.commit()
