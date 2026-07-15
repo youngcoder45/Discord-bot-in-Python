@@ -1153,7 +1153,7 @@ class AppealSubmissionDashboard(discord.ui.LayoutView):
 
         row = discord.ui.ActionRow()
         submit = discord.ui.Button(
-            label="📝 Submit Appeal",
+            label="Submit Appeal",
             style=discord.ButtonStyle.primary,
             disabled=not self.can_submit,
             custom_id=f"appeal:submit:{self.record.guild_id}:{self.record.user_id}",
@@ -1361,12 +1361,12 @@ class AppealReviewDashboard(discord.ui.LayoutView):
         meta_section = discord.ui.Section(
             discord.ui.TextDisplay(
                 "### Appeal Snapshot\n"
-                f"**User**\n• {self.record.username} (<@{self.record.user_id}>)\n\n"
-                f"**User ID**\n• `{self.record.user_id}`\n\n"
-                f"**Account Created**\n• {_format_relative(self._account_created)}\n\n"
-                f"**Joined Server**\n• {_format_relative(self._joined_at)}\n\n"
-                f"**Timeout Ends**\n• {_format_relative(self.record.timeout_expires_at)}\n\n"
-                f"**Reason**\n• {_clean_reason(self.record.punishment_reason)}\n\n"
+                f"**User**\n• {self.record.username} (<@{self.record.user_id}>)\n"
+                f"**User ID**\n• `{self.record.user_id}`\n"
+                f"**Account Created**\n• {_format_relative(self._account_created)}\n"
+                f"**Joined Server**\n• {_format_relative(self._joined_at)}\n"
+                f"**Timeout Ends**\n• {_format_relative(self.record.timeout_expires_at)}\n"
+                f"**Reason**\n• {_clean_reason(self.record.punishment_reason)}\n"
                 f"**Appeal Time**\n• {_format_relative(self.record.submitted_at)}"
             ),
             accessory=discord.ui.Thumbnail(
@@ -1379,8 +1379,8 @@ class AppealReviewDashboard(discord.ui.LayoutView):
 
         answers = discord.ui.TextDisplay(
             "### All Appeal Answers\n"
-            f"**1. Why were you timed out?**\n{_truncate(self.record.appeal_reason, 1200)}\n\n"
-            f"**2. Why should we remove the timeout?**\n{_truncate(self.record.should_remove, 1200)}\n\n"
+            f"**1. Why were you timed out?**\n{_truncate(self.record.appeal_reason, 1200)}\n"
+            f"**2. Why should we remove the timeout?**\n{_truncate(self.record.should_remove, 1200)}\n"
             f"**3. Anything else?**\n{_truncate(self.record.appeal_extra or 'Not provided.', 1200)}"
         )
         container.add_item(answers)
@@ -1427,7 +1427,7 @@ class AppealReviewDashboard(discord.ui.LayoutView):
         buttons: list[discord.ui.Button] = []
 
         accept = discord.ui.Button(
-            label="✅ Accept",
+            label="Accept",
             style=discord.ButtonStyle.success,
             disabled=resolved,
             custom_id=f"appeal:{self.record.appeal_id}:accept",
@@ -1445,8 +1445,8 @@ class AppealReviewDashboard(discord.ui.LayoutView):
         buttons.append(reject)
 
         extend = discord.ui.Button(
-            label="🕒 Extend Timeout",
-            style=discord.ButtonStyle.primary,
+            label="Extend Timeout",
+            style=discord.ButtonStyle.secondary,
             disabled=resolved,
             custom_id=f"appeal:{self.record.appeal_id}:extend",
         )
@@ -1454,7 +1454,7 @@ class AppealReviewDashboard(discord.ui.LayoutView):
         buttons.append(extend)
 
         view_user = discord.ui.Button(
-            label="👤 View User",
+            label="View User",
             style=discord.ButtonStyle.secondary,
             disabled=False,
             custom_id=f"appeal:{self.record.appeal_id}:user",
@@ -1463,7 +1463,7 @@ class AppealReviewDashboard(discord.ui.LayoutView):
         buttons.append(view_user)
 
         view_history = discord.ui.Button(
-            label="📜 View History",
+            label="View History",
             style=discord.ButtonStyle.secondary,
             disabled=False,
             custom_id=f"appeal:{self.record.appeal_id}:history",
