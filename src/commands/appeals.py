@@ -1436,7 +1436,7 @@ class AppealReviewDashboard(discord.ui.LayoutView):
         buttons.append(accept)
 
         reject = discord.ui.Button(
-            label="❌ Reject",
+            label="Reject",
             style=discord.ButtonStyle.danger,
             disabled=resolved,
             custom_id=f"appeal:{self.record.appeal_id}:reject",
@@ -1896,7 +1896,7 @@ class Appeals(commands.Cog):
         container = discord.ui.Container(accent_color=discord.Color.orange())
         container.add_item(
             discord.ui.TextDisplay(
-                "## 👤 User Profile\n"
+                "## User Profile\n"
                 f"**User**: {record.username}\n"
                 f"**User ID**: `{record.user_id}`\n"
                 f"**Roles**: {self._format_roles(member)}\n"
@@ -1928,7 +1928,7 @@ class Appeals(commands.Cog):
         container = discord.ui.Container(accent_color=discord.Color.dark_grey())
         container.add_item(
             discord.ui.TextDisplay(
-                "## 📜 History\n"
+                "## History\n"
                 f"**Warnings**: {len(warnings)}\n"
                 f"**Timeouts**: {len(timeouts)}\n"
                 f"**Appeals**: {len(appeals)}\n"
