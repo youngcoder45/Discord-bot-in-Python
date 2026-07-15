@@ -142,7 +142,10 @@ class ThreadCloser(commands.Cog):
         )
         embed.add_field(
             name="Next Steps",
-            value="This thread will be archived and locked in 10 seconds.\nA transcript has been saved.",
+            value=(
+                "A transcript has been saved.\n"
+                "This thread will be archived and locked shortly."
+            ),
             inline=False,
         )
         embed.set_footer(text=f"Ticket ID: {ticket_id} | Closed via ?close command")

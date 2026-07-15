@@ -205,6 +205,7 @@ When a user tries to ban/kick more than the limits, staff receives an embed show
 - **`/ticketpanel [#channel] [@support] [@report] [@partner]`** - Create ticket panel with specialized roles (Admin)
 - **`?close`** - Intelligent ticket closure (auto-detects ticket threads)
 - **` Create Ticket`** - Interactive button with category selection and information preview
+- Closed tickets keep their channel visible for 24 hours after the transcript is saved, so staff can review the conversation without downloading the transcript first
 
 #### Setup & Configuration Commands
 | Command | Description | Permission Required |

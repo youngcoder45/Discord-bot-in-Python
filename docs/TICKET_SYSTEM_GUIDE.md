@@ -196,6 +196,7 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 - Thread is archived and locked
 - User is notified
 - Transcript is generated
+- Ticket channel stays available for 24 hours after close so staff can review it without downloading the transcript
 - Action is logged
 - Ticket marked as closed in database
 
@@ -501,7 +502,7 @@ Use `/ticketstats` regularly to:
 A: No, one open ticket at a time per user.
 
 **Q: Are ticket transcripts saved?**  
-A: Yes, transcripts are generated on close (if configured).
+A: Yes, transcripts are generated immediately on close (if configured), and the closed ticket channel remains available for 24 hours before it is deleted.
 
 **Q: Can tickets be reopened?**  
 A: No, user must create new ticket. Staff can reference old tickets.

@@ -468,7 +468,8 @@ Users can create tickets by clicking the "Create Ticket" button in the ticket pa
 **Close Ticket Button:**
 - Click "🔒 Close Ticket" in any ticket thread
 - Ticket is archived and marked as closed
-- Transcript is generated
+- Transcript is generated immediately
+- The channel remains visible for 24 hours before automatic deletion
 - User is notified
 
 **Claim Ticket Button:**

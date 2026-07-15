@@ -2,7 +2,7 @@ import asyncio
 import io
 import logging
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import discord
@@ -180,6 +180,7 @@ class Tickets(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self._pending_deletion_tasks: dict[int, asyncio.Task] = {}
         self._init_database()
 
         # Configuration
@@ -192,6 +193,13 @@ class Tickets(commands.Cog):
         self.ticket_counter = self._get_ticket_counter()
 
         self.bot.loop.create_task(self._restore_persistent_views())
+        self.bot.loop.create_task(self._restore_pending_ticket_deletions())
+
+    def cog_unload(self):
+        for task in self._pending_deletion_tasks.values():
+            if not task.done():
+                task.cancel()
+        self._pending_deletion_tasks.clear()
 
     async def _restore_persistent_views(self):
         await self.bot.wait_until_ready()
@@ -248,6 +256,48 @@ class Tickets(commands.Cog):
 
         except Exception as e:
             logger.error(f"Error restoring persistent ticket views: {e}")
+
+    async def _restore_pending_ticket_deletions(self):
+        """Restore delayed deletions for closed tickets after restarts."""
+        await self.bot.wait_until_ready()
+
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT ticket_id, ticket_channel_id, delete_at
+                FROM tickets
+                WHERE status = 'closed' AND ticket_channel_id IS NOT NULL AND delete_at IS NOT NULL
+                """
+            )
+            rows = cursor.fetchall()
+            conn.close()
+
+            restored = 0
+            for ticket_id, channel_id, delete_at in rows:
+                delete_at_dt = self._parse_db_timestamp(delete_at)
+                if delete_at_dt is None:
+                    continue
+
+                channel = self.bot.get_channel(channel_id)
+                if channel is None or not isinstance(channel, discord.TextChannel):
+                    self._update_ticket_deletion_state(
+                        ticket_id, delete_at=None, deleted_at=True
+                    )
+                    continue
+
+                restored += 1
+                self._schedule_ticket_channel_deletion(
+                    ticket_id=ticket_id,
+                    channel=channel,
+                    delete_at=delete_at_dt,
+                )
+
+            if restored:
+                logger.info(f"Restored {restored} delayed ticket deletions")
+        except Exception as e:
+            logger.error(f"Error restoring delayed ticket deletions: {e}")
 
     async def _restore_ticket_control_views(self):
         """Restore TicketControlView for all open tickets so close/claim buttons survive restarts."""
@@ -379,6 +429,10 @@ class Tickets(commands.Cog):
             cols = [row[1] for row in cursor.fetchall()]
             if "welcome_message_id" not in cols:
                 cursor.execute("ALTER TABLE tickets ADD COLUMN welcome_message_id INTEGER")
+            if "delete_at" not in cols:
+                cursor.execute("ALTER TABLE tickets ADD COLUMN delete_at TIMESTAMP")
+            if "deleted_at" not in cols:
+                cursor.execute("ALTER TABLE tickets ADD COLUMN deleted_at TIMESTAMP")
         except Exception as e:
             print(f"[Tickets] Migration for welcome_message_id failed: {e}")
 
@@ -865,7 +919,7 @@ class Tickets(commands.Cog):
             return
 
         cursor.execute(
-            'UPDATE tickets SET status = "closed", closed_at = CURRENT_TIMESTAMP, close_reason = ? WHERE ticket_id = ?',
+            'UPDATE tickets SET status = "closed", closed_at = CURRENT_TIMESTAMP, close_reason = ?, delete_at = datetime(CURRENT_TIMESTAMP, "+24 hours"), deleted_at = NULL WHERE ticket_id = ?',
             (f"Closed by {interaction.user}", ticket_id),
         )
         conn.commit()
@@ -878,12 +932,23 @@ class Tickets(commands.Cog):
         )
         embed.add_field(
             name="Next Steps",
-            value="This channel will be deleted in 10 seconds.\nA transcript has been saved.",
+            value=(
+                "A transcript has been saved.\n"
+                "This channel will remain available for 24 hours so staff can review it before it is deleted."
+            ),
             inline=False,
         )
         embed.timestamp = datetime.now(timezone.utc)
 
         await interaction.response.send_message(embed=embed)
+
+        await self._generate_transcript(channel, ticket_id, save_to_log=True)
+
+        self._schedule_ticket_channel_deletion(
+            ticket_id=ticket_id,
+            channel=channel,
+            delete_at=datetime.now(timezone.utc) + timedelta(hours=24),
+        )
 
         await self._log_ticket_action(
             "CLOSED",
@@ -891,16 +956,8 @@ class Tickets(commands.Cog):
             channel,
             interaction.user,
             category,
-            f"Closed by {interaction.user.name}",
+            f"Closed by {interaction.user.name} | Transcript saved; channel deletes in 24 hours",
         )
-
-        await self._generate_transcript(channel, ticket_id, save_to_log=True)
-
-        await asyncio.sleep(10)
-        try:
-            await channel.delete(reason=f"Ticket #{ticket_id} closed")
-        except Exception as e:
-            print(f"[Tickets] Failed to delete ticket channel: {e}")
 
     def _is_staff_or_owner(
         self, interaction: discord.Interaction, user_id: int
@@ -1076,6 +1133,95 @@ class Tickets(commands.Cog):
         except Exception as e:
             print(f"[Tickets] Failed to generate transcript: {e}")
             return None
+
+    def _parse_db_timestamp(self, value: Optional[str]) -> Optional[datetime]:
+        if not value:
+            return None
+
+        try:
+            parsed = datetime.fromisoformat(str(value))
+        except ValueError:
+            try:
+                parsed = datetime.strptime(str(value), "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return None
+
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    def _update_ticket_deletion_state(
+        self, ticket_id: int, *, delete_at: Optional[datetime], deleted_at: bool = False
+    ) -> None:
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE tickets
+                SET delete_at = ?, deleted_at = ?
+                WHERE ticket_id = ?
+                """,
+                (
+                    delete_at.strftime("%Y-%m-%d %H:%M:%S")
+                    if delete_at is not None
+                    else None,
+                    datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+                    if deleted_at
+                    else None,
+                    ticket_id,
+                ),
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"[Tickets] Failed to update deletion state for ticket #{ticket_id}: {e}")
+
+    async def _delete_ticket_channel_later(
+        self, ticket_id: int, channel: discord.TextChannel, delete_at: datetime
+    ):
+        try:
+            delay = (delete_at - datetime.now(timezone.utc)).total_seconds()
+            if delay > 0:
+                await asyncio.sleep(delay)
+
+            if channel.guild is None:
+                return
+            fresh_channel = channel.guild.get_channel(channel.id)
+            if fresh_channel is None:
+                self._update_ticket_deletion_state(ticket_id, delete_at=None, deleted_at=True)
+                return
+
+            await fresh_channel.delete(
+                reason=f"Ticket #{ticket_id} deleted 24 hours after closure"
+            )
+            self._update_ticket_deletion_state(ticket_id, delete_at=None, deleted_at=True)
+        except asyncio.CancelledError:
+            raise
+        except discord.NotFound:
+            self._update_ticket_deletion_state(ticket_id, delete_at=None, deleted_at=True)
+        except Exception as e:
+            print(f"[Tickets] Failed to delete ticket channel #{ticket_id}: {e}")
+
+    def _schedule_ticket_channel_deletion(
+        self, ticket_id: int, channel: discord.TextChannel, delete_at: datetime
+    ) -> None:
+        existing_task = self._pending_deletion_tasks.pop(ticket_id, None)
+        if existing_task and not existing_task.done():
+            existing_task.cancel()
+
+        self._update_ticket_deletion_state(ticket_id, delete_at=delete_at)
+        task = self.bot.loop.create_task(
+            self._delete_ticket_channel_later(ticket_id, channel, delete_at)
+        )
+
+        def _cleanup(done_task: asyncio.Task, *, _ticket_id: int = ticket_id):
+            current = self._pending_deletion_tasks.get(_ticket_id)
+            if current is done_task:
+                self._pending_deletion_tasks.pop(_ticket_id, None)
+
+        task.add_done_callback(_cleanup)
+        self._pending_deletion_tasks[ticket_id] = task
 
     async def _log_ticket_action(
         self,
@@ -1721,7 +1867,7 @@ class Tickets(commands.Cog):
         channel_id, user_id, category = row
 
         cursor.execute(
-            'UPDATE tickets SET status = "closed", closed_at = CURRENT_TIMESTAMP, close_reason = ? WHERE ticket_id = ?',
+            'UPDATE tickets SET status = "closed", closed_at = CURRENT_TIMESTAMP, close_reason = ?, delete_at = datetime(CURRENT_TIMESTAMP, "+24 hours"), deleted_at = NULL WHERE ticket_id = ?',
             (f"Force closed by {ctx.author}: {reason}", ticket_id),
         )
         conn.commit()
@@ -1739,7 +1885,10 @@ class Tickets(commands.Cog):
         if announce_in_channel and hasattr(ctx, "send"):
             embed = discord.Embed(
                 title="Ticket Force Closed",
-                description=f"Ticket #{ticket_id} has been force closed.",
+                description=(
+                    f"Ticket #{ticket_id} has been force closed.\n"
+                    "A transcript has been saved and the channel will remain available for 24 hours."
+                ),
                 color=0xFF0000,
             )
             embed.add_field(
@@ -1759,7 +1908,10 @@ class Tickets(commands.Cog):
                 await ticket_channel.send(
                     embed=discord.Embed(
                         title="Ticket Force Closed",
-                        description=f"This ticket has been force closed by {ctx.author.mention}",
+                        description=(
+                            f"This ticket has been force closed by {ctx.author.mention}.\n"
+                            "A transcript has been saved and this channel will stay visible for 24 hours before deletion."
+                        ),
                         color=0xFF0000,
                     )
                 )
@@ -1767,11 +1919,11 @@ class Tickets(commands.Cog):
             await self._generate_transcript(
                 ticket_channel, int(ticket_id), save_to_log=True
             )
-            await asyncio.sleep(10)
-            try:
-                await ticket_channel.delete(reason=f"Ticket #{ticket_id} force closed")
-            except Exception as e:
-                print(f"[Tickets] Failed to delete force-closed ticket channel: {e}")
+            self._schedule_ticket_channel_deletion(
+                ticket_id=int(ticket_id),
+                channel=ticket_channel,
+                delete_at=datetime.now(timezone.utc) + timedelta(hours=24),
+            )
 
             await self._log_ticket_action(
                 "CLOSED",
@@ -1779,7 +1931,7 @@ class Tickets(commands.Cog):
                 ticket_channel,
                 ctx.author,
                 category,
-                f"Force closed by {ctx.author.name}: {reason}",
+                f"Force closed by {ctx.author.name}: {reason} | Transcript saved; channel deletes in 24 hours",
             )
 
     @commands.hybrid_command(name="forceclose")
