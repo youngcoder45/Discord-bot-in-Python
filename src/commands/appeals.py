@@ -31,10 +31,17 @@ def _appeals_footer_text(guild_name: str | None = None) -> str:
     return f"{guild_name} • Appeals" if guild_name else "Appeals"
 
 
+APPEALS_PANEL_COLOR = 0x0A0A0A
+APPEALS_ACCEPT_COLOR = 0x00FF00
+APPEALS_REJECT_COLOR = 0xFF0000
+APPEALS_TIMEOUT_END_COLOR = 0xF9F504
+
+
 def create_error_embed(
     title: str, description: str, guild_name: str | None = None
 ) -> discord.Embed:
     embed = _base_create_error_embed(title, description)
+    embed.color = APPEALS_PANEL_COLOR
     embed.set_footer(text=_appeals_footer_text(guild_name))
     embed.timestamp = datetime.now(timezone.utc)
     return embed
@@ -44,6 +51,7 @@ def create_success_embed(
     title: str, description: str, guild_name: str | None = None
 ) -> discord.Embed:
     embed = _base_create_success_embed(title, description)
+    embed.color = APPEALS_PANEL_COLOR
     embed.set_footer(text=_appeals_footer_text(guild_name))
     embed.timestamp = datetime.now(timezone.utc)
     return embed
@@ -53,6 +61,7 @@ def create_info_embed(
     title: str, description: str, guild_name: str | None = None
 ) -> discord.Embed:
     embed = _base_create_info_embed(title, description)
+    embed.color = APPEALS_PANEL_COLOR
     embed.set_footer(text=_appeals_footer_text(guild_name))
     embed.timestamp = datetime.now(timezone.utc)
     return embed
@@ -333,7 +342,7 @@ class AppealModal(discord.ui.Modal):
             staff_embed = discord.Embed(
                 title="New Appeal Submitted",
                 description=f"Appeal #{appeal_id} from {user}",
-                color=0x0000FF,
+                color=APPEALS_PANEL_COLOR,
             )
             trimmed = content[:800] + ("..." if len(content) > 800 else "")
             staff_embed.add_field(name="User", value=f"{user} ({user.id})", inline=True)
@@ -522,7 +531,7 @@ class AppealApproveModal(discord.ui.Modal):
         else:
             # Send success message
             display_target = member or user or f"User {self.user_id}"
-            embed = discord.Embed(title="Appeal Approved", color=0x00FF00)
+            embed = discord.Embed(title="Appeal Approved", color=APPEALS_PANEL_COLOR)
             embed.add_field(name="Appeal ID", value=f"#{self.appeal_id}", inline=True)
             embed.add_field(
                 name="User", value=f"{display_target} ({self.user_id})", inline=True
@@ -547,7 +556,7 @@ class AppealApproveModal(discord.ui.Modal):
                     dm = discord.Embed(
                         title="Appeal Approved",
                         description=f"## Your appeal has been reviewed and **approved**\n\nWelcome back to **{guild.name if guild else 'the server'}**! We're glad to have you return.",
-                        color=0x00FF00,
+                        color=APPEALS_PANEL_COLOR,
                     )
                     dm.add_field(
                         name="Appeal ID", value=f"`#{self.appeal_id}`", inline=True
@@ -684,7 +693,7 @@ class AppealDenyModal(discord.ui.Modal):
             conn.close()
 
             # Send response
-            embed = discord.Embed(title="Appeal Denied", color=0xFF0000)
+            embed = discord.Embed(title="Appeal Denied", color=APPEALS_PANEL_COLOR)
             embed.add_field(name="Appeal ID", value=f"#{self.appeal_id}", inline=True)
             embed.add_field(name="User ID", value=str(self.user_id), inline=True)
             embed.add_field(
@@ -708,7 +717,7 @@ class AppealDenyModal(discord.ui.Modal):
                 embed_dm = discord.Embed(
                     title="Appeal Denied",
                     description=f"## Your appeal has been reviewed\n\nAfter careful consideration, your appeal for **{interaction.guild.name if interaction.guild else 'the server'}** has been denied.",
-                    color=0xFF0000,
+                    color=APPEALS_PANEL_COLOR,
                 )
                 embed_dm.add_field(
                     name="Appeal ID", value=f"`#{self.appeal_id}`", inline=True
@@ -1100,7 +1109,9 @@ class AppealSubmissionDashboard(discord.ui.LayoutView):
     def _render(self) -> None:
         self.clear_items()
 
-        container = discord.ui.Container(accent_color=discord.Color.blurple())
+        container = discord.ui.Container(
+            accent_color=discord.Color(APPEALS_PANEL_COLOR)
+        )
         container.add_item(
             discord.ui.TextDisplay(
                 "## Moderation Appeal System\n"
@@ -1325,14 +1336,16 @@ class AppealReviewDashboard(discord.ui.LayoutView):
         self.clear_items()
 
         color_map = {
-            None: discord.Color.blurple(),
-            "approved": discord.Color.green(),
-            "denied": discord.Color.red(),
-            "extended": discord.Color.orange(),
-            "auto_resolved": discord.Color.greyple(),
+            None: discord.Color(APPEALS_PANEL_COLOR),
+            "approved": discord.Color(APPEALS_PANEL_COLOR),
+            "denied": discord.Color(APPEALS_PANEL_COLOR),
+            "extended": discord.Color(APPEALS_PANEL_COLOR),
+            "auto_resolved": discord.Color(APPEALS_PANEL_COLOR),
         }
         container = discord.ui.Container(
-            accent_color=color_map.get(self.decision, discord.Color.blurple())
+            accent_color=color_map.get(
+                self.decision, discord.Color(APPEALS_PANEL_COLOR)
+            )
         )
         avatar = self._user_avatar()
 
@@ -1789,11 +1802,11 @@ class Appeals(commands.Cog):
                 },
             ],
             color={
-                "APPEAL_SUBMITTED": 0x5865F2,
-                "APPEAL_APPROVED": 0x2ECC71,
-                "APPEAL_DENIED": 0xE74C3C,
-                "APPEAL_EXTENDED": 0xF39C12,
-            }.get(event_type, 0x5865F2),
+                "APPEAL_SUBMITTED": APPEALS_PANEL_COLOR,
+                "APPEAL_APPROVED": APPEALS_PANEL_COLOR,
+                "APPEAL_DENIED": APPEALS_PANEL_COLOR,
+                "APPEAL_EXTENDED": APPEALS_PANEL_COLOR,
+            }.get(event_type, APPEALS_PANEL_COLOR),
             jump_url=jump_url or record.jump_url,
         )
 
@@ -1893,7 +1906,9 @@ class Appeals(commands.Cog):
         appeals = await self._get_appeal_history(record.user_id, record.guild_id)
 
         view = discord.ui.LayoutView(timeout=120)
-        container = discord.ui.Container(accent_color=discord.Color.orange())
+        container = discord.ui.Container(
+            accent_color=discord.Color(APPEALS_PANEL_COLOR)
+        )
         container.add_item(
             discord.ui.TextDisplay(
                 "## User Profile\n"
@@ -1925,7 +1940,9 @@ class Appeals(commands.Cog):
         notes = await self._get_notes_history(record.user_id, record.guild_id)
 
         view = discord.ui.LayoutView(timeout=120)
-        container = discord.ui.Container(accent_color=discord.Color.dark_grey())
+        container = discord.ui.Container(
+            accent_color=discord.Color(APPEALS_PANEL_COLOR)
+        )
         container.add_item(
             discord.ui.TextDisplay(
                 "## History\n"
@@ -2362,13 +2379,13 @@ class Appeals(commands.Cog):
                 "## Your appeal has been reviewed and approved.\n\n"
                 f"Your timeout in **{record.guild_name}** has been removed."
             )
-            accent = discord.Color.green()
+            accent = discord.Color(APPEALS_PANEL_COLOR)
         else:
             text = (
                 "## Your appeal has been reviewed and denied.\n\n"
                 f"Your timeout in **{record.guild_name}** remains in place."
             )
-            accent = discord.Color.red()
+            accent = discord.Color(APPEALS_PANEL_COLOR)
 
         view = discord.ui.LayoutView(timeout=None)
         container = discord.ui.Container(accent_color=accent)
@@ -2398,7 +2415,9 @@ class Appeals(commands.Cog):
         except Exception:
             return
         view = discord.ui.LayoutView(timeout=None)
-        container = discord.ui.Container(accent_color=discord.Color.orange())
+        container = discord.ui.Container(
+            accent_color=discord.Color(APPEALS_PANEL_COLOR)
+        )
         container.add_item(
             discord.ui.TextDisplay(
                 "## Timeout Extended\n"
@@ -2489,15 +2508,15 @@ class Appeals(commands.Cog):
 
             if is_natural_expiry:
                 title = "Appeal Auto-Resolved - Timeout Naturally Expired"
-                color = 0x95A5A6  # Gray for natural expiration
+                color = APPEALS_TIMEOUT_END_COLOR
                 description = f"Appeal #{appeal_id} has been automatically resolved because the timeout naturally expired."
             elif is_ban_removal:
                 title = "Appeal Auto-Resolved - Ban Removed"
-                color = 0x0000FF  # Blue for ban removal
+                color = APPEALS_TIMEOUT_END_COLOR
                 description = f"Appeal #{appeal_id} has been automatically resolved because the ban was removed."
             else:
                 title = "Appeal Auto-Resolved - Punishment Invalid"
-                color = 0xF39C12  # Orange for other cases
+                color = APPEALS_TIMEOUT_END_COLOR
                 description = f"Appeal #{appeal_id} has been automatically resolved because the punishment is no longer valid."
 
             print(f"[Appeals] Creating log embed with title: {title}")
@@ -2667,7 +2686,7 @@ class Appeals(commands.Cog):
                 embed = discord.Embed(
                     title="Appeal DM Failed",
                     description=f"**Could not send appeal form to {user.mention}**\n\nUser will NOT be able to submit an appeal via DM.",
-                    color=0xFF0000,
+                    color=APPEALS_PANEL_COLOR,
                 )
                 embed.add_field(name="User", value=f"{user} ({user.id})", inline=True)
                 embed.add_field(name="Guild", value=guild.name, inline=True)
@@ -2706,7 +2725,7 @@ class Appeals(commands.Cog):
                 embed = discord.Embed(
                     title="Appeal DM Sent",
                     description=f"Successfully sent appeal form to {user.mention}",
-                    color=0x00FF00,
+                    color=APPEALS_PANEL_COLOR,
                 )
                 embed.add_field(name="User", value=f"{user} ({user.id})", inline=True)
                 embed.add_field(name="Guild", value=guild.name, inline=True)
@@ -2824,7 +2843,7 @@ class Appeals(commands.Cog):
                         action_text = "Natural timeout expiry"
                         log_title = "Natural Timeout Expiry Detected"
                         log_description = f"User {after.mention} (`{after.id}`) had their timeout naturally expire while having a pending appeal."
-                        color = 0x95A5A6  # Gray for natural expiry
+                        color = APPEALS_TIMEOUT_END_COLOR
                     else:
                         print(
                             f"[Appeals] Manual timeout removal detected for user {after.id} with pending appeal #{appeal[0]}"
@@ -2832,7 +2851,7 @@ class Appeals(commands.Cog):
                         action_text = "Manual timeout removal"
                         log_title = "Manual Timeout Removal Detected"
                         log_description = f"User {after.mention} (`{after.id}`) had their timeout manually removed while having a pending appeal."
-                        color = 0xFF9900  # Orange for manual removal
+                        color = APPEALS_TIMEOUT_END_COLOR
 
                     # IMMEDIATELY mark as auto-resolved and disable buttons
                     try:
@@ -3014,7 +3033,9 @@ class Appeals(commands.Cog):
             await ctx.send(embed=embed)
             return
 
-        embed = discord.Embed(title=f"{status.title()} Appeals", color=0x0000FF)
+        embed = discord.Embed(
+            title=f"{status.title()} Appeals", color=APPEALS_PANEL_COLOR
+        )
 
         for appeal in appeals:
             appeal_id, user_id, reason, appeal_status, timestamp = appeal
@@ -3066,7 +3087,9 @@ class Appeals(commands.Cog):
             user_info = f"Unknown User ({user_id})"
             account_created = "Unknown"
 
-        embed = discord.Embed(title=f"Appeal #{appeal_id} Details", color=0x0000FF)
+        embed = discord.Embed(
+            title=f"Appeal #{appeal_id} Details", color=APPEALS_PANEL_COLOR
+        )
         embed.add_field(name="User", value=user_info, inline=True)
         embed.add_field(name="Status", value=status.title(), inline=True)
         embed.add_field(name="Submitted", value=timestamp, inline=True)
@@ -3106,7 +3129,7 @@ class Appeals(commands.Cog):
         confirm_embed = discord.Embed(
             title="Cancel Appeal?",
             description=f"Are you sure you want to cancel appeal **#{appeal_id}**?\n\nYou can submit a new appeal after this is cancelled.",
-            color=0xF39C12,
+            color=APPEALS_PANEL_COLOR,
         )
 
         class CancelConfirmView(discord.ui.View):
@@ -3148,7 +3171,7 @@ class Appeals(commands.Cog):
                 result_embed = discord.Embed(
                     title="Appeal Cancelled",
                     description=f"Your appeal **#{self.appeal_id_val}** has been cancelled successfully.\n\nYou can submit a new appeal at any time.",
-                    color=0x00FF00,
+                    color=APPEALS_PANEL_COLOR,
                 )
                 result_embed.set_footer(
                     text=_appeals_footer_text(
@@ -3179,7 +3202,7 @@ class Appeals(commands.Cog):
                 result_embed = discord.Embed(
                     title="Cancelled",
                     description="Your appeal was not cancelled.",
-                    color=0x95A5A6,
+                    color=APPEALS_PANEL_COLOR,
                 )
                 result_embed.set_footer(
                     text=_appeals_footer_text(
@@ -3249,7 +3272,7 @@ class Appeals(commands.Cog):
                             log_embed = discord.Embed(
                                 title="Manual Unban Detected",
                                 description=f"User {user.mention} (`{user.id}`) was manually unbanned while having a pending appeal.",
-                                color=0xFF9900,
+                                color=APPEALS_TIMEOUT_END_COLOR,
                             )
                             log_embed.add_field(
                                 name="Unbanned By",

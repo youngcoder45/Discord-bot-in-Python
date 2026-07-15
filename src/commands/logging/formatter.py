@@ -120,10 +120,10 @@ class LogFormatter:
         elif event_type.startswith("APPEAL_"):
             decision = event_type.removeprefix("APPEAL_").title()
             color_map = {
-                "SUBMITTED": 0x5865F2,
-                "APPROVED": 0x2ECC71,
-                "DENIED": 0xE74C3C,
-                "EXTENDED": 0xF39C12,
+                "SUBMITTED": 0x2B2D31,
+                "APPROVED": 0x00FF00,
+                "DENIED": 0xFF0000,
+                "EXTENDED": 0x2B2D31,
             }
             embed.title = f"Appeal {decision}"
             embed.description = log_item.get(
@@ -214,14 +214,14 @@ class LogFormatter:
             elif "EXPIRED" in event_type:
                 embed.title = "Timeout Expired"
                 embed.description = f"{_fmt_mention(user)}'s timeout naturally expired"
-                embed.color = discord.Color(0x95a5a6)
+                embed.color = discord.Color(0xF9F504)
 
                 if details:
                     embed.add_field(name="Details", value=details, inline=False)
             elif "REMOVED" in event_type:
                 embed.title = "Timeout Removed"
                 embed.description = f"{_fmt_mention(user)} had their timeout removed early"
-                embed.color = discord.Color(0xff9900)
+                embed.color = discord.Color(0xF9F504)
 
                 if moderator:
                     embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
