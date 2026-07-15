@@ -519,16 +519,29 @@ class ModCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Failed to remove timeout: {str(e)}")
 
-    @commands.hybrid_command(name="slowmode", help="Set slowmode delay for the current channel")
+    @commands.hybrid_command(name="slowmode", help="View or set slowmode delay for the current channel")
     @app_commands.describe(seconds="Slowmode delay in seconds (0 to disable, max 21600)")
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.guild_only()
-    async def slowmode(self, ctx: commands.Context, seconds: int):
-        """Set slowmode delay for the current channel"""
-        if not isinstance(ctx.channel, discord.TextChannel):
-            return await ctx.send("❌ This command can only be used in text channels.")
-        
+    async def slowmode(self, ctx: commands.Context, seconds: Optional[int] = None):
+        """View or set slowmode delay for the current channel"""
+        if not isinstance(ctx.channel, (discord.TextChannel, discord.Thread)):
+            return await ctx.send("❌ This command can only be used in text channels or threads.")
+
+        if seconds is None:
+            current_delay = getattr(ctx.channel, "slowmode_delay", 0) or 0
+            embed = discord.Embed(
+                title="⏱ Current Slowmode",
+                description=(
+                    f"Current slowmode in {ctx.channel.mention} is **{current_delay} seconds**.\n\n"
+                    f"Use `?slowmode <a value here>` to set slowmode."
+                ),
+                color=discord.Color.blurple(),
+            )
+            embed.set_footer(text=f"Requested by {ctx.author}")
+            return await ctx.send(embed=embed)
+
         if seconds < 0 or seconds > 21600:
             return await ctx.send("❌ Slowmode delay must be between 0 and 21600 seconds (6 hours).")
         
