@@ -117,6 +117,35 @@ class LogFormatter:
                 if name and value:
                     embed.add_field(name=str(name), value=str(value), inline=inline)
 
+        elif event_type.startswith("APPEAL_"):
+            decision = event_type.removeprefix("APPEAL_").title()
+            color_map = {
+                "SUBMITTED": 0x5865F2,
+                "APPROVED": 0x2ECC71,
+                "DENIED": 0xE74C3C,
+                "EXTENDED": 0xF39C12,
+            }
+            embed.title = f"Appeal {decision}"
+            embed.description = log_item.get(
+                "description",
+                f"Appeal activity recorded for #{log_item.get('fields', [{}])[0].get('value', 'unknown')}",
+            )
+            embed.color = discord.Color(color_map.get(decision.upper(), 0x5865F2))
+            fields = log_item.get("fields", [])
+            for field in fields:
+                name = getattr(field, "name", None) or field.get("name")
+                value = getattr(field, "value", None) or field.get("value")
+                inline = getattr(field, "inline", True) if hasattr(field, "inline") else field.get("inline", True)
+                if name and value:
+                    embed.add_field(name=str(name), value=str(value), inline=inline)
+
+            if moderator:
+                embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
+
+            jump_url = log_item.get("jump_url")
+            if jump_url:
+                embed.add_field(name="Jump URL", value=str(jump_url), inline=False)
+
         elif event_type.startswith("BAN"):
             embed.title = "Member Banned"
             embed.description = f"{_fmt_mention(user)} was banned"

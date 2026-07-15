@@ -37,6 +37,40 @@ def init_db():
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        # Appeal system schema extensions
+        for column_sql in (
+            "ALTER TABLE unban_requests ADD COLUMN punishment_type TEXT",
+            "ALTER TABLE unban_requests ADD COLUMN punishment_reason TEXT",
+            "ALTER TABLE unban_requests ADD COLUMN appeal_reason TEXT",
+            "ALTER TABLE unban_requests ADD COLUMN appeal_learned TEXT",
+            "ALTER TABLE unban_requests ADD COLUMN appeal_extra TEXT",
+            "ALTER TABLE unban_requests ADD COLUMN timeout_issued_at DATETIME",
+            "ALTER TABLE unban_requests ADD COLUMN timeout_expires_at DATETIME",
+            "ALTER TABLE unban_requests ADD COLUMN appeal_message_id INTEGER",
+            "ALTER TABLE unban_requests ADD COLUMN review_channel_id INTEGER",
+            "ALTER TABLE unban_requests ADD COLUMN review_message_id INTEGER",
+            "ALTER TABLE unban_requests ADD COLUMN reviewed_by INTEGER",
+            "ALTER TABLE unban_requests ADD COLUMN reviewed_at DATETIME",
+            "ALTER TABLE unban_requests ADD COLUMN review_reason TEXT",
+            "ALTER TABLE unban_requests ADD COLUMN jump_url TEXT",
+        ):
+            try:
+                cursor.execute(column_sql)
+            except sqlite3.OperationalError:
+                pass
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS appeal_actions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                appeal_id INTEGER NOT NULL,
+                guild_id INTEGER,
+                action TEXT NOT NULL,
+                actor_id INTEGER,
+                reason TEXT,
+                jump_url TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
         # Keep legacy moderation_points for backward compatibility (not authoritative anymore)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS moderation_points (
