@@ -223,7 +223,7 @@ class AppealSubmissionDashboard(discord.ui.LayoutView):
         row = discord.ui.ActionRow()
         submit = discord.ui.Button(
             label="Submit Appeal",
-            style=discord.ButtonStyle.primary,
+            style=discord.ButtonStyle.secondary,
             disabled=not self.can_submit,
             custom_id=f"appeal:submit:{self.record.guild_id}:{self.record.user_id}",
         )
