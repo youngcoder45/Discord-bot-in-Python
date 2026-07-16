@@ -1756,7 +1756,7 @@ class Appeals(commands.Cog):
                 embed.add_field(
                     name="Reason", value=reason or "No reason provided", inline=False
                 )
-                    embed.add_field(name="Error", value=f"```{error}```", inline=False)
+                embed.add_field(name="Error", value=f"```{error}```", inline=False)
                 embed.add_field(
                     name="Message Type",
                     value="Timeout Appeal Form",
