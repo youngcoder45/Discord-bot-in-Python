@@ -395,8 +395,8 @@ class AppealReviewDashboard(discord.ui.LayoutView):
 
         color_map = {
             None: discord.Color(APPEALS_PANEL_COLOR),
-            "approved": discord.Color(APPEALS_PANEL_COLOR),
-            "denied": discord.Color(APPEALS_PANEL_COLOR),
+            "approved": discord.Color(APPEALS_ACCEPT_COLOR),
+            "denied": discord.Color(APPEALS_REJECT_COLOR),
             "extended": discord.Color(APPEALS_PANEL_COLOR),
             "auto_resolved": discord.Color(APPEALS_PANEL_COLOR),
         }
@@ -861,8 +861,8 @@ class Appeals(commands.Cog):
             ],
             color={
                 "APPEAL_SUBMITTED": APPEALS_PANEL_COLOR,
-                "APPEAL_APPROVED": APPEALS_PANEL_COLOR,
-                "APPEAL_DENIED": APPEALS_PANEL_COLOR,
+                "APPEAL_APPROVED": APPEALS_ACCEPT_COLOR,
+                "APPEAL_DENIED": APPEALS_REJECT_COLOR,
                 "APPEAL_EXTENDED": APPEALS_PANEL_COLOR,
             }.get(event_type, APPEALS_PANEL_COLOR),
             jump_url=jump_url or record.jump_url,
@@ -1124,7 +1124,11 @@ class Appeals(commands.Cog):
         review_view = AppealReviewDashboard(self, updated_record)
         review_channel = await self._resolve_review_channel(updated_record.guild_id)
         if review_channel:
-            staff_message = await review_channel.send(view=review_view)
+            staff_message = await review_channel.send(
+                content="@here",
+                view=review_view,
+                allowed_mentions=discord.AllowedMentions(everyone=True),
+            )
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
             cursor.execute(
@@ -1437,13 +1441,13 @@ class Appeals(commands.Cog):
                 "## Your appeal has been reviewed and approved.\n\n"
                 f"Your timeout in **{record.guild_name}** has been removed."
             )
-            accent = discord.Color(APPEALS_PANEL_COLOR)
+            accent = discord.Color(APPEALS_ACCEPT_COLOR)
         else:
             text = (
                 "## Your appeal has been reviewed and denied.\n\n"
                 f"Your timeout in **{record.guild_name}** remains in place."
             )
-            accent = discord.Color(APPEALS_PANEL_COLOR)
+            accent = discord.Color(APPEALS_REJECT_COLOR)
 
         view = discord.ui.LayoutView(timeout=None)
         container = discord.ui.Container(accent_color=accent)
@@ -1742,9 +1746,9 @@ class Appeals(commands.Cog):
             ch = self.bot.get_channel(cid)
             if ch:
                 embed = discord.Embed(
-                    title="Appeal DM Failed",
+                    title="DM Delivery Failed",
                     description=f"**Could not send appeal form to {user.mention}**\n\nUser will NOT be able to submit an appeal via DM.",
-                    color=APPEALS_PANEL_COLOR,
+                    color=APPEALS_REJECT_COLOR,
                 )
                 embed.add_field(name="User", value=f"{user} ({user.id})", inline=True)
                 embed.add_field(name="Guild", value=guild.name, inline=True)
@@ -1752,7 +1756,12 @@ class Appeals(commands.Cog):
                 embed.add_field(
                     name="Reason", value=reason or "No reason provided", inline=False
                 )
-                embed.add_field(name="Error", value=f"```{error}```", inline=False)
+                    embed.add_field(name="Error", value=f"```{error}```", inline=False)
+                embed.add_field(
+                    name="Message Type",
+                    value="Timeout Appeal Form",
+                    inline=False,
+                )
                 embed.add_field(
                     name="Note",
                     value="This user's DMs are blocked. They cannot submit appeals through the bot. Consider alternative appeal methods or manual review.",
@@ -1781,15 +1790,20 @@ class Appeals(commands.Cog):
             ch = self.bot.get_channel(cid)
             if ch:
                 embed = discord.Embed(
-                    title="Appeal DM Sent",
+                    title="DM Delivered Successfully",
                     description=f"Successfully sent appeal form to {user.mention}",
-                    color=APPEALS_PANEL_COLOR,
+                    color=APPEALS_ACCEPT_COLOR,
                 )
                 embed.add_field(name="User", value=f"{user} ({user.id})", inline=True)
                 embed.add_field(name="Guild", value=guild.name, inline=True)
                 embed.add_field(name="Action", value=action_type.title(), inline=True)
                 embed.add_field(
                     name="Reason", value=reason or "No reason provided", inline=False
+                )
+                embed.add_field(
+                    name="Message Type",
+                    value="Timeout Appeal Form",
+                    inline=False,
                 )
                 embed.timestamp = datetime.now(timezone.utc)
                 embed.set_footer(text=_appeals_footer_text(guild.name))
