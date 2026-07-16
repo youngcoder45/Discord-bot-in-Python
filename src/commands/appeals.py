@@ -173,8 +173,8 @@ class AppealSubmissionDashboard(discord.ui.LayoutView):
         container.add_item(
             discord.ui.TextDisplay(
                 "## Moderation Appeal System\n"
-                f"You are currently timed out from **{self.record.guild_name}**.\n\n"
-                "We understand mistakes happen.\n\n"
+                f"You are currently timed out from **{self.record.guild_name}**.\n"
+                "We understand mistakes happen.\n"
                 "If you believe your timeout was unfair or you would like another chance, "
                 "you may submit an appeal."
             )
@@ -1080,7 +1080,7 @@ class Appeals(commands.Cog):
             (
                 record.user_id,
                 record.guild_id,
-                "\n\n".join(
+                "\n".join(
                     [
                         f"**Why I was timed out:** {what_happened}",
                         f"**Why it should be removed:** {should_remove}",
@@ -1124,11 +1124,13 @@ class Appeals(commands.Cog):
         review_view = AppealReviewDashboard(self, updated_record)
         review_channel = await self._resolve_review_channel(updated_record.guild_id)
         if review_channel:
-            staff_message = await review_channel.send(
+            # Send @here mention first as a separate message (Components V2 views
+            # cannot be sent with a content field in the same message)
+            await review_channel.send(
                 content="@here",
-                view=review_view,
                 allowed_mentions=discord.AllowedMentions(everyone=True),
             )
+            staff_message = await review_channel.send(view=review_view)
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
             cursor.execute(
@@ -1438,13 +1440,13 @@ class Appeals(commands.Cog):
         guild = self.bot.get_guild(record.guild_id)
         if decision == "approved":
             text = (
-                "## Your appeal has been reviewed and approved.\n\n"
+                "## Your appeal has been reviewed and approved.\n"
                 f"Your timeout in **{record.guild_name}** has been removed."
             )
             accent = discord.Color(APPEALS_ACCEPT_COLOR)
         else:
             text = (
-                "## Your appeal has been reviewed and denied.\n\n"
+                "## Your appeal has been reviewed and denied.\n"
                 f"Your timeout in **{record.guild_name}** remains in place."
             )
             accent = discord.Color(APPEALS_REJECT_COLOR)
@@ -1483,7 +1485,7 @@ class Appeals(commands.Cog):
         container.add_item(
             discord.ui.TextDisplay(
                 "## Timeout Extended\n"
-                f"Your timeout in **{record.guild_name}** has been extended until {_format_relative(new_until)}.\n\n"
+                f"Your timeout in **{record.guild_name}** has been extended until {_format_relative(new_until)}.\n"
                 f"**Reason:** {reason}\n"
                 f"**Reviewed By:** {moderator}"
             )
@@ -1747,7 +1749,7 @@ class Appeals(commands.Cog):
             if ch:
                 embed = discord.Embed(
                     title="DM Delivery Failed",
-                    description=f"**Could not send appeal form to {user.mention}**\n\nUser will NOT be able to submit an appeal via DM.",
+                    description=f"**Could not send appeal form to {user.mention}**\nUser will NOT be able to submit an appeal via DM.",
                     color=APPEALS_REJECT_COLOR,
                 )
                 embed.add_field(name="User", value=f"{user} ({user.id})", inline=True)
@@ -2058,7 +2060,7 @@ class Appeals(commands.Cog):
                 try:
                     dm = create_success_embed(
                         "Appeal Automatically Approved",
-                        f"## Your appeal has been automatically approved\n\nYour timeout in **{after.guild.name}** has been removed.",
+                        f"## Your appeal has been automatically approved\nYour timeout in **{after.guild.name}** has been removed.",
                         guild_name=after.guild.name,
                     )
                     dm.add_field(
@@ -2200,7 +2202,7 @@ class Appeals(commands.Cog):
         # Ask for confirmation
         confirm_embed = discord.Embed(
             title="Cancel Appeal?",
-            description=f"Are you sure you want to cancel appeal **#{appeal_id}**?\n\nYou can submit a new appeal after this is cancelled.",
+            description=f"Are you sure you want to cancel appeal **#{appeal_id}**?\nYou can submit a new appeal after this is cancelled.",
             color=APPEALS_PANEL_COLOR,
         )
 
@@ -2242,7 +2244,7 @@ class Appeals(commands.Cog):
 
                 result_embed = discord.Embed(
                     title="Appeal Cancelled",
-                    description=f"Your appeal **#{self.appeal_id_val}** has been cancelled successfully.\n\nYou can submit a new appeal at any time.",
+                    description=f"Your appeal **#{self.appeal_id_val}** has been cancelled successfully.\nYou can submit a new appeal at any time.",
                     color=APPEALS_PANEL_COLOR,
                 )
                 result_embed.set_footer(
