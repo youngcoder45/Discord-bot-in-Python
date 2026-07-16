@@ -61,7 +61,6 @@ class Core(commands.Cog):
             "appeals": "commands.appeals",
             "logging": "commands.logging",
             "logging_cog": "commands.logging",
-            "staff_points": "commands.staff_points",
             "diagnostics": "commands.diagnostics",
             "protection": "commands.protection",
             "spam": "commands.spam_catch",

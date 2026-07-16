@@ -17,9 +17,6 @@ def initialize_all_databases():
         data_dir.mkdir(exist_ok=True)
         logger.info("📁 Data directory ensured")
         
-        # Initialize staff_points.db
-        init_staff_points_db()
-        
         logger.info("✅ All databases initialized successfully")
         return True
         
@@ -27,55 +24,6 @@ def initialize_all_databases():
         logger.error(f"❌ Database initialization failed: {e}")
         return False
 
-def init_staff_points_db():
-    """Initialize staff points (aura) database"""
-    db_path = "data/staff_points.db"
-    
-    conn = sqlite3.connect(db_path)
-    
-    # Main staff points table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS staff_points (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            points INTEGER DEFAULT 0,
-            total_earned INTEGER DEFAULT 0,
-            total_spent INTEGER DEFAULT 0,
-            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(guild_id, user_id)
-        )
-    ''')
-    
-    # Points history table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS points_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            moderator_id INTEGER NOT NULL,
-            points_change INTEGER NOT NULL,
-            reason TEXT,
-            action_type TEXT NOT NULL,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Staff roles configuration
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS staff_config (
-            guild_id INTEGER PRIMARY KEY,
-            staff_role_ids TEXT,
-            points_channel_id INTEGER,
-            auto_rewards TEXT,
-            daily_bonus INTEGER DEFAULT 0,
-            weekly_bonus INTEGER DEFAULT 0
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    logger.info("✅ staff_points.db initialized")
 
 if __name__ == "__main__":
     # Allow running this file directly for testing

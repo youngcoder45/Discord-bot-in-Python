@@ -100,71 +100,10 @@ class MessageHandler(commands.Cog):
         if getattr(message.channel, 'id', None) == INTRODUCTION_CHANNEL_ID:
             await self._add_intro_reactions(message)
 
-        # Check for thanks mentions
-        await self.check_thanks_mention(message)
-
         # NOTE: Don't call process_commands here - the bot already does this automatically
         # Calling it here would cause duplicate responses for prefix commands
 
-    async def check_thanks_mention(self, message):
-        """Check if message contains 'thanks' and mentions/replies to staff. Only admins can award aura."""
-        content = message.content.lower()
-        # Check if message contains the exact word "thanks" using word boundaries
-        import re
-        has_thanks = bool(re.search(r'\bthanks\b', content))
-        if not has_thanks:
-            return
-
-        # Only allow admins to award aura
-        if not message.guild:
-            return
-        author_member = message.guild.get_member(message.author.id)
-        if not author_member:
-            return
-
-        # Only server owner and admins can award aura
-        is_owner = author_member.id == message.guild.owner_id
-        is_admin = author_member.guild_permissions.administrator
-
-        if not (is_owner or is_admin):
-            return
-
-        # Get staff points cog
-        staff_points_cog = self.bot.get_cog('StaffPoints')
-        if not staff_points_cog:
-            return
-
-        mentioned_staff = []
-
-        # Check direct mentions
-        for mention in message.mentions:
-            # Only give aura to staff members (with staff role)
-            if await staff_points_cog.is_staff_member(mention):
-                mentioned_staff.append(mention)
-
-        # Check if replying to a staff member
-        if message.reference and message.reference.message_id:
-            try:
-                replied_msg = await message.channel.fetch_message(message.reference.message_id)
-                # Only give aura to staff members (with staff role)
-                if replied_msg.author != message.author and await staff_points_cog.is_staff_member(replied_msg.author):
-                    mentioned_staff.append(replied_msg.author)
-            except:
-                pass
-
-        # Give aura to mentioned/replied staff and send confirmation
-        for staff_member in set(mentioned_staff):  # Remove duplicates
-            success = await staff_points_cog.auto_give_point(staff_member, f"Thanks from {message.author.display_name}")
-            if success:
-                # Send professional bot reply message
-                embed = discord.Embed(
-                    title="✨ Aura Awarded",
-                    description=f"Added 1 aura to {staff_member.mention} for their helpful contribution.",
-                    color=0xf1c40f,
-                    timestamp=datetime.now(timezone.utc)
-                )
-                embed.set_footer(text=f"Awarded by {message.author.display_name}")
-                await message.reply(embed=embed, mention_author=False)
+    # Staff points/aura system removed per request.
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):

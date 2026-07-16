@@ -83,7 +83,6 @@ COGS_TO_LOAD = [
     'commands.sticky_message', # Sticky message feature for important announcements
     'commands.reaction_roles', # Reaction role system for automatic role assignment
     # Staff Management (Essential)
-    'commands.staff_points',  # Staff aura system with leaderboard
     'commands.permits',       # Permit system for bot-controlled moderation perms
     
     # Data & Utility (Useful but not critical)
