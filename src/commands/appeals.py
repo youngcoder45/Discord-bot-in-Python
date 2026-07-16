@@ -1257,12 +1257,18 @@ class Appeals(commands.Cog):
             except Exception:
                 pass
 
+        decision_color = (
+            APPEALS_ACCEPT_COLOR if decision == "approved" else APPEALS_REJECT_COLOR
+        )
+        decision_embed = discord.Embed(
+            title=f"Appeal {decision.title()}",
+            description=f"Appeal #{record.appeal_id} has been {decision}.",
+            color=decision_color,
+            timestamp=datetime.now(timezone.utc),
+        )
+        decision_embed.set_footer(text=_appeals_footer_text(record.guild_name))
         await interaction.response.send_message(
-            embed=create_success_embed(
-                f"Appeal {decision.title()}",
-                f"Appeal #{record.appeal_id} has been {decision}.",
-                guild_name=record.guild_name,
-            ),
+            embed=decision_embed,
             ephemeral=True,
         )
 
