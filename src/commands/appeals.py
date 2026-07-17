@@ -450,9 +450,9 @@ class AppealReviewDashboard(discord.ui.LayoutView):
 
         answers = discord.ui.TextDisplay(
             "### All Appeal Answers\n"
-            f"**1. Why were you timed out?**{_truncate(self.record.appeal_reason, 1200)}\n"
-            f"**2. Why should we remove the timeout?**{_truncate(self.record.should_remove, 1200)}\n"
-            f"**3. Anything else?**{_truncate(self.record.appeal_extra or 'Not provided.', 1200)}"
+            f"**1. Why were you timed out?**\n{_truncate(self.record.appeal_reason, 1200)}\n"
+            f"**2. Why should we remove the timeout?**\n{_truncate(self.record.should_remove, 1200)}\n"
+            f"**3. Anything else?**\n{_truncate(self.record.appeal_extra or 'Not provided.', 1200)}"
         )
         container.add_item(answers)
 
