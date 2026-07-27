@@ -30,9 +30,16 @@ MASS_BAN_THRESHOLD = int(os.getenv('MASS_BAN_THRESHOLD', 5))  # bans in short ti
 MASS_KICK_THRESHOLD = int(os.getenv('MASS_KICK_THRESHOLD', 5))  # kicks in short time
 NUKE_TIME_WINDOW = int(os.getenv('NUKE_TIME_WINDOW', 300))  # 5 minutes
 
-# Bot settings
-COMMAND_PREFIX = os.getenv('COMMAND_PREFIX', '$')
+# Bot settings (actual prefix is '?' in src/bot.py; this was legacy)
 STATUS_MESSAGE = os.getenv('STATUS_MESSAGE', 'Professional Moderation | !help')
+
+# Appeals system settings
+APPEALS_MODERATOR_USER_ID = int(os.getenv('APPEALS_MODERATOR_USER_ID', '1403059755001577543'))
+APPEALS_LOG_CHANNEL_IDS = [
+    int(x.strip())
+    for x in os.getenv('APPEALS_LOG_CHANNEL_IDS', '1423642446616592385,1444013659134361703').split(',')
+    if x.strip()
+]
 
 # Database settings
 DATABASE_NAME = os.getenv('DATABASE_NAME', 'data/modbot.db')

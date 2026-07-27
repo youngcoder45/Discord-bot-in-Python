@@ -1,4 +1,5 @@
 import discord
+from datetime import datetime, timezone
 from config import MODERATION_POINT_CAP, MODERATION_POINT_RESET_DAYS
 
 def create_points_embed(guild_name: str, points: int, reason: str, total_points: int) -> discord.Embed:
@@ -127,12 +128,21 @@ def create_points_cleared_embed(user: discord.Member, moderator: discord.Member,
 
 def create_error_embed(title: str, description: str) -> discord.Embed:
     """Create error embed"""
-    return discord.Embed(title=title, description=description, color=0xff0000)
+    embed = discord.Embed(title=title, description=description, color=0xff0000)
+    embed.timestamp = datetime.now(timezone.utc)
+    embed.set_footer(text="CodeVerse Bot")
+    return embed
 
 def create_success_embed(title: str, description: str) -> discord.Embed:
     """Create success embed"""
-    return discord.Embed(title=title, description=description, color=0x00ff00)
+    embed = discord.Embed(title=title, description=description, color=0x00ff00)
+    embed.timestamp = datetime.now(timezone.utc)
+    embed.set_footer(text="CodeVerse Bot")
+    return embed
 
 def create_info_embed(title: str, description: str) -> discord.Embed:
     """Create info embed"""
-    return discord.Embed(title=title, description=description, color=0x0000ff)
+    embed = discord.Embed(title=title, description=description, color=0x0000ff)
+    embed.timestamp = datetime.now(timezone.utc)
+    embed.set_footer(text="CodeVerse Bot")
+    return embed

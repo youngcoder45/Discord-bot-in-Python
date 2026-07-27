@@ -11,7 +11,8 @@ from discord import app_commands  # type: ignore[import-not-found]
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Union, Any, cast
 from collections.abc import Awaitable, Callable
-from utils.helpers import create_success_embed, create_error_embed, create_warning_embed, log_action
+from utils.embeds import create_success_embed, create_error_embed, create_info_embed
+from utils.helpers import log_action
 
 # Bot owner ID for restricted commands
 BOT_OWNER_ID = 955695820999639120
@@ -37,32 +38,7 @@ class ModCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.lockdown_channels = set()  # Store locked down channels
-        self._db_session = None
-        
-        # Initialize warnings service if SAM is available
-        self.warn_service_class = WarnService if SAM_AVAILABLE else None
-
-    # -------- Database Session Management (for Warnings) --------
-    
-    async def _get_db_session(self) -> AsyncSession:
-        """Get a database session."""
-        if not self._db_session and SAM_AVAILABLE:
-            self._db_session = await database.get_session().__aenter__()
-        return self._db_session
-
-    async def _close_db_session(self) -> None:
-        """Close the database session."""
-        if self._db_session and SAM_AVAILABLE:
-            await self._db_session.__aexit__(None, None, None)
-            self._db_session = None
-
-    async def get_warn_service(self) -> Optional[WarnService]:
-        """Get an instance of the warning service with an active database session."""
-        if not SAM_AVAILABLE or self.warn_service_class is None:
-            return None
-            
-        session = await self._get_db_session()
-        return self.warn_service_class(session)
+        # SAM warnings are handled via the Warnings cog directly, not this cog
 
     # -------- Helpers --------
 

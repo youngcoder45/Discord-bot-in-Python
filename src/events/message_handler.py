@@ -173,7 +173,7 @@ class MessageHandler(commands.Cog):
 
         else:
             # Log unexpected errors
-            print(f"Unhandled error in command {ctx.command}: {error}")
+            logger.error("Unhandled error in command %s: %s", ctx.command, error)
 
             embed = discord.Embed(
                 title="❌ An Error Occurred",

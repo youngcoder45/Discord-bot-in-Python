@@ -1,20 +1,18 @@
 import asyncio
-import math
+import logging
 import re
 import sqlite3
-import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any, Literal, Optional
 
 import discord  # type: ignore[import-not-found]
 from discord import app_commands  # type: ignore[import-not-found]
 from discord.ext import commands  # type: ignore[import-not-found]
 
-# Add parent directory to path to import config
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import MODERATION_ROLE_ID
+from config import MODERATION_ROLE_ID, APPEALS_MODERATOR_USER_ID, APPEALS_LOG_CHANNEL_IDS
+
+logger = logging.getLogger("codeverse.appeals")
 from utils.database import DATABASE_NAME, init_db
 from utils.embeds import (
     create_error_embed as _base_create_error_embed,
@@ -701,9 +699,9 @@ class Appeals(commands.Cog):
                 except Exception:
                     continue
             if restored:
-                print(f"[Appeals] Restored {restored} appeal review dashboards")
+                logger.info("Restored %s appeal review dashboards", restored)
         except Exception as e:
-            print(f"[Appeals] Error restoring appeal review dashboards: {e}")
+            logger.error("Error restoring appeal review dashboards: %s", e)
 
     def _resolve_member(self, guild_id: int, user_id: int) -> Optional[discord.Member]:
         guild = self.bot.get_guild(guild_id)
@@ -715,7 +713,7 @@ class Appeals(commands.Cog):
     def _is_moderator(self, interaction: discord.Interaction) -> bool:
         if not isinstance(interaction.user, discord.Member):
             return False
-        allowed = {1403059755001577543}
+        allowed = {APPEALS_MODERATOR_USER_ID}
         if interaction.guild:
             role = interaction.guild.get_role(MODERATION_ROLE_ID)
             if role:
@@ -1526,27 +1524,21 @@ class Appeals(commands.Cog):
                             alert_text="This appeal has been automatically resolved.",
                         )
                     )
-                    print(
-                        f"[Appeals] Disabled buttons for appeal #{appeal_id} in review dashboard"
-                    )
+                    logger.info("Disabled buttons for appeal #%s in review dashboard", appeal_id)
                     return
         except Exception as e:
-            print(f"[Appeals] Error disabling buttons for appeal #{appeal_id}: {e}")
+            logger.error("Error disabling buttons for appeal #%s: %s", appeal_id, e)
 
     async def _log_punishment_expiry(
         self, appeal_id: int, user_id: int, guild_id: int, status_message: str
     ):
         """Log punishment expiry to appeals channel"""
         try:
-            print(
-                f"[Appeals] Starting to log punishment expiry for appeal #{appeal_id}"
-            )
+            logger.info("Starting to log punishment expiry for appeal #%s", appeal_id)
 
             guild = self.bot.get_guild(guild_id)
             if not guild:
-                print(
-                    f"[Appeals] Could not find guild {guild_id} for logging appeal #{appeal_id}"
-                )
+                logger.warning("Could not find guild %s for logging appeal #%s", guild_id, appeal_id)
                 return
 
             # Find appeals channel
@@ -1556,19 +1548,13 @@ class Appeals(commands.Cog):
                 if "appeal" in channel.name.lower()
             ]
             if not appeals_channels:
-                print(
-                    f"[Appeals] No appeals channel found in {guild.name} for logging punishment expiry"
-                )
+                logger.warning("No appeals channel found in %s for logging punishment expiry", guild.name)
                 # Try to find any channel with "appeal" in the name or description
                 all_channels = [ch.name for ch in guild.text_channels]
-                print(
-                    f"[Appeals] Available channels in {guild.name}: {', '.join(all_channels)}"
-                )
+                logger.debug("Available channels in %s: %s", guild.name, ', '.join(all_channels))
                 return
 
-            print(
-                f"[Appeals] Found appeals channel: {appeals_channels[0].name} in {guild.name}"
-            )
+            logger.info("Found appeals channel: %s in %s", appeals_channels[0].name, guild.name)
 
             user = self.bot.get_user(user_id) or f"<@{user_id}>"
 
@@ -1589,7 +1575,7 @@ class Appeals(commands.Cog):
                 color = APPEALS_TIMEOUT_END_COLOR
                 description = f"Appeal #{appeal_id} has been automatically resolved because the punishment is no longer valid."
 
-            print(f"[Appeals] Creating log embed with title: {title}")
+            logger.debug("Creating log embed with title: %s", title)
 
             # Create log embed
             log_embed = discord.Embed(
@@ -1617,19 +1603,12 @@ class Appeals(commands.Cog):
             )
 
             # Send to appeals channel
-            print(f"[Appeals] Sending log embed to {appeals_channels[0].name}")
+            logger.debug("Sending log embed to %s", appeals_channels[0].name)
             await appeals_channels[0].send(embed=log_embed)
-            print(
-                f"[Appeals] Successfully logged punishment expiry for appeal #{appeal_id} to {appeals_channels[0].name}"
-            )
+            logger.info("Successfully logged punishment expiry for appeal #%s to %s", appeal_id, appeals_channels[0].name)
 
         except Exception as e:
-            print(
-                f"[Appeals] Error logging punishment expiry for appeal #{appeal_id}: {e}"
-            )
-            import traceback
-
-            traceback.print_exc()
+            logger.error("Error logging punishment expiry for appeal #%s: %s", appeal_id, e, exc_info=True)
 
     async def _send_appeal_form(
         self,
@@ -1658,9 +1637,7 @@ class Appeals(commands.Cog):
 
             # Prevent duplicate DMs within 30 seconds for same action
             if last_sent and (now - last_sent) < 30:
-                print(
-                    f"[Appeals] Skipped duplicate DM to {user} for {action_type} in {guild.name} (sent {now - last_sent:.1f}s ago)"
-                )
+                logger.debug("Skipped duplicate DM to %s for %s in %s (sent %.1fs ago)", user, action_type, guild.name, now - last_sent)
                 return
 
             self._timeout_dedupe_cache[dedupe_key] = now
@@ -1720,9 +1697,7 @@ class Appeals(commands.Cog):
 
             await user.send(view=view)
             dm_success = True
-            print(
-                f"[Appeals] Sent appeal dashboard to {user} ({user.id}) for {action_type} in {guild.name}"
-            )
+            logger.info("Sent appeal dashboard to %s (%s) for %s in %s", user, user.id, action_type, guild.name)
 
             # Log success to appeals channel
             await self._log_dm_success(
@@ -1730,10 +1705,10 @@ class Appeals(commands.Cog):
             )
         except discord.Forbidden:
             dm_error = "DMs are closed or bot is blocked"
-            print(f"[Appeals] Cannot DM {user} ({user.id}) - DMs closed or bot blocked")
+            logger.warning("Cannot DM %s (%s) - DMs closed or bot blocked", user, user.id)
         except Exception as e:
             dm_error = str(e)
-            print(f"[Appeals] DM error to {user} ({user.id}): {e}")
+            logger.warning("DM error to %s (%s): %s", user, user.id, e)
 
         # Log DM failure to appeals channel
         if not dm_success and dm_error:
@@ -1750,7 +1725,7 @@ class Appeals(commands.Cog):
         error: str,
     ):
         """Log to appeals channel when DM fails"""
-        for cid in (1423642446616592385, 1444013659134361703):
+        for cid in APPEALS_LOG_CHANNEL_IDS:
             ch = self.bot.get_channel(cid)
             if ch:
                 embed = discord.Embed(
@@ -1779,11 +1754,9 @@ class Appeals(commands.Cog):
                 embed.set_footer(text=_appeals_footer_text(guild.name))
                 try:
                     await ch.send(embed=embed)
-                    print(f"[Appeals] Logged DM failure to channel {cid}")
+                    logger.debug("Logged DM failure to channel %s", cid)
                 except Exception as e:
-                    print(
-                        f"[Appeals] Failed to send DM failure log to channel {cid}: {e}"
-                    )
+                    logger.warning("Failed to send DM failure log to channel %s: %s", cid, e)
                 break
 
     async def _log_dm_success(
@@ -1794,7 +1767,7 @@ class Appeals(commands.Cog):
         reason: str,
     ):
         """Log to appeals channel when DM is successfully sent"""
-        for cid in (1423642446616592385, 1444013659134361703):
+        for cid in APPEALS_LOG_CHANNEL_IDS:
             ch = self.bot.get_channel(cid)
             if ch:
                 embed = discord.Embed(
@@ -1818,9 +1791,7 @@ class Appeals(commands.Cog):
                 try:
                     await ch.send(embed=embed)
                 except Exception as e:
-                    print(
-                        f"[Appeals] Failed to send DM success log to channel {cid}: {e}"
-                    )
+                    logger.warning("Failed to send DM success log to channel %s: %s", cid, e)
                 break
 
     # ---------------- Listeners ----------------
@@ -1839,7 +1810,7 @@ class Appeals(commands.Cog):
         event_key = (user.id, guild.id, "ban", int(time.time() / 5))  # 5-second window
 
         if event_key in self._ban_event_handled:
-            print(f"[Appeals] Skipped duplicate ban event for {user} in {guild.name}")
+            logger.debug("Skipped duplicate ban event for %s in %s", user, guild.name)
             return
 
         self._ban_event_handled.add(event_key)
@@ -1867,14 +1838,12 @@ class Appeals(commands.Cog):
                         if time_diff < 10:
                             if entry.reason:
                                 reason = entry.reason
-                            print(f"[Appeals] Found ban audit log for {user}: {reason}")
+                            logger.debug("Found ban audit log for %s: %s", user, reason)
                             break
         except Exception as e:
-            print(f"[Appeals] Error fetching ban audit logs: {e}")
+            logger.error("Error fetching ban audit logs: %s", e)
 
-        print(
-            f"[Appeals] Ban detected for {user} ({user.id}) in {guild.name}: {reason}"
-        )
+        logger.info("Ban detected for %s (%s) in %s: %s", user, user.id, guild.name, reason)
         # Intentionally no DM appeal form for bans.
 
     @commands.Cog.listener()
@@ -1917,17 +1886,13 @@ class Appeals(commands.Cog):
 
                 if appeal:
                     if was_natural_expiry:
-                        print(
-                            f"[Appeals] Natural timeout expiry detected for user {after.id} with pending appeal #{appeal[0]}"
-                        )
+                        logger.info("Natural timeout expiry detected for user %s with pending appeal #%s", after.id, appeal[0])
                         action_text = "Natural timeout expiry"
                         log_title = "Natural Timeout Expiry Detected"
                         log_description = f"User {after.mention} (`{after.id}`) had their timeout naturally expire while having a pending appeal."
                         color = APPEALS_TIMEOUT_END_COLOR
                     else:
-                        print(
-                            f"[Appeals] Manual timeout removal detected for user {after.id} with pending appeal #{appeal[0]}"
-                        )
+                        logger.info("Manual timeout removal detected for user %s with pending appeal #%s", after.id, appeal[0])
                         action_text = "Manual timeout removal"
                         log_title = "Manual Timeout Removal Detected"
                         log_description = f"User {after.mention} (`{after.id}`) had their timeout manually removed while having a pending appeal."

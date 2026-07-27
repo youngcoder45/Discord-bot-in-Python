@@ -3,16 +3,18 @@ from discord import app_commands  # type: ignore[import-not-found]
 from discord.ext import commands  # type: ignore[import-not-found]
 from collections import defaultdict, deque
 import time
-from datetime import datetime
-import sys
-from pathlib import Path
+import logging
 
-# Add parent directory to path to import config
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import *
-
-from utils.database import add_points
+from config import (
+    SPAM_THRESHOLD, SPAM_TIME_WINDOW, DUPLICATE_THRESHOLD,
+    MENTION_THRESHOLD, CAPS_THRESHOLD,
+    JOIN_THRESHOLD, JOIN_TIME_WINDOW, NEW_ACCOUNT_THRESHOLD,
+    MASS_DELETE_THRESHOLD, NUKE_TIME_WINDOW,
+    MODERATION_ROLE_ID, STAFF_ALERT_CHANNEL,
+)
 from utils.embeds import create_error_embed
+
+logger = logging.getLogger("codeverse.protection")
 
 class Protection(commands.Cog):
     """Anti-spam, anti-raid, and anti-nuke protection systems"""
@@ -172,7 +174,7 @@ class Protection(commands.Cog):
                 # Still blocked - attempt to undo the ban
                 try:
                     await guild.unban(user, reason="Anti-nuke: Rate limit exceeded (user already blocked)")
-                    print(f"[Protection] 🛡️ Automatically undid ban for {user} by blocked actor {actor_id}")
+                    logger.info("Auto-undid ban for %s by blocked actor %s", user, actor_id)
                 except:
                     pass
                 return
@@ -224,9 +226,9 @@ class Protection(commands.Cog):
                             await channel.send(embed=embed)
                             break
                 
-                print(f"[Protection] 🛡️ Anti-nuke ban protection triggered for {actor_id}: {reason}")
+                logger.warning("Anti-nuke ban protection triggered for actor %s: %s", actor_id, reason)
             except Exception as e:
-                print(f"[Protection] ❌ Error in ban protection: {e}")
+                logger.error("Error in ban protection: %s", e)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -269,7 +271,7 @@ class Protection(commands.Cog):
         if actor_id in self.blocked_actors:
             if now - self.blocked_actors[actor_id] < self.BLOCK_COOLDOWN:
                 # Still blocked - log but cannot undo kick (no direct unban API for kicks)
-                print(f"[Protection] 🛡️ Kick blocked for {member} by blocked actor {actor_id}")
+                logger.info("Kick blocked for %s by blocked actor %s", member, actor_id)
                 return
             else:
                 # Cooldown expired, remove from blocked list
@@ -313,9 +315,9 @@ class Protection(commands.Cog):
                             await channel.send(embed=embed)
                             break
                 
-                print(f"[Protection] 🛡️ Anti-nuke kick protection triggered for {actor_id}: {reason}")
+                logger.warning("Anti-nuke kick protection triggered for actor %s: %s", actor_id, reason)
             except Exception as e:
-                print(f"[Protection] ❌ Error in kick protection: {e}")
+                logger.error("Error in kick protection: %s", e)
 
     @commands.Cog.listener()
     async def on_bulk_message_delete(self, messages):

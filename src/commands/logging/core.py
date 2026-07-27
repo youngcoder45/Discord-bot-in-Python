@@ -3,13 +3,8 @@ from discord.ext import commands
 import asyncio
 import logging
 import sqlite3
-import sys
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
-from pathlib import Path
-
-# Add parent directory to path to import config/utils if not in path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from utils.database import DATABASE_NAME
 from utils.webhook_manager import WebhookManager
