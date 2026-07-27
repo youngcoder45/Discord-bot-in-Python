@@ -5,9 +5,6 @@ Merges functionality from moderation.py, moderation_extended.py, and sam warning
 
 import discord  # type: ignore[import-not-found]
 import asyncio
-import json
-import os
-import re
 import sqlite3
 from discord.ext import commands  # type: ignore[import-not-found]
 from discord import app_commands  # type: ignore[import-not-found]
@@ -39,7 +36,6 @@ class ModCog(commands.Cog):
     
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.muted_users = {}  # Store muted users with timestamps
         self.lockdown_channels = set()  # Store locked down channels
         self._db_session = None
         

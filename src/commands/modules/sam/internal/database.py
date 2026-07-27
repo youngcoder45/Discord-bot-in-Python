@@ -21,16 +21,8 @@ if ":memory:" in str(config.database_uri):
 # Create sessionmaker globally
 async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-# Dirty hack to enable hot-reloading
-try:
-    if not SQLModel.__table_args__.get("extend_existing", False):  # type: ignore
-        logger.warning("Performing dirty hack for SQLModel hot reloading for models...")
-except AttributeError:
-    logger.warning(
-        "Performing dirty hack for SQLModel to enable hot reloading of the extension."
-    )
-SQLModel.__table_args__ = {"extend_existing": True}
-
+# Allow hot-reloading of the extension (cog reload via ?load)
+SQLModel.__table_args__ = {"extend_existing": True}  # type: ignore
 
 async def init_db():
     """
@@ -40,18 +32,6 @@ async def init_db():
     """
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
-
-
-async def drop_db():
-    """
-    Drops all tables in the database.
-
-    This is a destructive operation and will cause data loss.
-
-    Use with caution.
-    """
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
 
 
 @asynccontextmanager

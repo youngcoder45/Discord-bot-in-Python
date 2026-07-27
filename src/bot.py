@@ -142,19 +142,7 @@ class CodeVerseBot(commands.Bot):
 
     async def setup_hook(self):
         """Async setup tasks (load cogs, etc.)."""
-        # CRITICAL: Restore data BEFORE initializing databases or loading cogs
-        # Data persistence/backup system removed per user request
-        # try:
-        #     from utils.data_persistence import DataPersistenceManager
-        #     # Pass self (bot) to manager for alerts
-        #     persistence_manager = DataPersistenceManager(bot=self)
-        #     logger.info("🔄 Restoring data before cog initialization...")
-        #     await persistence_manager.startup_restore()
-        #     logger.info("✅ Data restoration completed")
-        # except Exception as e:
-        #     logger.error(f"⚠️ Data restoration failed: {e}")
-        
-        # Initialize databases AFTER data restoration
+        # Initialize databases
         try:
             from utils.database_init import initialize_all_databases
             if initialize_all_databases():
@@ -240,17 +228,7 @@ async def on_ready():
     # Log authorized servers the bot is in
     for guild in bot.guilds:
         if guild.id in AUTHORIZED_SERVERS:
-            logger.info(f"✅ Bot is operating in authorized server: {guild.name} (ID: {guild.id})")
-    
-    # Start periodic backup task (every 6 hours) - REMOVED per user request
-    # try:
-    #     from utils.data_persistence import start_periodic_backup
-    #     await start_periodic_backup(bot)
-    #     logger.info("🔄 Periodic backup system started")
-    # except Exception as e:
-    #     logger.error(f"⚠️ Periodic backup system failed to start: {e}")
-    
-    # Sync slash commands
+            logger.info(f"✅ Bot is operating in authorized server: {guild.name} (ID: {guild.id})")    # Sync slash commands
     try:
         # Sync to authorized guilds for faster updates
         for guild_id in AUTHORIZED_SERVERS:
@@ -263,8 +241,6 @@ async def on_ready():
                 logger.warning(f"Failed to sync commands to guild {guild_id}: {e}")
     except Exception as e:
         logger.error(f"Failed to sync slash commands: {e}")
-    
-    # Both prefix ($ping) and slash (/ping) commands are now available
 
 @bot.event
 async def on_guild_join(guild):

@@ -102,12 +102,6 @@ class Protection(commands.Cog):
 
         return True
 
-    # @commands.Cog.listener()
-    # async def on_message(self, message):
-    #     """Handle anti-spam checks - DISABLED BY USER REQUEST"""
-    #     # Anti-spam completely removed - user got false flagged for typing "oh" twice
-    #     pass
-
     @commands.Cog.listener()
     async def on_member_join(self, member):
         """Handle anti-raid checks"""
