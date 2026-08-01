@@ -23,22 +23,26 @@ logger = logging.getLogger(__name__)
 COG_CATEGORIES: dict[str, str] = {
     "Core": "Core",
     "Diagnostics": "Diagnostics",
+    # Moderation is a single broad section: basic moderation (ModCog),
+    # advanced moderation tools and the SAM warnings system.
     "ModCog": "Moderation",
-    "AdvancedModeration": "Advanced Moderation",
+    "AdvancedModeration": "Moderation",
+    "Warnings": "Moderation",
+    # AutoMod & Protection covers the anti-abuse systems.
     "Protection": "AutoMod & Protection",
+    "SpamCatch": "AutoMod & Protection",
     "Appeals": "Appeals",
-    "SpamCatch": "Spam Prevention",
     "Tickets": "Tickets",
-    "StickyMessage": "Sticky Messages",
     "ReactionRoles": "Reaction Roles",
     "PermitSystem": "Permits",
-    "EmbedBuilder": "Utilities",
-    "RulesCog": "Rules",
-    "ThreadCloser": "Threads",
-    "HelpThreadNotification": "Help Threads",
-    "Warnings": "Warnings",
     "LoggingCog": "Logging",
-    "MemberEvents": "Member Events",
+    # Utilities is the general-purpose section: embed builder plus the
+    # smaller helper systems (sticky messages, rules, threads, help threads).
+    "EmbedBuilder": "Utilities",
+    "StickyMessage": "Utilities",
+    "RulesCog": "Utilities",
+    "ThreadCloser": "Utilities",
+    "HelpThreadNotification": "Utilities",
     "MessageHandler": "Miscellaneous",
 }
 
@@ -126,9 +130,10 @@ def _cog_category(cog_name: Optional[str]) -> str:
 class _SlashCommandInfo:
     """Lightweight display wrapper for slash-only commands from the tree.
 
-    app_commands.Command objects lack help/short_doc/cog_name and hold their
-    cog through .extras, so we project them onto a uniform shape that the
-    embed builders and visibility filter already understand.
+    app_commands.Command objects lack help/short_doc/cog_name, so we project
+    them onto a uniform shape that the embed builders and visibility filter
+    already understand. The owning cog is derived from cog attributes via
+    _slash_command_cogs(); .extras carries the command's hidden flag.
     """
 
     def __init__(self, app_cmd, qualified_name: str, label: str):
@@ -162,6 +167,29 @@ def _tree_commands(bot: commands.Bot) -> dict[str, app_commands.Command]:
     return result
 
 
+def _slash_command_cogs(bot: commands.Bot) -> dict[str, str]:
+    """Map every slash command's qualified name to its defining cog class name.
+
+    app_commands.Command/Group objects do not carry a reference to the cog
+    that defined them (extras is empty, no binding attr in this discord.py
+    version), so we discover them by scanning each loaded cog's class
+    attributes for Command/Group instances.
+    """
+    result: dict[str, str] = {}
+    for cog in bot.cogs.values():
+        for attr_name in dir(cog):
+            if attr_name.startswith("_"):
+                continue
+            attr = getattr(cog, attr_name, None)
+            if isinstance(attr, (app_commands.Command, app_commands.Group)):
+                result.setdefault(attr.qualified_name, cog.__class__.__name__)
+                # Direct subcommands of a group belong to the same cog.
+                if isinstance(attr, app_commands.Group):
+                    for sub in attr.commands:
+                        result.setdefault(sub.qualified_name, cog.__class__.__name__)
+    return result
+
+
 def build_categories(bot: commands.Bot, ctx) -> dict[str, list]:
     """Group every visible command into its display category.
 
@@ -189,6 +217,7 @@ def build_categories(bot: commands.Bot, ctx) -> dict[str, list]:
     # Slash-only commands from the tree (hybrids were already popped above).
     # Subcommands of groups are skipped here — they are listed inside the
     # group's detailed help instead, keeping each category list tidy.
+    slash_cogs = _slash_command_cogs(bot)
     for qname, app_cmd in tree.items():
         if getattr(app_cmd, "parent", None) is not None:
             continue  # subcommand of a group (shown via detail view)
@@ -198,7 +227,7 @@ def build_categories(bot: commands.Bot, ctx) -> dict[str, list]:
             continue
         if not _is_visible_command(app_cmd, is_owner):
             continue
-        label = _cog_category(getattr(app_cmd, "extras", {}).get("cog_label"))
+        label = _cog_category(slash_cogs.get(qname))
         categories[label].append((qname, _SlashCommandInfo(app_cmd, qname, label)))
 
     result: dict[str, list] = {}
@@ -403,7 +432,7 @@ def _find_command(bot: commands.Bot, name: str):
             return cmd
         for app_cmd in _tree_commands(bot).values():
             if app_cmd.qualified_name == key:
-                label = _cog_category(getattr(app_cmd, "extras", {}).get("cog_label"))
+                label = _cog_category(_slash_command_cogs(bot).get(key))
                 return _SlashCommandInfo(app_cmd, key, label)
     return None
 
