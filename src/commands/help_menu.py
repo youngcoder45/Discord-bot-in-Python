@@ -36,6 +36,7 @@ COG_CATEGORIES: dict[str, str] = {
     "ThreadCloser": "Threads",
     "HelpThreadNotification": "Help Threads",
     "Warnings": "Warnings",
+    "LoggingCog": "Logging",
     "MemberEvents": "Member Events",
     "MessageHandler": "Miscellaneous",
 }

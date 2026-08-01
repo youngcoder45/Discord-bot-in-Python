@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import asyncio
 import logging
 import sqlite3
@@ -8,6 +9,7 @@ from typing import Optional, Dict, Any
 
 from utils.database import DATABASE_NAME
 from utils.webhook_manager import WebhookManager
+from utils.embeds import create_success_embed, create_error_embed, create_info_embed
 from .config import LOG_CHANNEL_MAP
 from .formatter import LogFormatter
 
@@ -18,6 +20,13 @@ from .events.moderation import ModerationLogMixin
 from .events.voice import VoiceLogMixin
 
 logger = logging.getLogger("codeverse.logging")
+
+# Column order used for the guild_log_channels row (shared by the manual
+# log-channel setup commands and the channel resolution fallback).
+LOG_COLUMNS = [
+    "message_log_channel_id", "member_log_channel_id", "server_log_channel_id",
+    "ticket_log_channel_id", "mod_log_channel_id", "other_log_channel_id",
+]
 
 class LoggingCog(MemberLogMixin, ChannelLogMixin, RoleLogMixin, ModerationLogMixin, VoiceLogMixin, commands.Cog):
     """Centralized logging system for all bot events"""
@@ -59,10 +68,21 @@ class LoggingCog(MemberLogMixin, ChannelLogMixin, RoleLogMixin, ModerationLogMix
                     sent_to_discord BOOLEAN DEFAULT 0
                 )
             ''')
-            # Note: We are not removing the old guild_log_channels table logic 
-            # as it might be used by other parts or legacy code, 
-            # but for this Guild, we use the Config Map.
-            
+            # Table used by the /setlogchannels command so log destinations can
+            # be configured manually per guild. Columns mirror the legacy
+            # guild_log_channels layout read by _get_legacy_log_channel.
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS guild_log_channels (
+                    guild_id INTEGER PRIMARY KEY,
+                    message_log_channel_id INTEGER,
+                    member_log_channel_id INTEGER,
+                    server_log_channel_id INTEGER,
+                    ticket_log_channel_id INTEGER,
+                    mod_log_channel_id INTEGER,
+                    other_log_channel_id INTEGER
+                )
+            ''')
+
             conn.commit()
             conn.close()
         except Exception as e:
@@ -74,35 +94,32 @@ class LoggingCog(MemberLogMixin, ChannelLogMixin, RoleLogMixin, ModerationLogMix
             self.log_task.cancel()
     
     async def get_log_channel_id(self, guild_id: int, event_type: str) -> Optional[int]:
-        """Resolve channel ID for event"""
-        # Priority 1: Hardcoded map for The CodeVerse Hub (or main server)
-        # We assume this bot runs for this server primarily or the user wants this config globally.
-        # If we wanted to check guild_id, we would do:
-        # if guild_id == 1263067254153805905: ...
-        
-        # Define the main guild ID
-        CODEVERSE_GUILD_ID = 1263067254153805905
+        """Resolve channel ID for event.
 
-        # Check specific event type only if it is the main guild
-        if guild_id == CODEVERSE_GUILD_ID and event_type in LOG_CHANNEL_MAP:
-             return LOG_CHANNEL_MAP[event_type]
-        
-        # Check prefix mappings if not found exact ? 
-        # (e.g. TICKET_Something -> TICKET_CREATE?) 
-        # No, explicit map is better.
-        
-        # Fallback to DB (Legacy support)
-        return await self._get_legacy_log_channel(guild_id, event_type)
+        Priority 1: per-guild channels configured manually via the
+        /setlogchannels command (stored in guild_log_channels).
+        Priority 2: hardcoded LOG_CHANNEL_MAP for the main server.
+        """
+        # Manual per-guild configuration wins so admins can override defaults.
+        db_channel = await self._get_legacy_log_channel(guild_id, event_type)
+        if db_channel:
+            return db_channel
+
+        # Fallback: hardcoded map for The CodeVerse Hub (or main server)
+        if guild_id == 1263067254153805905 and event_type in LOG_CHANNEL_MAP:
+            return LOG_CHANNEL_MAP[event_type]
+
+        return None
 
     async def _get_legacy_log_channel(self, guild_id: int, event_type: str):
         try:
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
-            cursor.execute('''
-                SELECT message_log_channel_id, member_log_channel_id, server_log_channel_id,
-                       ticket_log_channel_id, mod_log_channel_id, other_log_channel_id
-                FROM guild_log_channels WHERE guild_id = ?
-            ''', (guild_id,))
+            cursor.execute(
+                f'''SELECT {', '.join(LOG_COLUMNS)}
+                FROM guild_log_channels WHERE guild_id = ?''',
+                (guild_id,),
+            )
             result = cursor.fetchone()
             conn.close()
             if not result: return None
@@ -256,4 +273,220 @@ class LoggingCog(MemberLogMixin, ChannelLogMixin, RoleLogMixin, ModerationLogMix
             moderator_id=moderator_id,
             details=reason,
             case_id=case_id
+        )
+
+    # ------------------------------------------------------------------
+    # Manual log channel setup (/setlogchannels)
+    # ------------------------------------------------------------------
+    # Maps the user-facing log type to its column in guild_log_channels
+    # and the event categories it covers (used only for display hints).
+    LOG_TYPES: Dict[str, Dict[str, Any]] = {
+        "member": {"column": "member_log_channel_id", "events": "Joins, leaves, nickname & role changes"},
+        "mod": {"column": "mod_log_channel_id", "events": "Bans, kicks, warns, timeouts, mutes"},
+        "server": {"column": "server_log_channel_id", "events": "Channel & role create/delete/update"},
+        "ticket": {"column": "ticket_log_channel_id", "events": "Ticket create/close/transcript"},
+        "other": {"column": "other_log_channel_id", "events": "Everything not covered above"},
+    }
+
+    async def _get_guild_log_config(self, guild_id: int) -> Optional[Dict[str, Any]]:
+        """Return the manual log channel config row for a guild, if any."""
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                f'''SELECT {', '.join(LOG_COLUMNS)}
+                   FROM guild_log_channels WHERE guild_id = ?''',
+                (guild_id,),
+            )
+            row = cursor.fetchone()
+            conn.close()
+            if not row:
+                return None
+            return dict(zip(LOG_COLUMNS, row))
+        except Exception as e:
+            logger.error(f"Error reading log channel config: {e}")
+            return None
+
+    def _channel_label(self, channel_id: Optional[int]) -> str:
+        """Render a channel id as a mention, or 'Not set'."""
+        if not channel_id:
+            return "Not set"
+        channel = self.bot.get_channel(channel_id)
+        if channel:
+            return channel.mention
+        return f"`{channel_id}` (missing)"
+
+    @commands.hybrid_command(name="setlogchannels", aliases=["setlog"])
+    @commands.has_permissions(administrator=True)
+    @app_commands.describe(
+        log_type="Which log category to configure (member/mod/server/ticket/other)",
+        channel="The channel to send these logs to (leave empty to view current setup)",
+    )
+    async def setlogchannels(
+        self,
+        ctx: commands.Context,
+        log_type: str,
+        channel: Optional[discord.TextChannel] = None,
+    ):
+        """Set up or view the manual log channel configuration for this server."""
+        if not ctx.guild:
+            await ctx.send(embed=create_error_embed("Error", "This command can only be used in servers."), ephemeral=True)
+            return
+
+        log_type = log_type.lower().strip()
+
+        # Show current setup: ?setlogchannels show / list
+        if log_type in ("show", "list", "status"):
+            config = await self._get_guild_log_config(ctx.guild.id)
+            lines = []
+            for key, meta in self.LOG_TYPES.items():
+                cid = config.get(meta["column"]) if config else None
+                lines.append(f"**{key.capitalize()} logs:** {self._channel_label(cid)}")
+            await ctx.send(
+                embed=create_info_embed(
+                    "Log Channel Setup",
+                    "\n".join(lines) + "\n\nUse `/setlogchannels <type> #channel` to change a category.",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        meta = self.LOG_TYPES.get(log_type)
+        if not meta:
+            await ctx.send(
+                embed=create_error_embed(
+                    "Invalid Log Type",
+                    f"Unknown type `{log_type}`. Valid types: {', '.join('`' + k + '`' for k in self.LOG_TYPES)}.\n"
+                    "Use `show` to view the current setup.",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        if channel is None:
+            config = await self._get_guild_log_config(ctx.guild.id)
+            cid = config.get(meta["column"]) if config else None
+            await ctx.send(
+                embed=create_info_embed(
+                    f"{log_type.capitalize()} Log Channel",
+                    f"Current channel: {self._channel_label(cid)}\n\n"
+                    f"Events covered: {meta['events']}",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        # Permission test before saving
+        try:
+            test_msg = await channel.send(embed=discord.Embed(title="Test", description="Log channel enabled."))
+            await test_msg.delete()
+        except discord.Forbidden:
+            await ctx.send(
+                embed=create_error_embed("Permission Error", f"I cannot send messages in {channel.mention}"),
+                ephemeral=True,
+            )
+            return
+        except Exception as e:
+            await ctx.send(embed=create_error_embed("Setup Error", str(e)), ephemeral=True)
+            return
+
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            # Read current row if present so we only overwrite the chosen column.
+            cursor.execute(
+                f'''SELECT {', '.join(LOG_COLUMNS)}
+                   FROM guild_log_channels WHERE guild_id = ?''',
+                (ctx.guild.id,),
+            )
+            row = cursor.fetchone()
+            current = list(row) if row else [None] * len(LOG_COLUMNS)
+
+            col_index = LOG_COLUMNS.index(meta["column"])
+            current[col_index] = channel.id
+
+            cursor.execute(
+                '''INSERT OR REPLACE INTO guild_log_channels
+                   (guild_id, message_log_channel_id, member_log_channel_id, server_log_channel_id,
+                    ticket_log_channel_id, mod_log_channel_id, other_log_channel_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                (ctx.guild.id, *current),
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            await ctx.send(embed=create_error_embed("Database Error", str(e)), ephemeral=True)
+            return
+
+        await ctx.send(
+            embed=create_success_embed(
+                "Log Channel Set",
+                f"**{log_type.capitalize()} logs** will now be sent to {channel.mention}.\n"
+                f"Events covered: {meta['events']}",
+            ),
+            ephemeral=True,
+        )
+
+    @commands.hybrid_command(name="setlogchannels-disable", aliases=["setlog-disable"])
+    @commands.has_permissions(administrator=True)
+    @app_commands.describe(log_type="Which log category to disable (member/mod/server/ticket/other)")
+    async def setlogchannels_disable(self, ctx: commands.Context, log_type: str):
+        """Clear the manual log channel for a category (falls back to defaults)."""
+        if not ctx.guild:
+            await ctx.send(embed=create_error_embed("Error", "This command can only be used in servers."), ephemeral=True)
+            return
+
+        log_type = log_type.lower().strip()
+        meta = self.LOG_TYPES.get(log_type)
+        if not meta:
+            await ctx.send(
+                embed=create_error_embed(
+                    "Invalid Log Type",
+                    f"Unknown type `{log_type}`. Valid types: {', '.join('`' + k + '`' for k in self.LOG_TYPES)}.",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                f'''SELECT {', '.join(LOG_COLUMNS)}
+                   FROM guild_log_channels WHERE guild_id = ?''',
+                (ctx.guild.id,),
+            )
+            row = cursor.fetchone()
+            if not row or row[LOG_COLUMNS.index(meta["column"])] is None:
+                conn.close()
+                await ctx.send(
+                    embed=create_info_embed(
+                        "Log Channel", f"No manual **{log_type} log** channel was set."
+                    ),
+                    ephemeral=True,
+                )
+                return
+
+            current = list(row)
+            col_index = LOG_COLUMNS.index(meta["column"])
+            current[col_index] = None
+            cursor.execute(
+                '''INSERT OR REPLACE INTO guild_log_channels
+                   (guild_id, message_log_channel_id, member_log_channel_id, server_log_channel_id,
+                    ticket_log_channel_id, mod_log_channel_id, other_log_channel_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                (ctx.guild.id, *current),
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            await ctx.send(embed=create_error_embed("Database Error", str(e)), ephemeral=True)
+            return
+
+        await ctx.send(
+            embed=create_success_embed(
+                "Log Channel Cleared",
+                f"**{log_type.capitalize()} logs** will now fall back to the default configuration.",
+            ),
+            ephemeral=True,
         )
