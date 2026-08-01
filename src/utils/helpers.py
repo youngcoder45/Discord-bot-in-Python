@@ -121,17 +121,18 @@ def is_moderator(
     )
 
 
-def register_mod_action(bot, guild_id: int, user_id: int, moderator_id: int, reason: str, action_type: str):
+def register_mod_action(bot, guild_id: int, user_id: int, moderator_id: int, reason: str, action_type: str, source=None):
     """Tell the LoggingCog who really performed a moderation action.
 
     Called by moderation commands BEFORE the Discord API call so the logging
     event listener attributes the log entry to the actual command invoker
     instead of the bot (Discord audit logs show the bot application for
-    API-performed actions).
+    API-performed actions). `source` is an optional context flag (e.g. "appeal")
+    describing how the action happened.
     """
     logging_cog = bot.get_cog("LoggingCog")
     if logging_cog and hasattr(logging_cog, "register_command_action"):
-        logging_cog.register_command_action(guild_id, user_id, moderator_id, reason, action_type)
+        logging_cog.register_command_action(guild_id, user_id, moderator_id, reason, action_type, source=source)
 
 
 def discard_mod_action(bot, guild_id: int, user_id: int, action_type: str):

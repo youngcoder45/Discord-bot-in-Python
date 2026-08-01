@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 import sqlite3
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
@@ -617,6 +618,10 @@ class Appeals(commands.Cog):
         self._ban_event_handled = (
             set()
         )  # Track recently handled ban events to prevent duplicates
+        # Tracks timeout removals caused by approved appeals so the
+        # on_member_update listener can log the correct source instead of
+        # classifying them as manual removals. {(guild_id, user_id): (appeal_id, timestamp)}
+        self._pending_appeal_removals: dict[tuple[int, int], tuple[int, float]] = {}
         self._ensure_appeal_schema()
         self.bot.loop.create_task(self._restore_review_dashboards())
 
@@ -666,6 +671,19 @@ class Appeals(commands.Cog):
                 conn.close()
             except Exception:
                 pass
+
+    def _remember_appeal_removal(self, guild_id: int, user_id: int, appeal_id: int):
+        """Record that a timeout removal is about to be caused by an approved
+        appeal, so the member_update listener can log the correct source
+        instead of classifying it as a manual removal."""
+        self._pending_appeal_removals[(guild_id, user_id)] = (appeal_id, time.time())
+        # Keep the registry bounded: drop stale entries that were never consumed.
+        if len(self._pending_appeal_removals) > 32:
+            cutoff = time.time() - 300
+            self._pending_appeal_removals = {
+                key: entry for key, entry in self._pending_appeal_removals.items()
+                if entry[1] > cutoff
+            }
 
     async def _restore_review_dashboards(self):
         await self.bot.wait_until_ready()
@@ -1200,9 +1218,14 @@ class Appeals(commands.Cog):
                 )
                 return
             try:
+                # Mark this removal as appeal-approved so the appeals
+                # on_member_update listener logs it as "removed via approved
+                # appeal" instead of a manual removal.
+                self._remember_appeal_removal(record.guild_id, record.user_id, record.appeal_id)
                 # Register the actual invoker so the logging system attributes
                 # the timeout removal to the reviewing moderator instead of the
-                # bot (Discord audit logs show the bot for API actions).
+                # bot (Discord audit logs show the bot for API actions), and
+                # pass the source so the moderation log reflects the appeal.
                 register_mod_action(
                     self.bot,
                     record.guild_id,
@@ -1210,6 +1233,7 @@ class Appeals(commands.Cog):
                     interaction.user.id,
                     f"Appeal #{record.appeal_id} approved by {interaction.user}",
                     "TIMEOUT_REMOVED",
+                    source="appeal",
                 )
                 await member.timeout(
                     None,
@@ -1217,6 +1241,7 @@ class Appeals(commands.Cog):
                 )
             except Exception as e:
                 discard_mod_action(self.bot, record.guild_id, record.user_id, "TIMEOUT_REMOVED")
+                self._pending_appeal_removals.pop((record.guild_id, record.user_id), None)
                 await interaction.response.send_message(
                     embed=create_error_embed(
                         "Action Failed", f"Could not clear timeout: {e}"
@@ -1879,12 +1904,31 @@ class Appeals(commands.Cog):
         before_timeout = before.timed_out_until
         after_timeout = after.timed_out_until
 
+        # Was this timeout removal caused by an approved appeal?
+        # finalize_appeal_decision records this right before removing the
+        # timeout, so we can distinguish appeal-approved removals from direct
+        # moderator removals instead of inferring the source afterward.
+        _removal_source = self._pending_appeal_removals.get((after.guild.id, after.id))
+        was_appeal_removal = False
+        appeal_id_for_log = None
+        if _removal_source:
+            if time.time() - _removal_source[1] <= 300:
+                was_appeal_removal = True
+                appeal_id_for_log = _removal_source[0]
+            else:
+                # Stale marker from a missed event — drop it so it can't linger.
+                self._pending_appeal_removals.pop((after.guild.id, after.id), None)
+
         # Check if timeout was manually removed OR naturally expired
         if (
             before_timeout
             and before_timeout > datetime.now(timezone.utc)
             and (not after_timeout or after_timeout <= datetime.now(timezone.utc))
         ):
+            if was_appeal_removal:
+                # Source identified: pop the marker so it isn't reused later.
+                self._pending_appeal_removals.pop((after.guild.id, after.id), None)
+
             # Determine if this was manual removal or natural expiration
             current_time = datetime.now(timezone.utc)
             was_natural_expiry = False
@@ -1908,8 +1952,14 @@ class Appeals(commands.Cog):
                 appeal = cursor.fetchone()
                 conn.close()
 
-                if appeal:
-                    if was_natural_expiry:
+                if appeal or was_appeal_removal:
+                    if was_appeal_removal:
+                        logger.info("Timeout removed via approved appeal #%s for user %s", appeal_id_for_log, after.id)
+                        action_text = "Timeout removed via approved appeal"
+                        log_title = "Timeout Removed via Approved Appeal"
+                        log_description = f"User {after.mention} (`{after.id}`) had their timeout removed after appeal **#{appeal_id_for_log}** was approved."
+                        color = APPEALS_ACCEPT_COLOR
+                    elif was_natural_expiry:
                         logger.info("Natural timeout expiry detected for user %s with pending appeal #%s", after.id, appeal[0])
                         action_text = "Natural timeout expiry"
                         log_title = "Natural Timeout Expiry Detected"
@@ -1922,35 +1972,43 @@ class Appeals(commands.Cog):
                         log_description = f"User {after.mention} (`{after.id}`) had their timeout manually removed while having a pending appeal."
                         color = APPEALS_TIMEOUT_END_COLOR
 
-                    # IMMEDIATELY mark as auto-resolved and disable buttons
-                    try:
-                        conn = sqlite3.connect(DATABASE_NAME)
-                        cursor = conn.cursor()
-                        cursor.execute(
-                            'UPDATE unban_requests SET status = "auto_resolved" WHERE id = ?',
-                            (appeal[0],),
+                    if was_appeal_removal:
+                        # finalize_appeal_decision already marked the appeal
+                        # approved and updated the review dashboard, so there is
+                        # nothing to auto-resolve here.
+                        print(
+                            f"[Appeals] Timeout removed via approved appeal #{appeal_id_for_log} for {after} ({after.id})"
                         )
-                        conn.commit()
-                        conn.close()
+                    else:
+                        # IMMEDIATELY mark as auto-resolved and disable buttons
+                        try:
+                            conn = sqlite3.connect(DATABASE_NAME)
+                            cursor = conn.cursor()
+                            cursor.execute(
+                                'UPDATE unban_requests SET status = "auto_resolved" WHERE id = ?',
+                                (appeal[0],),
+                            )
+                            conn.commit()
+                            conn.close()
 
-                        # Disable buttons immediately
-                        await self._disable_appeal_buttons_by_id(
-                            appeal[0], after.guild.id
-                        )
-                        print(
-                            f"[Appeals] Auto-resolved appeal #{appeal[0]} and disabled buttons due to {action_text}"
-                        )
-                    except Exception as e:
-                        print(
-                            f"[Appeals] Error auto-resolving appeal #{appeal[0]}: {e}"
-                        )
+                            # Disable buttons immediately
+                            await self._disable_appeal_buttons_by_id(
+                                appeal[0], after.guild.id
+                            )
+                            print(
+                                f"[Appeals] Auto-resolved appeal #{appeal[0]} and disabled buttons due to {action_text}"
+                            )
+                        except Exception as e:
+                            print(
+                                f"[Appeals] Error auto-resolving appeal #{appeal[0]}: {e}"
+                            )
 
                     # Create log message
                     log_embed = discord.Embed(
                         title=log_title, description=log_description, color=color
                     )
                     log_embed.add_field(
-                        name="Appeal ID", value=f"#{appeal[0]}", inline=True
+                        name="Appeal ID", value=f"#{appeal_id_for_log if was_appeal_removal else appeal[0]}", inline=True
                     )
                     log_embed.add_field(
                         name="Previous Timeout",
@@ -1959,7 +2017,7 @@ class Appeals(commands.Cog):
                     )
                     log_embed.add_field(
                         name="Action",
-                        value="Appeal automatically resolved and buttons disabled",
+                        value=action_text,
                         inline=False,
                     )
                     log_embed.set_footer(text=f"User: {after.name}")
@@ -2030,6 +2088,12 @@ class Appeals(commands.Cog):
 
         # Check if timeout was REMOVED before expiry (manual untimeout/appeal approved)
         elif before_timeout is not None and after_timeout is None:
+            if was_appeal_removal:
+                # The appeal was already approved and processed by
+                # finalize_appeal_decision — do not auto-approve it again or
+                # send a duplicate DM.
+                self._pending_appeal_removals.pop((after.guild.id, after.id), None)
+                return
             # Auto-approve any pending appeals for this user in this guild
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()

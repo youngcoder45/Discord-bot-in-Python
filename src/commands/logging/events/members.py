@@ -61,7 +61,7 @@ class MemberLogMixin(commands.Cog):
             if added_roles or removed_roles:
                 registered = self._consume_pending_action(after.guild.id, after.id, "ROLE_ADD") or self._consume_pending_action(after.guild.id, after.id, "ROLE_REMOVE")
                 if registered:
-                    moderator_id, _ = registered
+                    moderator_id, _, _ = registered
                 else:
                     try:
                         await asyncio.sleep(0.5)
@@ -102,7 +102,7 @@ class MemberLogMixin(commands.Cog):
             moderator_id = None
             registered = self._consume_pending_action(after.guild.id, after.id, "NICKNAME_UPDATE")
             if registered:
-                moderator_id, _ = registered
+                moderator_id, _, _ = registered
             else:
                 try:
                     await asyncio.sleep(0.5)
@@ -138,7 +138,7 @@ class MemberLogMixin(commands.Cog):
             moderator_id = None
             registered = self._consume_pending_action(after.guild.id, after.id, "TIMEOUT_APPLIED")
             if registered:
-                moderator_id, reason = registered
+                moderator_id, reason, _ = registered
             else:
                 try:
                     await asyncio.sleep(1)
@@ -192,8 +192,9 @@ class MemberLogMixin(commands.Cog):
             moderator_id = None
 
             registered = self._consume_pending_action(after.guild.id, after.id, "TIMEOUT_REMOVED")
+            removal_source = None
             if registered:
-                moderator_id, reason = registered
+                moderator_id, reason, removal_source = registered
                 natural_expiry = False
             elif not natural_expiry:
                 try:
@@ -223,7 +224,8 @@ class MemberLogMixin(commands.Cog):
                 user_id=after.id,
                 guild_id=after.guild.id,
                 moderator_id=moderator_id,
-                details=reason
+                details=reason,
+                source=removal_source
             )
 
     @commands.Cog.listener()

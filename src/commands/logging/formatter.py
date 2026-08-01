@@ -229,7 +229,10 @@ class LogFormatter:
                     embed.add_field(name="Details", value=details, inline=False)
             elif "REMOVED" in event_type:
                 embed.title = "Timeout Removed"
-                embed.description = f"{_fmt_mention(user)} had their timeout removed early"
+                if log_item.get("source") == "appeal":
+                    embed.description = f"{_fmt_mention(user)}'s timeout was removed via an approved appeal"
+                else:
+                    embed.description = f"{_fmt_mention(user)} had their timeout removed manually"
                 embed.color = discord.Color(0xF9F504)
 
                 if moderator:

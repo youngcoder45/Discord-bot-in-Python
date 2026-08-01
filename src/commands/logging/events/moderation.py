@@ -19,10 +19,11 @@ class ModerationLogMixin(commands.Cog):
     # Registry keys: (guild_id, user_id, action_type)
     # Registry values: (moderator_id, reason, timestamp)
 
-    def register_command_action(self, guild_id: int, user_id: int, moderator_id: int, reason: str, action_type: str):
+    def register_command_action(self, guild_id: int, user_id: int, moderator_id: int, reason: str, action_type: str, source=None):
         """Record a moderation action performed through a bot command so the
-        log entry attributes it to the actual command invoker."""
-        self._pending_mod_actions[(guild_id, user_id, action_type)] = (moderator_id, reason, time.time())
+        log entry attributes it to the actual command invoker. `source` is an
+        optional context flag (e.g. "appeal") describing how the action happened."""
+        self._pending_mod_actions[(guild_id, user_id, action_type)] = (moderator_id, reason, time.time(), source)
         # Keep the registry bounded: prune stale entries that were never
         # consumed (e.g. if a gateway event was missed and never re-dispatched).
         if len(self._pending_mod_actions) > 64:
@@ -37,10 +38,13 @@ class ModerationLogMixin(commands.Cog):
         self._pending_mod_actions.pop((guild_id, user_id, action_type), None)
 
     def _consume_pending_action(self, guild_id: int, user_id: int, action_type: str):
-        """Pop a command-initiated moderation action if present and fresh (< 2 min)."""
+        """Pop a command-initiated moderation action if present and fresh (< 2 min).
+
+        Returns (moderator_id, reason, source) or None.
+        """
         entry = self._pending_mod_actions.pop((guild_id, user_id, action_type), None)
         if entry and time.time() - entry[2] <= 120:
-            return entry[0], entry[1]
+            return entry[0], entry[1], entry[3]
         return None
 
     @commands.Cog.listener()
@@ -49,7 +53,7 @@ class ModerationLogMixin(commands.Cog):
         moderator_id = None
         registered = self._consume_pending_action(guild.id, user.id, "BAN")
         if registered:
-            moderator_id, reason = registered
+            moderator_id, reason, _ = registered
         else:
             # Fallback only for actions not initiated through a bot command
             # (manual bans in Discord or bot-initiated bans). The bot will show
@@ -77,7 +81,7 @@ class ModerationLogMixin(commands.Cog):
         moderator_id = None
         registered = self._consume_pending_action(guild.id, user.id, "UNBAN")
         if registered:
-            moderator_id, reason = registered
+            moderator_id, reason, _ = registered
         else:
             await asyncio.sleep(1)
             try:
@@ -103,7 +107,7 @@ class ModerationLogMixin(commands.Cog):
             if entry.target and isinstance(entry.target, (discord.User, discord.Member)):
                 registered = self._consume_pending_action(entry.guild.id, entry.target.id, "KICK")
                 if registered:
-                    moderator_id, reason = registered
+                    moderator_id, reason, _ = registered
                 else:
                     moderator_id = entry.user.id if entry.user else None
                     reason = entry.reason or "No reason provided"
