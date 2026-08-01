@@ -11,34 +11,33 @@ from typing import Optional
 
 import discord
 from discord.ext import commands
-from discord import app_commands
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Category configuration
 # ---------------------------------------------------------------------------
-# Maps cog class names -> (display label, emoji). Commands from any cog not
-# listed here are grouped under a "Miscellaneous" category automatically.
-COG_CATEGORIES: dict[str, tuple[str, str]] = {
-    "Core": ("Core", "🛠️"),
-    "Diagnostics": ("Diagnostics", "🔍"),
-    "ModCog": ("Moderation", "🛡️"),
-    "AdvancedModeration": ("Advanced Moderation", "⚙️"),
-    "Protection": ("AutoMod & Protection", "🤖"),
-    "Appeals": ("Appeals", "📨"),
-    "SpamCatch": ("Spam Prevention", "🧹"),
-    "Tickets": ("Tickets", "🎫"),
-    "StickyMessage": ("Sticky Messages", "📌"),
-    "ReactionRoles": ("Reaction Roles", "🎭"),
-    "PermitSystem": ("Permits", "🗝️"),
-    "EmbedBuilder": ("Utilities", "🧰"),
-    "RulesCog": ("Rules", "📜"),
-    "ThreadCloser": ("Threads", "🧵"),
-    "HelpThreadNotification": ("Help Threads", "🆘"),
-    "Warnings": ("Warnings", "⚠️"),
-    "MemberEvents": ("Member Events", "👋"),
-    "MessageHandler": ("Miscellaneous", "📁"),
+# Maps cog class names -> display label. Commands from any cog not listed
+# here are grouped under a "Miscellaneous" category automatically.
+COG_CATEGORIES: dict[str, str] = {
+    "Core": "Core",
+    "Diagnostics": "Diagnostics",
+    "ModCog": "Moderation",
+    "AdvancedModeration": "Advanced Moderation",
+    "Protection": "AutoMod & Protection",
+    "Appeals": "Appeals",
+    "SpamCatch": "Spam Prevention",
+    "Tickets": "Tickets",
+    "StickyMessage": "Sticky Messages",
+    "ReactionRoles": "Reaction Roles",
+    "PermitSystem": "Permits",
+    "EmbedBuilder": "Utilities",
+    "RulesCog": "Rules",
+    "ThreadCloser": "Threads",
+    "HelpThreadNotification": "Help Threads",
+    "Warnings": "Warnings",
+    "MemberEvents": "Member Events",
+    "MessageHandler": "Miscellaneous",
 }
 
 # Cog classes that are purely automated (no user-invocable commands).
@@ -72,27 +71,27 @@ def _is_owner(ctx: commands.Context) -> bool:
 def _is_visible_command(cmd: commands.Command, is_owner: bool) -> bool:
     """Decide whether a command should appear in the help menu.
 
-    - Explicit system commands are always hidden.
-    - Owner-only commands are visible only to the bot owner.
+    - Explicit system commands (sync/load/introreact) are always hidden.
+    - Owner-only commands are always decorated hidden=True by convention
+      (commands.is_owner is a function, not a class, so it cannot be used
+      with isinstance) — they are excluded via the hidden filter below.
     - Other hidden commands are hidden unless whitelisted for users.
     - Regular commands are always visible.
     """
     if cmd.name in _SYSTEM_COMMANDS:
         return False
-    if any(isinstance(c, commands.is_owner) for c in getattr(cmd, "checks", []) or []):
-        return is_owner
     if cmd.hidden:
         return cmd.name in _USER_HIDDEN_COMMANDS
     return True
 
 
-def _cog_category(cog_name: Optional[str]) -> tuple[str, str]:
-    """Return the (label, emoji) for a cog's commands."""
+def _cog_category(cog_name: Optional[str]) -> str:
+    """Return the display label for a cog's commands."""
     if cog_name:
-        category = COG_CATEGORIES.get(cog_name)
-        if category:
-            return category
-    return "Miscellaneous", "📁"
+        label = COG_CATEGORIES.get(cog_name)
+        if label:
+            return label
+    return "Miscellaneous"
 
 
 def build_categories(bot: commands.Bot, ctx) -> dict[str, list[commands.Command]]:
@@ -107,7 +106,7 @@ def build_categories(bot: commands.Bot, ctx) -> dict[str, list[commands.Command]
     for cmd in bot.commands:
         if not _is_visible_command(cmd, is_owner):
             continue
-        label, _ = _cog_category(cmd.cog_name)
+        label = _cog_category(cmd.cog_name)
         categories[label].append(cmd)
 
     for cmds in categories.values():
@@ -138,13 +137,13 @@ def build_home_embed(bot: commands.Bot, categories: dict[str, list[commands.Comm
         f"• **Categories:** {len(categories)}",
         f"• **Uptime:** {uptime}",
     ]
-    embed.add_field(name="📊 Quick Stats", value="\n".join(stats), inline=False)
+    embed.add_field(name="Quick Stats", value="\n".join(stats), inline=False)
 
     overview = "\n".join(
-        f"{emoji} **{label}** — {len(cmds)} command{'s' if len(cmds) != 1 else ''}"
+        f"**{label}** — {len(cmds)} command{'s' if len(cmds) != 1 else ''}"
         for label, cmds in categories.items()
     )
-    embed.add_field(name="🗂️ Categories", value=overview or "No commands available.", inline=False)
+    embed.add_field(name="Categories", value=overview or "No commands available.", inline=False)
 
     if bot.user and bot.user.avatar:
         embed.set_thumbnail(url=bot.user.avatar.url)
@@ -173,21 +172,20 @@ def _format_usage(bot: commands.Bot, cmd: commands.Command, prefix: str) -> str:
 
 
 def _format_permissions(cmd: commands.Command) -> str:
-    """Extract human-readable permission requirements from command checks."""
+    """Extract human-readable permission requirements from command checks.
+
+    Note: owner-only commands are excluded from the help menu upstream
+    (commands.is_owner is a function, not a class, so it cannot be used
+    with isinstance).
+    """
     perms: list[str] = []
-    owner_only = False
     for check in getattr(cmd, "checks", []) or []:
-        if isinstance(check, commands.is_owner):
-            owner_only = True
-            continue
         kw = getattr(check, "kwargs", None)
         if not kw:
             continue
         for perm, value in kw.items():
             if isinstance(value, bool) and value:
                 perms.append(_perm_label(perm))
-    if owner_only:
-        return "Bot Owner only"
     return ", ".join(perms) if perms else "Everyone"
 
 
@@ -269,8 +267,7 @@ def build_command_embed(
         timestamp=datetime.now(timezone.utc),
     )
 
-    label, emoji = _cog_category(cmd.cog_name)
-    embed.add_field(name="Category", value=f"{emoji} {label}", inline=True)
+    embed.add_field(name="Category", value=_cog_category(cmd.cog_name), inline=True)
     embed.add_field(name="Type", value=_type_label(cmd), inline=True)
 
     aliases = _get_aliases(cmd)
@@ -315,14 +312,6 @@ def _chunk_commands(cmds: list[commands.Command], size: int) -> list[list[comman
     return [cmds[i : i + size] for i in range(0, len(cmds), size)]
 
 
-def _category_emoji(label: str) -> str:
-    """Return the emoji for a display label (reverse lookup of COG_CATEGORIES)."""
-    for _, (cat_label, emoji) in COG_CATEGORIES.items():
-        if cat_label == label:
-            return emoji
-    return "📁"
-
-
 def _total_pages(cmds: list[commands.Command]) -> int:
     """Number of pages for a category given the per-page chunking."""
     return max(1, len(_chunk_commands(cmds, _COMMANDS_PER_FIELD * _FIELDS_PER_PAGE)))
@@ -336,15 +325,13 @@ def build_category_embed(
     page: int = 0,
 ) -> discord.Embed:
     """Embed for one category page. Returns a single page of commands."""
-    emoji = _category_emoji(label)
-
     page_size = _COMMANDS_PER_FIELD * _FIELDS_PER_PAGE
     total_pages = max(1, len(_chunk_commands(cmds, page_size)))
     page = max(0, min(page, total_pages - 1))
     page_fields = _chunk_commands(cmds[page * page_size : (page + 1) * page_size], _COMMANDS_PER_FIELD)
 
     embed = discord.Embed(
-        title=f"{emoji} {label} Commands",
+        title=f"{label} Commands",
         description=f"{len(cmds)} command{'s' if len(cmds) != 1 else ''} • `?help <command>` or `/help <command>` for details",
         color=0x2B2D31,
         timestamp=datetime.now(timezone.utc),
@@ -376,7 +363,6 @@ class _HomeButton(discord.ui.Button):
         super().__init__(
             label="Home",
             style=discord.ButtonStyle.secondary,
-            emoji="🏠",
             custom_id="help:home",
         )
 
@@ -385,10 +371,8 @@ class _HomeButton(discord.ui.Button):
 
 
 class _PageButton(discord.ui.Button):
-    def __init__(self, label: str, emoji: Optional[str], custom_id: str, direction: int):
-        super().__init__(
-            label=label, style=discord.ButtonStyle.primary, emoji=emoji or None, custom_id=custom_id
-        )
+    def __init__(self, label: str, custom_id: str, direction: int):
+        super().__init__(label=label, style=discord.ButtonStyle.primary, custom_id=custom_id)
         self.direction = direction
 
     async def callback(self, interaction: discord.Interaction):
@@ -452,8 +436,8 @@ class HelpMenuView(discord.ui.View):
 
         self.add_item(_CategorySelect(categories))
         self.add_item(_HomeButton())
-        self.add_item(_PageButton("◀", None, "help:prev", -1))
-        self.add_item(_PageButton("▶", None, "help:next", 1))
+        self.add_item(_PageButton("◀", "help:prev", -1))
+        self.add_item(_PageButton("▶", "help:next", 1))
 
     async def on_timeout(self) -> None:
         """Clean up the menu by disabling it when it times out."""
