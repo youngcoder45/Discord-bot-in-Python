@@ -11,6 +11,7 @@ from typing import Optional
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +70,11 @@ def _is_owner(ctx: commands.Context) -> bool:
     return author.id in owner_ids
 
 
-def _is_visible_command(cmd: commands.Command, is_owner: bool) -> bool:
+def _is_visible_command(cmd, is_owner: bool) -> bool:
     """Decide whether a command should appear in the help menu.
+
+    Works for both prefix/hybrid commands (commands.Command) and slash-only
+    commands (app_commands.Command / our _SlashCommandInfo wrapper).
 
     - Explicit system commands (sync/load/introreact) are always hidden.
     - Owner-only commands are always decorated hidden=True by convention
@@ -79,11 +83,35 @@ def _is_visible_command(cmd: commands.Command, is_owner: bool) -> bool:
     - Other hidden commands are hidden unless whitelisted for users.
     - Regular commands are always visible.
     """
-    if cmd.name in _SYSTEM_COMMANDS:
+    name = getattr(cmd, "name", "")
+    if name in _SYSTEM_COMMANDS:
         return False
-    if cmd.hidden:
-        return cmd.name in _USER_HIDDEN_COMMANDS
+    hidden = getattr(cmd, "hidden", False) or bool(getattr(cmd, "extras", {}).get("hidden", False))
+    if hidden:
+        return name in _USER_HIDDEN_COMMANDS
     return True
+
+
+# ---------------------------------------------------------------------------
+# Command type detection (Slash / Hybrid / Prefix)
+# ---------------------------------------------------------------------------
+def command_type(cmd) -> str:
+    """Classify a command as "slash", "hybrid" or "prefix".
+
+    - Hybrid: commands.HybridCommand / commands.HybridGroup (have an
+      app_command attached AND live in the prefix command list).
+    - Slash: app_commands.Command / Group (slash-only, from the command tree).
+    - Prefix: commands.Command with no slash counterpart.
+    """
+    if isinstance(cmd, _SlashCommandInfo):
+        return "slash"
+    if isinstance(cmd, (commands.HybridCommand, commands.HybridGroup)):
+        return "hybrid"
+    if isinstance(cmd, (app_commands.Command, app_commands.Group)):
+        return "slash"
+    if getattr(cmd, "app_command", None) is not None:
+        return "hybrid"
+    return "prefix"
 
 
 def _cog_category(cog_name: Optional[str]) -> str:
@@ -95,24 +123,89 @@ def _cog_category(cog_name: Optional[str]) -> str:
     return "Miscellaneous"
 
 
-def build_categories(bot: commands.Bot, ctx) -> dict[str, list[commands.Command]]:
-    """Group every visible top-level command into its display category.
+class _SlashCommandInfo:
+    """Lightweight display wrapper for slash-only commands from the tree.
 
-    Returns an ordered dict of {category_label: [commands]}, sorted by
-    label and with each category's commands sorted by name.
+    app_commands.Command objects lack help/short_doc/cog_name and hold their
+    cog through .extras, so we project them onto a uniform shape that the
+    embed builders and visibility filter already understand.
+    """
+
+    def __init__(self, app_cmd, qualified_name: str, label: str):
+        self.app_command = app_cmd
+        self.name = app_cmd.name
+        self.qualified_name = qualified_name
+        self.label = label
+        self.aliases: list[str] = []
+        self.hidden = False
+        self.extras: dict = dict(getattr(app_cmd, "extras", {}) or {})
+        self.cog_name = label
+
+    @property
+    def help(self):
+        return self.app_command.description or None
+
+    @property
+    def short_doc(self):
+        return self.app_command.description or None
+
+    @property
+    def checks(self):
+        return []
+
+
+def _tree_commands(bot: commands.Bot) -> dict[str, app_commands.Command]:
+    """Flatten the app command tree into {qualified_name: command}."""
+    result: dict[str, app_commands.Command] = {}
+    for cmd in bot.tree.walk_commands():  # type: ignore[attr-defined]
+        result.setdefault(cmd.qualified_name, cmd)
+    return result
+
+
+def build_categories(bot: commands.Bot, ctx) -> dict[str, list]:
+    """Group every visible command into its display category.
+
+    Returns an ordered dict of {category_label: [commands]} where each entry
+    is either a commands.Command (prefix/hybrid) or a _SlashCommandInfo
+    (slash-only). Every command appears exactly once.
     """
     is_owner = _is_owner(ctx)
-    categories: dict[str, list[commands.Command]] = defaultdict(list)
+    categories: dict[str, list] = defaultdict(list)
 
+    # Prefix + hybrid commands (hybrids carry .app_command and live here).
+    tree = _tree_commands(bot)
+    registered_prefix_names: set[str] = set()
     for cmd in bot.commands:
         if not _is_visible_command(cmd, is_owner):
             continue
+        # Hybrid commands are also present in the tree; register by qualified
+        # name so slash-only commands from the tree don't duplicate them.
+        qname = cmd.qualified_name
         label = _cog_category(cmd.cog_name)
-        categories[label].append(cmd)
+        categories[label].append((qname, cmd))
+        tree.pop(qname, None)
+        registered_prefix_names.add(cmd.name)
 
-    for cmds in categories.values():
-        cmds.sort(key=lambda c: c.name)
-    return dict(sorted(categories.items()))
+    # Slash-only commands from the tree (hybrids were already popped above).
+    # Subcommands of groups are skipped here — they are listed inside the
+    # group's detailed help instead, keeping each category list tidy.
+    for qname, app_cmd in tree.items():
+        if getattr(app_cmd, "parent", None) is not None:
+            continue  # subcommand of a group (shown via detail view)
+        # A command registered as a plain prefix command AND as a slash command
+        # (e.g. getuserid in protection.py) is shown once under its prefix form.
+        if app_cmd.name in registered_prefix_names:
+            continue
+        if not _is_visible_command(app_cmd, is_owner):
+            continue
+        label = _cog_category(getattr(app_cmd, "extras", {}).get("cog_label"))
+        categories[label].append((qname, _SlashCommandInfo(app_cmd, qname, label)))
+
+    result: dict[str, list] = {}
+    for label, entries in categories.items():
+        entries.sort(key=lambda e: e[0])
+        result[label] = [cmd for _, cmd in entries]
+    return dict(sorted(result.items()))
 
 
 def build_home_embed(bot: commands.Bot, categories: dict[str, list[commands.Command]], prefix: str) -> discord.Embed:
@@ -254,13 +347,74 @@ def _get_aliases(cmd: commands.Command) -> list[str]:
     return aliases
 
 
+def _display_name(cmd) -> str:
+    """Name shown in list views: uses /-form for slash commands, prefix form otherwise."""
+    if command_type(cmd) == "slash":
+        return f"/{cmd.qualified_name}"
+    return cmd.qualified_name
+
+
+def _display_usage(cmd, prefix: str) -> str:
+    """Build the usage line(s) for a command of any type."""
+    ctype = command_type(cmd)
+    if ctype == "slash":
+        return f"`/{cmd.qualified_name}`"
+    if ctype == "hybrid":
+        sig = getattr(cmd, "signature", "") or ""
+        sig = " " + sig if sig else sig
+        return f"`{prefix}{cmd.qualified_name}{sig}` / `{cmd.qualified_name}{sig}`"
+    sig = getattr(cmd, "signature", "") or ""
+    sig = " " + sig if sig else sig
+    return f"`{prefix}{cmd.qualified_name}{sig}`"
+
+
+def _normalize_command_name(name: str) -> str:
+    """Normalize user input like '/verify', '?ban' or 'ls role' to a lookup key."""
+    name = name.strip().lstrip("/").lstrip("?")
+    return name.replace(" ", ".")
+
+
+def _total_visible_count(bot: commands.Bot) -> int:
+    """Count of commands shown in the menu (top-level visible commands)."""
+    seen: set[str] = set()
+    for c in bot.commands:
+        if not _is_visible_command(c, False):
+            continue
+        seen.add(c.qualified_name)
+    for app_cmd in _tree_commands(bot).values():
+        if getattr(app_cmd, "parent", None) is not None:
+            continue
+        if app_cmd.name in {c.name for c in bot.commands}:
+            continue
+        if not _is_visible_command(app_cmd, False):
+            continue
+        seen.add(app_cmd.qualified_name)
+    return len(seen)
+
+
+def _find_command(bot: commands.Bot, name: str):
+    """Find a command by (possibly qualified) name across prefix + slash."""
+    name = _normalize_command_name(name)
+    # Try dotted form first (tree-style keys), then the space form (the
+    # natural prefix syntax, e.g. 'ls role' resolves via bot.get_command).
+    for key in (name, name.replace(".", " ")):
+        cmd = bot.get_command(key)
+        if cmd is not None:
+            return cmd
+        for app_cmd in _tree_commands(bot).values():
+            if app_cmd.qualified_name == key:
+                label = _cog_category(getattr(app_cmd, "extras", {}).get("cog_label"))
+                return _SlashCommandInfo(app_cmd, key, label)
+    return None
+
+
 def build_command_embed(
     bot: commands.Bot,
-    cmd: commands.Command,
+    cmd,
     prefix: str,
     is_owner: bool,
 ) -> discord.Embed:
-    """Detailed embed for a single command."""
+    """Detailed embed for a single command (any type)."""
     embed = discord.Embed(
         title=f"`{cmd.qualified_name}`",
         description=(cmd.help or cmd.short_doc or "No description provided."),
@@ -268,7 +422,7 @@ def build_command_embed(
         timestamp=datetime.now(timezone.utc),
     )
 
-    embed.add_field(name="Category", value=_cog_category(cmd.cog_name), inline=True)
+    embed.add_field(name="Category", value=_cog_category(getattr(cmd, "cog_name", None)), inline=True)
     embed.add_field(name="Type", value=_type_label(cmd), inline=True)
 
     aliases = _get_aliases(cmd)
@@ -279,7 +433,7 @@ def build_command_embed(
             inline=True,
         )
 
-    embed.add_field(name="Usage", value=_format_usage(bot, cmd, prefix), inline=False)
+    embed.add_field(name="Usage", value=_display_usage(cmd, prefix), inline=False)
 
     perms = _format_permissions(cmd)
     if perms:
@@ -294,11 +448,13 @@ def build_command_embed(
         if subs:
             lines = [f"`{s.name}` — {s.short_doc or 'No description'}" for s in subs]
             embed.add_field(name="Subcommands", value="\n".join(lines), inline=False)
+    elif isinstance(cmd, _SlashCommandInfo) and isinstance(cmd.app_command, app_commands.Group):
+        subs = [s for s in cmd.app_command.commands if _is_visible_command(s, is_owner)]
+        if subs:
+            lines = [f"`{s.name}` — {s.description or 'No description'}" for s in subs]
+            embed.add_field(name="Subcommands", value="\n".join(lines), inline=False)
 
-    total = sum(
-        1 for c in bot.commands if _is_visible_command(c, is_owner)
-    )
-    embed.set_footer(text=f"CodeVerse Bot • {total} total commands")
+    embed.set_footer(text=f"CodeVerse Bot • {_total_visible_count(bot)} total commands")
     return embed
 
 
@@ -309,27 +465,53 @@ _COMMANDS_PER_FIELD = 12
 _FIELDS_PER_PAGE = 2
 
 
-def _chunk_commands(cmds: list[commands.Command], size: int) -> list[list[commands.Command]]:
+def _chunk_commands(cmds: list, size: int) -> list[list]:
     return [cmds[i : i + size] for i in range(0, len(cmds), size)]
 
 
-def _total_pages(cmds: list[commands.Command]) -> int:
+def _total_pages(cmds: list) -> int:
     """Number of pages for a category given the per-page chunking."""
     return max(1, len(_chunk_commands(cmds, _COMMANDS_PER_FIELD * _FIELDS_PER_PAGE)))
+
+
+def _section_lines(cmds: list, prefix: str) -> list[str]:
+    """Format command lines (without a section heading)."""
+    lines = []
+    for cmd in cmds:
+        summary = (cmd.short_doc or cmd.help or "No description").strip().replace("\n", " ")
+        if len(summary) > 70:
+            summary = summary[:67] + "…"
+        lines.append(f"`{_display_name(cmd)}` — {summary}")
+    return lines
+
+
+def _group_by_type(cmds: list) -> dict[str, list]:
+    """Split commands into slash/hybrid/prefix buckets."""
+    buckets: dict[str, list] = {"slash": [], "hybrid": [], "prefix": []}
+    for cmd in cmds:
+        buckets[command_type(cmd)].append(cmd)
+    return buckets
+
+
+_SECTION_TITLES = {"slash": "Slash Commands", "hybrid": "Hybrid Commands", "prefix": "Prefix Commands"}
 
 
 def build_category_embed(
     bot: commands.Bot,
     label: str,
-    cmds: list[commands.Command],
+    cmds: list,
     prefix: str,
     page: int = 0,
 ) -> discord.Embed:
-    """Embed for one category page. Returns a single page of commands."""
+    """Embed for one category page, grouped into command-type sections.
+
+    Sections are shown in the order Slash -> Hybrid -> Prefix, and empty
+    sections are omitted entirely.
+    """
     page_size = _COMMANDS_PER_FIELD * _FIELDS_PER_PAGE
     total_pages = max(1, len(_chunk_commands(cmds, page_size)))
     page = max(0, min(page, total_pages - 1))
-    page_fields = _chunk_commands(cmds[page * page_size : (page + 1) * page_size], _COMMANDS_PER_FIELD)
+    page_cmds = cmds[page * page_size : (page + 1) * page_size]
 
     embed = discord.Embed(
         title=f"{label} Commands",
@@ -338,14 +520,19 @@ def build_category_embed(
         timestamp=datetime.now(timezone.utc),
     )
 
-    for chunk in page_fields:
-        lines = []
-        for cmd in chunk:
-            summary = (cmd.short_doc or cmd.help or "No description").strip().replace("\n", " ")
-            if len(summary) > 70:
-                summary = summary[:67] + "…"
-            lines.append(f"`{prefix}{cmd.name}` — {summary}")
-        embed.add_field(name="Commands", value="\n".join(lines), inline=False)
+    buckets = _group_by_type(page_cmds)
+    for ctype in ("slash", "hybrid", "prefix"):
+        group = buckets[ctype]
+        if not group:
+            continue
+        # If a section spills onto the next page, mark it so users know it
+        # continues (headers are never orphaned on their own page).
+        title = _SECTION_TITLES[ctype]
+        if page > 0 and command_type(cmds[page * page_size - 1]) == ctype:
+            title += " (cont.)"
+        for chunk in _chunk_commands(group, _COMMANDS_PER_FIELD):
+            lines = _section_lines(chunk, prefix)
+            embed.add_field(name=title, value="\n".join(lines), inline=False)
 
     if total_pages > 1:
         embed.set_footer(
@@ -464,7 +651,7 @@ async def send_help_menu(ctx: commands.Context, command_name: Optional[str] = No
 
     # Detailed help for a specific command
     if command_name:
-        cmd = bot.get_command(command_name.lower())
+        cmd = _find_command(bot, command_name.lower())
         if not cmd or not _is_visible_command(cmd, is_owner):
             await _reply(ctx, f"Command `{command_name}` not found.")
             return
