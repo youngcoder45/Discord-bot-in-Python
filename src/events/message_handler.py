@@ -48,7 +48,8 @@ class MessageHandler(commands.Cog):
         if channel is None:
             try:
                 channel = await ctx.guild.fetch_channel(INTRODUCTION_CHANNEL_ID)
-            except Exception:
+            except (discord.Forbidden, discord.NotFound) as e:
+                logger.warning("Could not fetch intro channel: %s", e)
                 channel = None
 
         if channel is None:
@@ -125,8 +126,8 @@ class MessageHandler(commands.Cog):
                     color=discord.Color.red()
                 )
                 await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except:
-                pass  # If followup also fails, just ignore
+            except Exception as e:
+                logger.warning("Followup after slash error also failed: %s", e)
             return
 
         if isinstance(error, commands.MissingPermissions):
@@ -183,8 +184,8 @@ class MessageHandler(commands.Cog):
             )
             try:
                 await ctx.send(embed=embed, delete_after=15)
-            except:
-                pass  # If sending fails, just ignore
+            except Exception as e:
+                logger.warning("Failed to send error response: %s", e)
 
     # AFK and XP systems removed per request.
 

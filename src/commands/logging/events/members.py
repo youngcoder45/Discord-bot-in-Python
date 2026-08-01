@@ -59,15 +59,19 @@ class MemberLogMixin(commands.Cog):
 
             moderator_id = None
             if added_roles or removed_roles:
-                try:
-                    await asyncio.sleep(0.5)
-                    async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_role_update, limit=10):
-                        if entry.target and entry.target.id == after.id:
-                            if entry.user:
-                                moderator_id = entry.user.id
-                            break
-                except Exception as e:
-                    logger.error(f"Error fetching audit log for role update: {e}")
+                registered = self._consume_pending_action(after.guild.id, after.id, "ROLE_ADD") or self._consume_pending_action(after.guild.id, after.id, "ROLE_REMOVE")
+                if registered:
+                    moderator_id, _ = registered
+                else:
+                    try:
+                        await asyncio.sleep(0.5)
+                        async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_role_update, limit=10):
+                            if entry.target and entry.target.id == after.id:
+                                if entry.user:
+                                    moderator_id = entry.user.id
+                                break
+                    except Exception as e:
+                        logger.error(f"Error fetching audit log for role update: {e}")
 
                 # Emit specific events for Add/Remove if possible, or mixed
                 # User config asked for "all role addition/removing to a member logs in ..."
@@ -96,15 +100,19 @@ class MemberLogMixin(commands.Cog):
         # --- NICKNAMES ---
         if before.nick != after.nick:
             moderator_id = None
-            try:
-                await asyncio.sleep(0.5)
-                async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=10):
-                    if entry.target and entry.target.id == after.id:
-                        if entry.user:
-                            moderator_id = entry.user.id
-                        break
-            except Exception as e:
-                logger.error(f"Error fetching audit log for nickname update: {e}")
+            registered = self._consume_pending_action(after.guild.id, after.id, "NICKNAME_UPDATE")
+            if registered:
+                moderator_id, _ = registered
+            else:
+                try:
+                    await asyncio.sleep(0.5)
+                    async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=10):
+                        if entry.target and entry.target.id == after.id:
+                            if entry.user:
+                                moderator_id = entry.user.id
+                            break
+                except Exception as e:
+                    logger.error(f"Error fetching audit log for nickname update: {e}")
             
             old_nick = before.nick or before.name
             new_nick = after.nick or after.name
@@ -128,27 +136,31 @@ class MemberLogMixin(commands.Cog):
             # TIMEOUT APPLIED
             reason = "No reason provided"
             moderator_id = None
-            try:
-                await asyncio.sleep(1)
-                async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=5):
-                    if entry.target and entry.target.id == after.id:
-                        if entry.reason:
-                            reason = entry.reason
-                            # Check for appended moderator info
-                            if " | By: " in reason:
-                                try:
-                                    parts = reason.split(" | By: ")
-                                    reason = parts[0]
-                                    mod_info = parts[1]
-                                    if "(" in mod_info and ")" in mod_info:
-                                        mod_id_str = mod_info.split("(")[1].split(")")[0]
-                                        moderator_id = int(mod_id_str)
-                                except: pass
-                        
-                        if entry.user and not moderator_id:
-                            moderator_id = entry.user.id
-                        break
-            except: pass
+            registered = self._consume_pending_action(after.guild.id, after.id, "TIMEOUT_APPLIED")
+            if registered:
+                moderator_id, reason = registered
+            else:
+                try:
+                    await asyncio.sleep(1)
+                    async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=5):
+                        if entry.target and entry.target.id == after.id:
+                            if entry.reason:
+                                reason = entry.reason
+                                # Check for appended moderator info
+                                if " | By: " in reason:
+                                    try:
+                                        parts = reason.split(" | By: ")
+                                        reason = parts[0]
+                                        mod_info = parts[1]
+                                        if "(" in mod_info and ")" in mod_info:
+                                            mod_id_str = mod_info.split("(")[1].split(")")[0]
+                                            moderator_id = int(mod_id_str)
+                                    except: pass
+                            
+                            if entry.user and not moderator_id:
+                                moderator_id = entry.user.id
+                            break
+                except: pass
             
             duration = "Unknown"
             if after_timeout:
@@ -179,7 +191,11 @@ class MemberLogMixin(commands.Cog):
             reason = "Timeout expired naturally" if natural_expiry else "No reason provided"
             moderator_id = None
 
-            if not natural_expiry:
+            registered = self._consume_pending_action(after.guild.id, after.id, "TIMEOUT_REMOVED")
+            if registered:
+                moderator_id, reason = registered
+                natural_expiry = False
+            elif not natural_expiry:
                 try:
                     await asyncio.sleep(1)
                     async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=5):

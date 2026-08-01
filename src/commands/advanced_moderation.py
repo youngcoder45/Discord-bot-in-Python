@@ -3,11 +3,16 @@ from discord.ext import commands  # type: ignore[import-not-found]
 from discord import app_commands  # type: ignore[import-not-found]
 import asyncio
 import time
+import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 import sqlite3
 from typing import Optional, List
 import re
+
+from utils.helpers import register_mod_action, discard_mod_action
+
+logger = logging.getLogger(__name__)
 
 class AdvancedModeration(commands.Cog):
     """Advanced moderation features with built-in safety mechanisms"""
@@ -60,8 +65,13 @@ class AdvancedModeration(commands.Cog):
         try:
             # Note: per server policy we do not DM users for ban actions.
             
+            # Register the actual invoker so the logging system attributes the
+            # tempban to the moderator instead of the bot.
+            ban_reason = f"Tempban ({duration}m): {reason}"
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, ban_reason, "BAN")
+            
             # Ban the member
-            await member.ban(reason=f"Tempban ({duration}m): {reason}")
+            await member.ban(reason=ban_reason)
             
             # Schedule unban
             self.bot.loop.create_task(self._schedule_unban(ctx.guild, member, duration * 60))
@@ -81,8 +91,10 @@ class AdvancedModeration(commands.Cog):
             # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "BAN")
             await ctx.send("❌ I don't have permission to ban this member", ephemeral=True)
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "BAN")
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
     async def _schedule_unban(self, guild: discord.Guild, member: discord.Member, delay: int):
@@ -90,8 +102,10 @@ class AdvancedModeration(commands.Cog):
         await asyncio.sleep(delay)
         try:
             await guild.unban(member, reason="Temporary ban expired")
-        except:
+        except discord.NotFound:
             pass  # Member may have been manually unbanned
+        except Exception as e:
+            logger.warning("Auto-unban failed for %s in guild %s: %s", member, guild.id, e)
 
     @commands.hybrid_command(name="mute")
     @commands.has_permissions(moderate_members=True)
@@ -119,6 +133,9 @@ class AdvancedModeration(commands.Cog):
             until = datetime.now(timezone.utc) + timedelta(minutes=duration)
             # Add moderator info to reason for logging
             audit_reason = f"{reason} | By: {ctx.author} ({ctx.author.id})"
+            # Register the actual invoker so the logging system attributes the
+            # mute to the moderator instead of the bot.
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_APPLIED")
             await member.timeout(until, reason=audit_reason)
             
             embed = discord.Embed(
@@ -136,8 +153,10 @@ class AdvancedModeration(commands.Cog):
             # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
             await ctx.send("❌ I don't have permission to timeout this member", ephemeral=True)
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
     @commands.hybrid_command(name="unmute")
@@ -147,6 +166,7 @@ class AdvancedModeration(commands.Cog):
         """Remove timeout from a member"""
         try:
             audit_reason = f"Unmuted | By: {ctx.author} ({ctx.author.id})"
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, "Unmuted", "TIMEOUT_REMOVED")
             await member.timeout(None, reason=audit_reason)
             
             embed = discord.Embed(
@@ -161,8 +181,10 @@ class AdvancedModeration(commands.Cog):
             # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_REMOVED")
             await ctx.send("❌ I don't have permission to remove timeout from this member", ephemeral=True)
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_REMOVED")
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
     @commands.command(name="hide")

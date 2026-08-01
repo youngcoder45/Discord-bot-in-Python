@@ -12,7 +12,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, Union, Any, cast
 from collections.abc import Awaitable, Callable
 from utils.embeds import create_success_embed, create_error_embed, create_info_embed
-from utils.helpers import log_action
+from utils.helpers import log_action, safe_send, register_mod_action, discard_mod_action
 
 # Bot owner ID for restricted commands
 BOT_OWNER_ID = 955695820999639120
@@ -43,22 +43,8 @@ class ModCog(commands.Cog):
     # -------- Helpers --------
 
     async def _safe_reply(self, ctx: commands.Context, content: str | None = None, *, embed: discord.Embed | None = None, ephemeral: bool = True):
-        """Unified reply for hybrid commands without using ephemeral on regular ctx.send."""
-        try:
-            if ctx.interaction:
-                if not ctx.interaction.response.is_done():
-                    if embed is not None:
-                        return await ctx.interaction.response.send_message(content=content or "", embed=embed, ephemeral=ephemeral)
-                    return await ctx.interaction.response.send_message(content=content or "", ephemeral=ephemeral)
-                else:
-                    if embed is not None:
-                        return await ctx.interaction.followup.send(content=content or "", embed=embed, ephemeral=ephemeral)
-                    return await ctx.interaction.followup.send(content=content or "", ephemeral=ephemeral)
-            if embed is not None:
-                return await ctx.send(content=content or "", embed=embed)
-            return await ctx.send(content=content or "")
-        except Exception as e:  # Broad catch to avoid cascading errors
-            print(f"[ModCog:_safe_reply] Failed to send response: {e}")
+        """Unified reply for hybrid commands. Delegates to shared safe_send from helpers."""
+        return await safe_send(ctx, content=content, embed=embed, ephemeral=ephemeral)
 
     # -------- Basic Moderation Commands --------
     
@@ -181,6 +167,10 @@ class ModCog(commands.Cog):
             if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
                 return await self._safe_reply(ctx, "❌ Target has an equal or higher role.")
         try:
+            # Register the actual invoker so the logging system attributes the
+            # kick to the moderator instead of the bot (Discord audit logs show
+            # the bot application for API-performed actions).
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "KICK")
             await member.kick(reason=reason)
             await self._safe_reply(ctx, f"👢 Kicked {member.mention} | Reason: {reason}")
             
@@ -189,8 +179,10 @@ class ModCog(commands.Cog):
                  protection_cog.record_action(ctx.author.id, "kick")
 
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "KICK")
             await self._safe_reply(ctx, "❌ I don't have permission to kick that member.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "KICK")
             await self._safe_reply(ctx, f"❌ Error: {e}")
 
     @commands.hybrid_command(name="ban", description="Ban a member from the server.")
@@ -224,6 +216,10 @@ class ModCog(commands.Cog):
             if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
                 return await self._safe_reply(ctx, "❌ Target has an equal or higher role.")
         try:
+            # Register the actual invoker so the logging system attributes the
+            # ban to the moderator instead of the bot (Discord audit logs show
+            # the bot application for API-performed bans).
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "BAN")
             await member.ban(reason=reason)
             await self._safe_reply(ctx, f"🔨 Banned {member.mention} | Reason: {reason}")
 
@@ -232,8 +228,10 @@ class ModCog(commands.Cog):
                  protection_cog.record_action(ctx.author.id, "ban")
 
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "BAN")
             await self._safe_reply(ctx, "❌ I don't have permission to ban that member.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "BAN")
             await self._safe_reply(ctx, f"❌ Error: {e}")
 
     @commands.hybrid_command(name="unban", description="Unban a previously banned user (use their ID).")
@@ -254,11 +252,15 @@ class ModCog(commands.Cog):
             return await self._safe_reply(ctx, "❌ That user is not banned.")
 
         try:
-            await ctx.guild.unban(user, reason=f"Unbanned by {ctx.author}")
+            unban_reason = f"Unbanned by {ctx.author}"
+            register_mod_action(self.bot, ctx.guild.id, user.id, ctx.author.id, unban_reason, "UNBAN")
+            await ctx.guild.unban(user, reason=unban_reason)
             await self._safe_reply(ctx, f"✅ Unbanned {user.mention}")
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "UNBAN")
             await self._safe_reply(ctx, "❌ I don't have permission to unban that user.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "UNBAN")
             await self._safe_reply(ctx, f"❌ Error: {e}")
 
     # -------- Advanced Moderation Commands --------
@@ -281,8 +283,12 @@ class ModCog(commands.Cog):
         
         try:
             # Ban then immediately unban
-            await user.ban(reason=f"[SOFTBAN] {reason}", delete_message_days=1)
-            await ctx.guild.unban(user, reason=f"Softban by {ctx.author}")
+            ban_reason = f"[SOFTBAN] {reason}"
+            unban_reason = f"Softban by {ctx.author}"
+            register_mod_action(self.bot, ctx.guild.id, user.id, ctx.author.id, ban_reason, "BAN")
+            await user.ban(reason=ban_reason, delete_message_days=1)
+            register_mod_action(self.bot, ctx.guild.id, user.id, ctx.author.id, unban_reason, "UNBAN")
+            await ctx.guild.unban(user, reason=unban_reason)
             
             # Log the action
             embed = discord.Embed(
@@ -294,8 +300,12 @@ class ModCog(commands.Cog):
             embed.set_footer(text=f"Softbanned by {ctx.author}")
             await ctx.send(embed=embed)
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "BAN")
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "UNBAN")
             await ctx.send("❌ I don't have permission to softban that user.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "BAN")
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "UNBAN")
             await ctx.send(f"❌ Failed to softban: {str(e)}")
 
     @commands.hybrid_command(name="clean", help="Delete bot messages and command invocations")
@@ -341,6 +351,7 @@ class ModCog(commands.Cog):
         
         try:
             if role in user.roles:
+                register_mod_action(self.bot, ctx.guild.id, user.id, ctx.author.id, f"Role toggle by {ctx.author}", "ROLE_REMOVE")
                 await user.remove_roles(role, reason=f"Role toggle by {ctx.author}")
                 
                 embed = discord.Embed(
@@ -349,6 +360,7 @@ class ModCog(commands.Cog):
                     color=discord.Color.orange()
                 )
             else:
+                register_mod_action(self.bot, ctx.guild.id, user.id, ctx.author.id, f"Role toggle by {ctx.author}", "ROLE_ADD")
                 await user.add_roles(role, reason=f"Role toggle by {ctx.author}")
                 
                 embed = discord.Embed(
@@ -360,8 +372,12 @@ class ModCog(commands.Cog):
             embed.set_footer(text=f"Action by {ctx.author}")
             await ctx.send(embed=embed)
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "ROLE_ADD")
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "ROLE_REMOVE")
             await ctx.send("❌ I don't have permission to modify that role.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "ROLE_ADD")
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "ROLE_REMOVE")
             await ctx.send(f"❌ Failed to toggle role: {str(e)}")
 
     @commands.hybrid_command(name="addmod", help="Add the moderator role to a user")
@@ -385,6 +401,7 @@ class ModCog(commands.Cog):
             return
             
         try:
+            register_mod_action(self.bot, ctx.guild.id, user.id, ctx.author.id, f"Promoted to Moderator by {ctx.author}", "ROLE_ADD")
             await user.add_roles(role, reason=f"Promoted to Moderator by {ctx.author}")
             
             embed = discord.Embed(
@@ -397,8 +414,10 @@ class ModCog(commands.Cog):
             
             await ctx.send(embed=embed)
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "ROLE_ADD")
             await ctx.send("❌ I don't have permission to assign the moderator role.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, user.id, "ROLE_ADD")
             await ctx.send(f"❌ Failed to promote user: {str(e)}")
 
     @commands.hybrid_command(name="timeout", help="Timeout a member for a specified duration")
@@ -446,6 +465,7 @@ class ModCog(commands.Cog):
         
         try:
             timeout_until = datetime.now(timezone.utc) + timedelta(seconds=total_seconds)
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_APPLIED")
             await member.timeout(timeout_until, reason=reason)
             
             embed = discord.Embed(
@@ -460,8 +480,10 @@ class ModCog(commands.Cog):
             
             await ctx.send(embed=embed)
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
             await ctx.send("❌ I don't have permission to timeout that member.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
             await ctx.send(f"❌ Failed to timeout: {str(e)}")
 
     @commands.hybrid_command(name="untimeout", help="Remove timeout from a member")
@@ -475,6 +497,7 @@ class ModCog(commands.Cog):
             return await ctx.send(f"❌ {member.mention} is not timed out.")
         
         try:
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_REMOVED")
             await member.timeout(None, reason=reason)
             
             embed = discord.Embed(
@@ -487,8 +510,10 @@ class ModCog(commands.Cog):
             
             await ctx.send(embed=embed)
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_REMOVED")
             await ctx.send("❌ I don't have permission to remove timeout from that member.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_REMOVED")
             await ctx.send(f"❌ Failed to remove timeout: {str(e)}")
 
     @commands.hybrid_command(name="slowmode", help="View or set slowmode delay for the current channel")
@@ -827,9 +852,12 @@ class ModCog(commands.Cog):
         for user_id in ids:
             try:
                 user = await self.bot.fetch_user(user_id)
-                await ctx.guild.ban(user, reason=f"[MASSBAN] {reason}")
+                ban_reason = f"[MASSBAN] {reason}"
+                register_mod_action(self.bot, ctx.guild.id, user_id, ctx.author.id, ban_reason, "BAN")
+                await ctx.guild.ban(user, reason=ban_reason)
                 banned.append(f"{user} ({user_id})")
             except Exception as e:
+                discard_mod_action(self.bot, ctx.guild.id, user_id, "BAN")
                 failed.append(f"{user_id}: {str(e)}")
         
         embed = discord.Embed(
@@ -870,6 +898,7 @@ class ModCog(commands.Cog):
         old_nick = member.display_name
         
         try:
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, f"Nickname changed by {ctx.author}", "NICKNAME_UPDATE")
             await member.edit(nick=nickname, reason=f"Nickname changed by {ctx.author}")
             
             embed = discord.Embed(
@@ -883,8 +912,10 @@ class ModCog(commands.Cog):
             
             await ctx.send(embed=embed)
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "NICKNAME_UPDATE")
             await ctx.send("❌ I don't have permission to change that member's nickname.")
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "NICKNAME_UPDATE")
             await ctx.send(f"❌ Failed to change nickname: {str(e)}")
 
     # -------- Server Information Commands --------

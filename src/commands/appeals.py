@@ -14,6 +14,7 @@ from config import MODERATION_ROLE_ID, APPEALS_MODERATOR_USER_ID, APPEALS_LOG_CH
 
 logger = logging.getLogger("codeverse.appeals")
 from utils.database import DATABASE_NAME, init_db
+from utils.helpers import discard_mod_action, register_mod_action
 from utils.embeds import (
     create_error_embed as _base_create_error_embed,
 )
@@ -1199,11 +1200,23 @@ class Appeals(commands.Cog):
                 )
                 return
             try:
+                # Register the actual invoker so the logging system attributes
+                # the timeout removal to the reviewing moderator instead of the
+                # bot (Discord audit logs show the bot for API actions).
+                register_mod_action(
+                    self.bot,
+                    record.guild_id,
+                    record.user_id,
+                    interaction.user.id,
+                    f"Appeal #{record.appeal_id} approved by {interaction.user}",
+                    "TIMEOUT_REMOVED",
+                )
                 await member.timeout(
                     None,
                     reason=f"Appeal #{record.appeal_id} approved by {interaction.user}",
                 )
             except Exception as e:
+                discard_mod_action(self.bot, record.guild_id, record.user_id, "TIMEOUT_REMOVED")
                 await interaction.response.send_message(
                     embed=create_error_embed(
                         "Action Failed", f"Could not clear timeout: {e}"
@@ -1319,8 +1332,19 @@ class Appeals(commands.Cog):
 
         new_until = datetime.now(timezone.utc) + delta
         try:
+            # Register the actual invoker so the logging system attributes the
+            # timeout extension to the reviewing moderator instead of the bot.
+            register_mod_action(
+                self.bot,
+                record.guild_id,
+                record.user_id,
+                interaction.user.id,
+                reason,
+                "TIMEOUT_APPLIED",
+            )
             await member.timeout(new_until, reason=reason)
         except Exception as e:
+            discard_mod_action(self.bot, record.guild_id, record.user_id, "TIMEOUT_APPLIED")
             await interaction.response.send_message(
                 embed=create_error_embed("Timeout Failed", str(e)),
                 ephemeral=True,

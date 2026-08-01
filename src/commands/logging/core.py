@@ -28,6 +28,10 @@ class LoggingCog(MemberLogMixin, ChannelLogMixin, RoleLogMixin, ModerationLogMix
         self.log_queue = asyncio.Queue()
         self.formatter = LogFormatter(bot)
         self.is_ready = False
+        # Registry of command-initiated moderation actions so the event
+        # listeners can attribute logs to the real command invoker instead of
+        # the bot (see ModerationLogMixin.register_command_action).
+        self._pending_mod_actions: dict = {}
         
         # Start log processing task
         self.log_task = asyncio.create_task(self.process_logs())

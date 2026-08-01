@@ -213,8 +213,15 @@ class Core(commands.Cog):
         if not report_channel:
             try:
                 report_channel = await self.bot.fetch_channel(REPORT_CHANNEL_ID)
-            except:
+            except (discord.Forbidden, discord.NotFound):
                 msg = "Report channel not found. Please contact an admin."
+                if isinstance(interaction_or_ctx, commands.Context):
+                    await interaction_or_ctx.reply(msg, ephemeral=True)
+                else:
+                    await interaction_or_ctx.response.send_message(msg, ephemeral=True)
+                return
+            except Exception:
+                msg = "Could not access report channel. Please try again later."
                 if isinstance(interaction_or_ctx, commands.Context):
                     await interaction_or_ctx.reply(msg, ephemeral=True)
                 else:
@@ -258,14 +265,14 @@ class Core(commands.Cog):
                 channel = self.bot.get_channel(channel_id) or await self.bot.fetch_channel(channel_id)
                 if isinstance(channel, (discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.StageChannel)):
                     message = await channel.fetch_message(message_id)
-            except:
+            except (discord.NotFound, discord.Forbidden, ValueError, IndexError):
                 pass
         
         # Try parsing as ID in current channel
         if not message and message_reference.isdigit():
             try:
                 message = await ctx.channel.fetch_message(int(message_reference))
-            except:
+            except (discord.NotFound, discord.Forbidden):
                 pass
                 
         if not message:

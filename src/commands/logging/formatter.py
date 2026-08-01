@@ -151,6 +151,9 @@ class LogFormatter:
             embed.description = f"{_fmt_mention(user)} was banned"
             embed.color = discord.Color(0x2B2D31)
             
+            if user_id:
+                embed.add_field(name="User ID", value=f"`{user_id}`", inline=True)
+            
             if moderator:
                 embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
             
@@ -166,6 +169,9 @@ class LogFormatter:
             embed.description = f"{_fmt_mention(user)} was unbanned"
             embed.color = discord.Color(0x2B2D31)
             
+            if user_id:
+                embed.add_field(name="User ID", value=f"`{user_id}`", inline=True)
+            
             if moderator:
                 embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
             
@@ -180,6 +186,9 @@ class LogFormatter:
             embed.title = "Member Kicked"
             embed.description = f"{_fmt_mention(user)} was kicked"
             embed.color = discord.Color(0x2B2D31)
+            
+            if user_id:
+                embed.add_field(name="User ID", value=f"`{user_id}`", inline=True)
             
             if moderator:
                 embed.add_field(name="Moderator", value=_fmt_mention(moderator), inline=True)
