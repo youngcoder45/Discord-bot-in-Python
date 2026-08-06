@@ -15,7 +15,7 @@ from config import MODERATION_ROLE_ID, APPEALS_MODERATOR_USER_ID, APPEALS_LOG_CH
 
 logger = logging.getLogger("codeverse.appeals")
 from utils.database import DATABASE_NAME, init_db
-from utils.helpers import discard_mod_action, register_mod_action
+from utils.helpers import discard_mod_action, register_mod_action, safe_send
 from utils.embeds import (
     create_error_embed as _base_create_error_embed,
 )
@@ -75,23 +75,14 @@ async def _safe_ctx_send(
     view: discord.ui.View | None = None,
     ephemeral: bool = False,
 ):
-    send_kwargs: dict[str, Any] = {}
-    if content is not None:
-        send_kwargs["content"] = content
-    if embed is not None:
-        send_kwargs["embed"] = embed
-    if view is not None:
-        send_kwargs["view"] = view
+    """Safe reply for hybrid commands.
 
-    interaction = getattr(ctx, "interaction", None)
-    if ephemeral and interaction is not None:
-        try:
-            return await interaction.response.send_message(
-                **send_kwargs, ephemeral=True
-            )
-        except discord.InteractionResponded:
-            return await interaction.followup.send(**send_kwargs, ephemeral=True)
-    return await ctx.send(**send_kwargs)
+    Delegates to the shared helper so an expired interaction (10062) can never
+    raise, and non-interaction (prefix) invocations still use ``ctx.send``.
+    """
+    return await safe_send(
+        ctx, content=content, embed=embed, view=view, ephemeral=ephemeral
+    )
 
 
 def _format_relative(dt: Optional[datetime]) -> str:
@@ -1084,6 +1075,11 @@ class Appeals(commands.Cog):
             )
             return
 
+        # Acknowledge immediately: the database insert, logging event and
+        # staff review message sends below can exceed Discord's 3-second
+        # interaction window (10062 Unknown interaction).
+        await interaction.response.defer(ephemeral=True)
+
         conn = sqlite3.connect(DATABASE_NAME)
         cursor = conn.cursor()
         cursor.execute(
@@ -1125,7 +1121,7 @@ class Appeals(commands.Cog):
 
         updated_record = await self._fetch_appeal_record(appeal_id)
         if updated_record is None:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "Failed to persist the appeal.", ephemeral=True
             )
             return
@@ -1162,7 +1158,7 @@ class Appeals(commands.Cog):
             conn.commit()
             conn.close()
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=create_success_embed(
                 "Appeal Submitted",
                 "Your appeal has been sent to the moderation team.",
@@ -1199,9 +1195,13 @@ class Appeals(commands.Cog):
             )
             return
 
+        # Acknowledge immediately: the timeout API call, database writes,
+        # message edits and DM sends below can exceed the 3-second window.
+        await interaction.response.defer(ephemeral=True)
+
         updated_record = await self._fetch_appeal_record(record.appeal_id)
         if updated_record is None or updated_record.status != "pending":
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "This appeal has already been processed.", ephemeral=True
             )
             return
@@ -1209,7 +1209,7 @@ class Appeals(commands.Cog):
         if decision == "approved":
             member = self._resolve_member(record.guild_id, record.user_id)
             if member is None:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     embed=create_error_embed(
                         "Member Not Found",
                         "The user is no longer in the server, so the timeout cannot be removed.",
@@ -1242,7 +1242,7 @@ class Appeals(commands.Cog):
             except Exception as e:
                 discard_mod_action(self.bot, record.guild_id, record.user_id, "TIMEOUT_REMOVED")
                 self._pending_appeal_removals.pop((record.guild_id, record.user_id), None)
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     embed=create_error_embed(
                         "Action Failed", f"Could not clear timeout: {e}"
                     ),
@@ -1303,7 +1303,7 @@ class Appeals(commands.Cog):
             timestamp=datetime.now(timezone.utc),
         )
         decision_embed.set_footer(text=_appeals_footer_text(record.guild_name))
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=decision_embed,
             ephemeral=True,
         )
@@ -1345,9 +1345,13 @@ class Appeals(commands.Cog):
             )
             return
 
+        # Acknowledge immediately: the timeout API call, database writes,
+        # logging event and DM send below can exceed the 3-second window.
+        await interaction.response.defer(ephemeral=True)
+
         member = self._resolve_member(record.guild_id, record.user_id)
         if not member:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_error_embed(
                     "Member Not Found", "The user is no longer in the server."
                 ),
@@ -1370,7 +1374,7 @@ class Appeals(commands.Cog):
             await member.timeout(new_until, reason=reason)
         except Exception as e:
             discard_mod_action(self.bot, record.guild_id, record.user_id, "TIMEOUT_APPLIED")
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_error_embed("Timeout Failed", str(e)),
                 ephemeral=True,
             )
@@ -1401,7 +1405,7 @@ class Appeals(commands.Cog):
         await self._dm_extended_timeout(
             refreshed or record, interaction.user, new_until, reason
         )
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=create_success_embed(
                 "Timeout Extended",
                 f"The timeout for {record.username} has been extended until {_format_relative(new_until)}.",

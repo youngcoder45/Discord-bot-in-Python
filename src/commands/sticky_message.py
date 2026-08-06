@@ -3,7 +3,13 @@ from discord.ext import commands  # type: ignore[import-not-found]
 from discord import app_commands  # type: ignore[import-not-found]
 import sqlite3
 import asyncio
+import logging
+import time
 from typing import Optional
+
+from utils.helpers import safe_interaction_reply
+
+logger = logging.getLogger("codeverse.sticky_message")
 
 DATABASE_NAME = "data/codeverse_bot.db"
 
@@ -45,17 +51,27 @@ class StickyMessageModal(discord.ui.Modal):
         """Handle modal submission"""
         try:
             if not interaction.guild:
-                await interaction.response.send_message("❌ This command can only be used in servers.", ephemeral=True)
+                await safe_interaction_reply(
+                    interaction,
+                    content="❌ This command can only be used in servers.",
+                    ephemeral=True,
+                )
                 return
-                
+
+            # Acknowledge the interaction immediately. Sending the sticky
+            # message and writing to the database below can take longer than
+            # Discord's 3-second window, which would expire the interaction
+            # token and produce a 10062 Unknown interaction error.
+            await interaction.response.defer(ephemeral=True)
+
             text = self.content.value
-            
+
             # Create the sticky message content
             sticky_content = f"__**Sticky Message**__\n\n{text}"
-            
+
             # Send the sticky message
             sticky_msg = await self.channel.send(sticky_content)
-            
+
             # Store in database
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
@@ -66,41 +82,45 @@ class StickyMessageModal(discord.ui.Modal):
             ''', (interaction.guild.id, self.channel.id, text, sticky_msg.id))
             conn.commit()
             conn.close()
-            
+
             # Update cache
             self.cog._message_cache[self.channel.id] = {
                 'content': text,
                 'message_id': sticky_msg.id,
-                'last_repost': asyncio.get_event_loop().time()
+                'last_repost': time.monotonic()
             }
-            
+
             # Send confirmation
             embed = discord.Embed(
                 title="✅ Sticky Message Created",
                 description=f"Sticky message has been set in {self.channel.mention}",
                 color=0x00ff00
             )
-            
+
             # Show preview (truncated if too long)
             preview = text[:500] + "..." if len(text) > 500 else text
             embed.add_field(name="Content Preview", value=preview, inline=False)
-            
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            
+
+            # The interaction was deferred, so the final response is a followup.
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
         except discord.Forbidden:
             embed = discord.Embed(
                 title="❌ Permission Error",
                 description=f"I don't have permission to send messages in {self.channel.mention}.",
                 color=0xff0000
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await safe_interaction_reply(interaction, embed=embed, ephemeral=True)
         except Exception as e:
+            logger.exception("Failed to create sticky message in channel %s", self.channel.id)
             embed = discord.Embed(
                 title="❌ Error",
                 description=f"Failed to create sticky message: {str(e)}",
                 color=0xff0000
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            # safe_interaction_reply picks followup when we already deferred and
+            # swallows 10062 if the interaction expired meanwhile.
+            await safe_interaction_reply(interaction, embed=embed, ephemeral=True)
 
 class StickyMessage(commands.Cog):
     """Sticky message system that reposts messages when new messages are sent"""
@@ -394,7 +414,7 @@ class StickyMessage(commands.Cog):
             return
         
         # Reduced cooldown - only 1 second to prevent spam but still be responsive
-        current_time = asyncio.get_event_loop().time()
+        current_time = time.monotonic()
         if current_time - sticky_data['last_repost'] < 1:  # 1 second cooldown
             return
         

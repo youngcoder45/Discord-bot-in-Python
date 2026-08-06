@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from config import DATABASE_NAME
 from utils.embeds import create_success_embed, create_error_embed
+from utils.helpers import safe_interaction_reply
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class PermissionSelect(discord.ui.Select):
             conn.close()
             
             embed = create_success_embed("Role Created", f"Permit role **{self.role_name}** created with permissions: {', '.join(self.values)}")
-            await interaction.response.send_message(embed=embed)
+            await safe_interaction_reply(interaction, embed=embed)
             
             # Disable view
             if self.view:
@@ -49,7 +50,7 @@ class PermissionSelect(discord.ui.Select):
         except Exception as e:
             logger.error(f"Error creating permit role: {e}")
             embed = create_error_embed("Creation Failed", f"Database error: {e}")
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await safe_interaction_reply(interaction, embed=embed, ephemeral=True)
 
 class PermitView(discord.ui.View):
     def __init__(self, role_name: str):

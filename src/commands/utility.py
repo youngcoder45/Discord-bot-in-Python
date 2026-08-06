@@ -6,6 +6,8 @@ import json
 import re
 from datetime import datetime, timezone
 
+from utils.helpers import safe_interaction_reply
+
 class EmbedEditModal(discord.ui.Modal):
     """Interactive modal for editing existing embeds"""
     
@@ -72,6 +74,10 @@ class EmbedEditModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         """Handle the form submission and edit the embed"""
         try:
+            # Acknowledge immediately: editing a message (or webhook call) can
+            # exceed Discord's 3-second interaction window.
+            await interaction.response.defer(ephemeral=True)
+
             # Create the updated embed
             embed = discord.Embed(
                 title=self.embed_title.value,
@@ -109,13 +115,13 @@ class EmbedEditModal(discord.ui.Modal):
             else:
                 await self.original_message.edit(content=new_content, embed=embed)
             
-            # Send ephemeral confirmation
+            # Send ephemeral confirmation (followup: the interaction is deferred)
             success_embed = discord.Embed(
                 title="✅ Embed Updated",
                 description=f"The embed has been updated!\n[Jump to message]({self.original_message.jump_url})",
                 color=discord.Color.green()
             )
-            await interaction.response.send_message(embed=success_embed, ephemeral=True)
+            await interaction.followup.send(embed=success_embed, ephemeral=True)
             
         except discord.Forbidden:
             error_embed = discord.Embed(
@@ -123,21 +129,21 @@ class EmbedEditModal(discord.ui.Modal):
                 description="I don't have permission to edit that message. Make sure I sent the original message.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
         except discord.NotFound:
             error_embed = discord.Embed(
                 title="❌ Message Not Found",
                 description="The message could not be found. It may have been deleted.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
         except Exception as e:
             error_embed = discord.Embed(
                 title="❌ Embed Edit Failed",
                 description=f"Error: {str(e)}",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
 
 class EmbedCreatorModal(discord.ui.Modal):
     """Interactive modal for creating embeds"""
@@ -191,6 +197,10 @@ class EmbedCreatorModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         """Handle the form submission and create the embed"""
         try:
+            # Acknowledge immediately: webhook lookups/creation and channel sends
+            # below can exceed Discord's 3-second interaction window.
+            await interaction.response.defer(ephemeral=True)
+
             # Create the embed with the provided data
             embed = discord.Embed(
                 title=self.embed_title.value,
@@ -257,16 +267,16 @@ class EmbedCreatorModal(discord.ui.Modal):
                         await target_channel.send(embed=embed)
                 else:
                     # Fallback for other channel types
-                    await interaction.response.send_message(content=self.embed_premessage.value, embed=embed)
+                    await interaction.followup.send(content=self.embed_premessage.value, embed=embed, ephemeral=True)
                     return
 
-            # Send ephemeral confirmation to the user
+            # Send ephemeral confirmation to the user (followup: already deferred)
             success_embed = discord.Embed(
                 title="✅ Embed Sent",
                 description="Your embed has been sent to this channel!",
                 color=discord.Color.green()
             )
-            await interaction.response.send_message(embed=success_embed, ephemeral=True)
+            await interaction.followup.send(embed=success_embed, ephemeral=True)
             
         except Exception as e:
             error_embed = discord.Embed(
@@ -274,7 +284,7 @@ class EmbedCreatorModal(discord.ui.Modal):
                 description=f"Error: {str(e)}",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
 
 class EmbedBuilder(commands.Cog):
     """Advanced embed creation and management commands"""
@@ -310,7 +320,8 @@ class EmbedBuilder(commands.Cog):
                 description=f"Error: {str(e)}",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            # Safe: handles already-responded/expired interactions (10062).
+            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
 
     @app_commands.command(
         name="editembed",
@@ -433,14 +444,15 @@ class EmbedBuilder(commands.Cog):
                            f"• Right-click message → Copy Message Link",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            # Safe: handles already-responded/expired interactions (10062).
+            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
         except Exception as e:
             error_embed = discord.Embed(
                 title="❌ Error Opening Embed Editor",
                 description=f"Error: {str(e)}",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
 
     @app_commands.command(
         name="embedquick",
@@ -468,6 +480,10 @@ class EmbedBuilder(commands.Cog):
     ):
         """Create a beautiful customized embed message (quick method with parameters)"""
         try:
+            # Acknowledge immediately: the channel send below can exceed
+            # Discord's 3-second interaction window (10062).
+            await interaction.response.defer(ephemeral=True)
+
             print(f"DEBUG: /embedquick called by {interaction.user} (ID: {interaction.user.id})")
             print(f"DEBUG: Guild: {interaction.guild.name if interaction.guild else 'DM'}")
             
@@ -532,16 +548,16 @@ class EmbedBuilder(commands.Cog):
             if isinstance(interaction.channel, (discord.TextChannel, discord.Thread)):
                 await interaction.channel.send(embed=embed)
                 
-                # Send ephemeral confirmation to the user
+                # Send ephemeral confirmation to the user (followup: deferred)
                 success_embed = discord.Embed(
                     title="✅ Embed Sent",
                     description="Your embed has been sent to this channel!",
                     color=discord.Color.green()
                 )
-                await interaction.response.send_message(embed=success_embed, ephemeral=True)
+                await interaction.followup.send(embed=success_embed, ephemeral=True)
             else:
                 # Fallback if not in a proper channel
-                await interaction.response.send_message(embed=embed)
+                await interaction.followup.send(embed=embed)
             
         except Exception as e:
             error_embed = discord.Embed(
@@ -549,7 +565,8 @@ class EmbedBuilder(commands.Cog):
                 description=f"Error: {str(e)}",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            # Safe: picks followup when deferred and swallows 10062 if expired.
+            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
 
     # embedrules command has been removed
 

@@ -13,6 +13,7 @@ from config import (
     MODERATION_ROLE_ID, STAFF_ALERT_CHANNEL,
 )
 from utils.embeds import create_error_embed
+from utils.helpers import safe_interaction_reply
 
 logger = logging.getLogger("codeverse.protection")
 
@@ -450,14 +451,9 @@ class Protection(commands.Cog):
     @app_commands.describe(user="The member to get the ID of")
     async def getuserid_slash(self, interaction: discord.Interaction, user: discord.Member):
         """Slash command: /getuserid user: <member>"""
-        try:
-            await interaction.response.send_message(f"{user} — ID: {user.id}", ephemeral=True)
-        except Exception:
-            # Fallback for already-responded interactions
-            try:
-                await interaction.followup.send(f"{user} — ID: {user.id}", ephemeral=True)
-            except:
-                pass
+        await safe_interaction_reply(
+            interaction, content=f"{user} — ID: {user.id}", ephemeral=True
+        )
 
     @commands.command(name="getuserid")
     async def getuserid(self, ctx, user: discord.Member):

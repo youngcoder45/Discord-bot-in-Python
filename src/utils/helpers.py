@@ -47,6 +47,70 @@ def find_channel_by_name(guild: discord.Guild, *keywords: str) -> Optional[disco
     return None
 
 
+async def safe_interaction_reply(
+    interaction: discord.Interaction,
+    *,
+    content: str | None = None,
+    embed: discord.Embed | None = None,
+    embeds: list[discord.Embed] | None = None,
+    view: discord.ui.View | None = None,
+    ephemeral: bool = False,
+) -> Optional[discord.Message]:
+    """Reply to a Discord interaction without ever crashing on `10062`.
+
+    Automatically picks the correct API based on the interaction's state:
+    - Not yet acknowledged -> ``interaction.response.send_message``
+    - Already deferred/responded -> ``interaction.followup.send``
+
+    Handles (logs, never re-raises):
+    - ``discord.NotFound`` (10062 Unknown interaction - token expired)
+    - ``discord.InteractionResponded`` (race between check and send)
+    - ``discord.HTTPException`` (rate limits / transient API failures)
+
+    Returns the sent message or ``None`` if the reply could not be delivered.
+    """
+    send_kwargs: dict[str, Any] = {}
+    if content is not None:
+        send_kwargs["content"] = content
+    if embed is not None:
+        send_kwargs["embed"] = embed
+    if embeds is not None:
+        send_kwargs["embeds"] = embeds
+    if view is not None:
+        send_kwargs["view"] = view
+    if ephemeral:
+        send_kwargs["ephemeral"] = True
+
+    try:
+        if not interaction.response.is_done():
+            return await interaction.response.send_message(**send_kwargs)
+        return await interaction.followup.send(**send_kwargs)
+    except discord.NotFound:
+        # The interaction token expired before we could respond (error 10062).
+        logger.warning(
+            "Interaction %s expired before a reply could be sent (error 10062).",
+            interaction.id,
+        )
+    except discord.InteractionResponded:
+        # Race: the interaction was acknowledged between our check and the send.
+        try:
+            return await interaction.followup.send(**send_kwargs)
+        except discord.NotFound:
+            logger.warning(
+                "Interaction %s expired before a followup could be sent (error 10062).",
+                interaction.id,
+            )
+        except discord.HTTPException as e:
+            logger.error("safe_interaction_reply followup failed: %s", e)
+    except discord.HTTPException as e:
+        logger.error(
+            "safe_interaction_reply failed for interaction %s: %s",
+            interaction.id,
+            e,
+        )
+    return None
+
+
 async def safe_send(
     ctx_or_interaction: commands.Context | discord.Interaction,
     *,
@@ -58,7 +122,8 @@ async def safe_send(
     """Unified reply helper for hybrid commands.
 
     Works with both prefix (ctx.send) and slash (interaction response/followup) flows.
-    Handles InteractionResponded errors gracefully.
+    Interaction flows are routed through :func:`safe_interaction_reply`, so an
+    expired interaction (10062) can never raise.
     """
     send_kwargs: dict[str, Any] = {}
     if content is not None:
@@ -69,20 +134,14 @@ async def safe_send(
         send_kwargs["view"] = view
 
     interaction = getattr(ctx_or_interaction, "interaction", ctx_or_interaction)
-    if isinstance(interaction, discord.Interaction) and ephemeral:
-        try:
-            if not interaction.response.is_done():
-                return await interaction.response.send_message(
-                    **send_kwargs, ephemeral=True
-                )
-            return await interaction.followup.send(**send_kwargs, ephemeral=True)
-        except discord.InteractionResponded:
-            # Interaction was already responded to — use followup
-            try:
-                return await interaction.followup.send(**send_kwargs, ephemeral=True)
-            except Exception as e:
-                logger.warning("safe_send followup failed: %s", e)
-            
+    if isinstance(interaction, discord.Interaction):
+        # Interaction-based reply (slash / hybrid invoked via slash).
+        message = await safe_interaction_reply(
+            interaction, **send_kwargs, ephemeral=ephemeral
+        )
+        if message is not None:
+            return message
+
     if isinstance(ctx_or_interaction, commands.Context):
         try:
             return await ctx_or_interaction.send(**send_kwargs)

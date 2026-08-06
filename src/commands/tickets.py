@@ -11,6 +11,7 @@ from discord.ext import commands
 
 from utils.database import DATABASE_NAME
 from utils.embeds import create_error_embed, create_info_embed, create_success_embed
+from utils.helpers import safe_interaction_reply
 
 logger = logging.getLogger("codeverse.tickets")
 
@@ -871,11 +872,22 @@ class Tickets(commands.Cog):
         )
 
     async def handle_close_ticket(self, interaction: discord.Interaction):
+        # Acknowledge immediately: the DB reads and API calls below can exceed
+        # Discord's 3-second window for button interactions (10062).
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except (discord.NotFound, discord.HTTPException):
+            logger.warning(
+                "Ticket close interaction expired before ack (user %s).",
+                getattr(interaction.user, "id", None),
+            )
+            return
+
         if (
             not isinstance(interaction.channel, discord.TextChannel)
             or not interaction.guild
         ):
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_error_embed(
                     "Not a Ticket", "This command can only be used in ticket channels."
                 ),
@@ -895,7 +907,7 @@ class Tickets(commands.Cog):
 
         if not result:
             conn.close()
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_error_embed(
                     "Not a Ticket", "This is not an open ticket channel."
                 ),
@@ -909,7 +921,7 @@ class Tickets(commands.Cog):
 
         if not has_permission:
             conn.close()
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_error_embed(
                     "No Permission",
                     "Only the ticket owner or staff can close this ticket.",
@@ -940,7 +952,7 @@ class Tickets(commands.Cog):
         )
         embed.timestamp = datetime.now(timezone.utc)
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
         await self._generate_transcript(channel, ticket_id, save_to_log=True)
 
@@ -1009,11 +1021,22 @@ class Tickets(commands.Cog):
         return False
 
     async def handle_claim_ticket(self, interaction: discord.Interaction):
+        # Acknowledge immediately: the DB reads and the fetch_user API call
+        # below can exceed Discord's 3-second window for button interactions.
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except (discord.NotFound, discord.HTTPException):
+            logger.warning(
+                "Ticket claim interaction expired before ack (user %s).",
+                getattr(interaction.user, "id", None),
+            )
+            return
+
         if (
             not isinstance(interaction.channel, discord.TextChannel)
             or not interaction.guild
         ):
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_error_embed(
                     "Not a Ticket", "This command can only be used in ticket channels."
                 ),
@@ -1024,7 +1047,7 @@ class Tickets(commands.Cog):
         channel = interaction.channel
 
         if not self._is_staff(interaction):
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_error_embed(
                     "No Permission", "Only staff members can claim tickets."
                 ),
@@ -1042,7 +1065,7 @@ class Tickets(commands.Cog):
 
         if not result:
             conn.close()
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_error_embed(
                     "Not a Ticket", "This is not an open ticket channel."
                 ),
@@ -1059,7 +1082,7 @@ class Tickets(commands.Cog):
             except Exception:
                 msg = "This ticket is already claimed by someone."
             conn.close()
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=create_info_embed("Already Claimed", msg),
                 ephemeral=True,
             )
@@ -1078,7 +1101,7 @@ class Tickets(commands.Cog):
             color=0x0000FF,
         )
         embed.timestamp = datetime.now(timezone.utc)
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
         await self._log_ticket_action(
             "CLAIMED",

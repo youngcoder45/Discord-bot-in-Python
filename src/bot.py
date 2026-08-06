@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from commands.modules.sam import bridge as sam_bridge
 from utils.json_store import get_guild_prefix
+from utils.helpers import safe_interaction_reply
 import atexit
 
 # Load environment variables once at startup
@@ -51,7 +52,7 @@ def authorized_servers_only():
                     description="This bot can only be used in authorized servers.",
                     color=discord.Color.red()
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await safe_interaction_reply(interaction, embed=embed, ephemeral=True)
                 logger.warning(f"Command {func.__name__} blocked in unauthorized server: {interaction.guild.name} (ID: {interaction.guild.id})")
                 return
             return await func(interaction, *args, **kwargs)
@@ -118,10 +119,9 @@ class CodeVerseBot(commands.Bot):
                 description="This bot can only be used in authorized servers.",
                 color=discord.Color.red()
             )
-            try:
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            except discord.InteractionResponded:
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            # Safe reply: never raises even if the interaction already expired
+            # (10062) or was responded to between the check and the send.
+            await safe_interaction_reply(interaction, embed=embed, ephemeral=True)
             
             logger.warning(f"Interaction blocked in unauthorized server: {interaction.guild.name} (ID: {interaction.guild.id})")
             return False

@@ -1321,6 +1321,9 @@ class VerificationView(discord.ui.View):
         )
         
         await interaction.response.defer()
+        # After deferring, edits must go through edit_original_response
+        # (response.edit_message would raise InteractionResponded).
+        await interaction.edit_original_response(embed=embed, view=self)
     
     @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
     async def save_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1371,7 +1374,10 @@ class VerificationView(discord.ui.View):
             for item in self.children:
                 item.disabled = True
             
-            await interaction.response.edit_message(embed=embed, view=self)
+            # The interaction was deferred above, so edits must use
+            # edit_original_response (response.edit_message would raise
+            # InteractionResponded after a defer).
+            await interaction.edit_original_response(embed=embed, view=self)
             
         except discord.Forbidden:
             await interaction.followup.send(
