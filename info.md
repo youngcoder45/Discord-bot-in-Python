@@ -1,4 +1,4 @@
-# CodeVerse Bot — Full Feature Inventory
+# CodeVerse Bot: Full Feature Inventory
 
 This document describes what this repository’s Discord bot does **based on the code that actually loads at runtime** (see `src/bot.py` → `COGS_TO_LOAD`) plus notable “present in repo but not really wired up” parts (dashboard, unused storage tables, etc.).
 
@@ -332,4 +332,3 @@ Extracted from decorators in `src/commands/**` and `src/events/**`.
 | `warnings_group clear` | slash | src/commands/modules/sam/features/warnings/cogs.py:259 |
 | `warnings_group modify` | slash | src/commands/modules/sam/features/warnings/cogs.py:208 |
 | `warnings_group view` | slash | src/commands/modules/sam/features/warnings/cogs.py:161 |
-

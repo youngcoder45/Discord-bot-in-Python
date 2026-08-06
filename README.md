@@ -706,7 +706,7 @@ Clean, modular code with full type hints, comprehensive documentation, and easy 
 | Maintainer | [@youngcoder45](https://github.com/youngcoder45) and [@hyscript7](https://github.com/hyscript7)|
 | Library | discord.py |
 
-Community contributions welcome—submit PRs or issues.
+Community contributions welcome, Submit PRs or issues.
 
 ## Contributing
 

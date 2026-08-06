@@ -4,14 +4,15 @@ The help menu is built entirely from the bot's loaded command tree at
 render time, so new commands appear automatically once their cog is loaded.
 There is no manual command list to keep in sync.
 """
+
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Optional
 
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +85,16 @@ def _is_visible_command(cmd, is_owner: bool) -> bool:
     - Explicit system commands (sync/load/introreact) are always hidden.
     - Owner-only commands are always decorated hidden=True by convention
       (commands.is_owner is a function, not a class, so it cannot be used
-      with isinstance) — they are excluded via the hidden filter below.
+      with isinstance) they are excluded via the hidden filter below.
     - Other hidden commands are hidden unless whitelisted for users.
     - Regular commands are always visible.
     """
     name = getattr(cmd, "name", "")
     if name in _SYSTEM_COMMANDS:
         return False
-    hidden = getattr(cmd, "hidden", False) or bool(getattr(cmd, "extras", {}).get("hidden", False))
+    hidden = getattr(cmd, "hidden", False) or bool(
+        getattr(cmd, "extras", {}).get("hidden", False)
+    )
     if hidden:
         return name in _USER_HIDDEN_COMMANDS
     return True
@@ -216,7 +219,7 @@ def build_categories(bot: commands.Bot, ctx) -> dict[str, list]:
         registered_prefix_names.add(cmd.name)
 
     # Slash-only commands from the tree (hybrids were already popped above).
-    # Subcommands of groups are skipped here — they are listed inside the
+    # Subcommands of groups are skipped here they are listed inside the
     # group's detailed help instead, keeping each category list tidy.
     slash_cogs = _slash_command_cogs(bot)
     for qname, app_cmd in tree.items():
@@ -238,13 +241,15 @@ def build_categories(bot: commands.Bot, ctx) -> dict[str, list]:
     return dict(sorted(result.items()))
 
 
-def build_home_embed(bot: commands.Bot, categories: dict[str, list[commands.Command]], prefix: str) -> discord.Embed:
+def build_home_embed(
+    bot: commands.Bot, categories: dict[str, list[commands.Command]], prefix: str
+) -> discord.Embed:
     """Main help page with bot info, quick stats and category overview."""
     total = sum(len(cmds) for cmds in categories.values())
     uptime = _format_uptime(bot)
 
     embed = discord.Embed(
-        title="CodeVerse Bot — Help Center",
+        title="CodeVerse Bot : Help Center",
         description=(
             "Welcome to **CodeVerse Bot**! Pick a category from the dropdown "
             "below to explore its commands.\n\n"
@@ -264,14 +269,18 @@ def build_home_embed(bot: commands.Bot, categories: dict[str, list[commands.Comm
     embed.add_field(name="Quick Stats", value="\n".join(stats), inline=False)
 
     overview = "\n".join(
-        f"**{label}** — {len(cmds)} command{'s' if len(cmds) != 1 else ''}"
+        f"**{label}** - {len(cmds)} command{'s' if len(cmds) != 1 else ''}"
         for label, cmds in categories.items()
     )
-    embed.add_field(name="Categories", value=overview or "No commands available.", inline=False)
+    embed.add_field(
+        name="Categories", value=overview or "No commands available.", inline=False
+    )
 
     if bot.user and bot.user.avatar:
         embed.set_thumbnail(url=bot.user.avatar.url)
-    embed.set_footer(text=f"{total} total commands • Use the dropdown to browse categories")
+    embed.set_footer(
+        text=f"{total} total commands • Use the dropdown to browse categories"
+    )
     return embed
 
 
@@ -452,7 +461,11 @@ def build_command_embed(
         timestamp=datetime.now(timezone.utc),
     )
 
-    embed.add_field(name="Category", value=_cog_category(getattr(cmd, "cog_name", None)), inline=True)
+    embed.add_field(
+        name="Category",
+        value=_cog_category(getattr(cmd, "cog_name", None)),
+        inline=True,
+    )
     embed.add_field(name="Type", value=_type_label(cmd), inline=True)
 
     aliases = _get_aliases(cmd)
@@ -476,12 +489,14 @@ def build_command_embed(
     if isinstance(cmd, commands.Group):
         subs = [s for s in cmd.commands if _is_visible_command(s, is_owner)]
         if subs:
-            lines = [f"`{s.name}` — {s.short_doc or 'No description'}" for s in subs]
+            lines = [f"`{s.name}` - {s.short_doc or 'No description'}" for s in subs]
             embed.add_field(name="Subcommands", value="\n".join(lines), inline=False)
-    elif isinstance(cmd, _SlashCommandInfo) and isinstance(cmd.app_command, app_commands.Group):
+    elif isinstance(cmd, _SlashCommandInfo) and isinstance(
+        cmd.app_command, app_commands.Group
+    ):
         subs = [s for s in cmd.app_command.commands if _is_visible_command(s, is_owner)]
         if subs:
-            lines = [f"`{s.name}` — {s.description or 'No description'}" for s in subs]
+            lines = [f"`{s.name}` - {s.description or 'No description'}" for s in subs]
             embed.add_field(name="Subcommands", value="\n".join(lines), inline=False)
 
     embed.set_footer(text=f"CodeVerse Bot • {_total_visible_count(bot)} total commands")
@@ -508,10 +523,12 @@ def _section_lines(cmds: list, prefix: str) -> list[str]:
     """Format command lines (without a section heading)."""
     lines = []
     for cmd in cmds:
-        summary = (cmd.short_doc or cmd.help or "No description").strip().replace("\n", " ")
+        summary = (
+            (cmd.short_doc or cmd.help or "No description").strip().replace("\n", " ")
+        )
         if len(summary) > 70:
             summary = summary[:67] + "…"
-        lines.append(f"`{_display_name(cmd)}` — {summary}")
+        lines.append(f"`{_display_name(cmd)}` - {summary}")
     return lines
 
 
@@ -523,7 +540,11 @@ def _group_by_type(cmds: list) -> dict[str, list]:
     return buckets
 
 
-_SECTION_TITLES = {"slash": "Slash Commands", "hybrid": "Hybrid Commands", "prefix": "Prefix Commands"}
+_SECTION_TITLES = {
+    "slash": "Slash Commands",
+    "hybrid": "Hybrid Commands",
+    "prefix": "Prefix Commands",
+}
 
 
 def build_category_embed(
@@ -569,7 +590,9 @@ def build_category_embed(
             text=f"Page {page + 1}/{total_pages} • Use the buttons to navigate • {len(cmds)} commands"
         )
     else:
-        embed.set_footer(text=f"{len(cmds)} commands • Select another category from the dropdown")
+        embed.set_footer(
+            text=f"{len(cmds)} commands • Select another category from the dropdown"
+        )
     return embed
 
 
@@ -585,12 +608,16 @@ class _HomeButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.edit_message(embed=self.view.home_embed, view=self.view)  # type: ignore[attr-defined]
+        await interaction.response.edit_message(
+            embed=self.view.home_embed, view=self.view
+        )  # type: ignore[attr-defined]
 
 
 class _PageButton(discord.ui.Button):
     def __init__(self, label: str, custom_id: str, direction: int):
-        super().__init__(label=label, style=discord.ButtonStyle.primary, custom_id=custom_id)
+        super().__init__(
+            label=label, style=discord.ButtonStyle.primary, custom_id=custom_id
+        )
         self.direction = direction
 
     async def callback(self, interaction: discord.Interaction):
@@ -598,7 +625,11 @@ class _PageButton(discord.ui.Button):
         page = view.current_page + self.direction
         view.current_page = max(0, min(page, view.total_pages - 1))
         embed = build_category_embed(
-            view.bot, view.current_label, view.current_cmds, view.prefix, view.current_page
+            view.bot,
+            view.current_label,
+            view.current_cmds,
+            view.prefix,
+            view.current_page,
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -670,7 +701,9 @@ class HelpMenuView(discord.ui.View):
 # ---------------------------------------------------------------------------
 # Entry point used by the help command
 # ---------------------------------------------------------------------------
-async def send_help_menu(ctx: commands.Context, command_name: Optional[str] = None) -> None:
+async def send_help_menu(
+    ctx: commands.Context, command_name: Optional[str] = None
+) -> None:
     """Render and send the interactive help menu.
 
     Works for both slash and prefix invocations via hybrid commands.
@@ -700,19 +733,29 @@ async def send_help_menu(ctx: commands.Context, command_name: Optional[str] = No
         view.message = message
 
 
-async def _reply(ctx, content: str | None = None, embed: discord.Embed | None = None) -> None:
+async def _reply(
+    ctx, content: str | None = None, embed: discord.Embed | None = None
+) -> None:
     """Reply through either the interaction or a plain context."""
     if ctx.interaction:
         if not ctx.interaction.response.is_done():
             if embed is not None:
-                await ctx.interaction.response.send_message(content=content or "", embed=embed, ephemeral=True)
+                await ctx.interaction.response.send_message(
+                    content=content or "", embed=embed, ephemeral=True
+                )
             else:
-                await ctx.interaction.response.send_message(content=content or "", ephemeral=True)
+                await ctx.interaction.response.send_message(
+                    content=content or "", ephemeral=True
+                )
         else:
             if embed is not None:
-                await ctx.interaction.followup.send(content=content or "", embed=embed, ephemeral=True)
+                await ctx.interaction.followup.send(
+                    content=content or "", embed=embed, ephemeral=True
+                )
             else:
-                await ctx.interaction.followup.send(content=content or "", ephemeral=True)
+                await ctx.interaction.followup.send(
+                    content=content or "", ephemeral=True
+                )
     else:
         if embed is not None:
             await ctx.send(content=content or "", embed=embed)
