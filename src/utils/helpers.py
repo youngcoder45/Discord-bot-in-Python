@@ -15,6 +15,26 @@ async def log_action(action: str, user_id: int, details: str = "", **extra):
     logger.info("[%s] %s - User: %s - %s", timestamp, action, user_id, details)
 
 
+def sanitize_mentions(text: str) -> str:
+    """Escape mass-mention tokens in user-generated content.
+
+    Replaces ``@everyone``/``@here`` and raw user/role mentions (``<@123>``,
+    ``<@!123>``, ``<@&456>``) with a zero-width space after the ``@`` so the
+    text is preserved but cannot trigger any mention ping. This is applied to
+    any user content the bot re-posts (embeds, sticky messages, etc.) to
+    prevent accidental or abusive mass pinging.
+
+    Returns the sanitized string unchanged if ``text`` is empty/None.
+    """
+    if not text:
+        return text or ""
+    # @everyone / @here (case-insensitive)
+    text = re.sub(r"@(everyone|here)\b", "@\u200b\\1", text, flags=re.IGNORECASE)
+    # Raw user / role mentions: <@123>, <@!123>, <@&456>
+    text = re.sub(r"<@([!&]?\d+)>", "<@\u200b\\1>", text)
+    return text
+
+
 def parse_duration(text: str) -> Optional[timedelta]:
     """Parse a duration string like '1d 2h 30m' into a timedelta.
     

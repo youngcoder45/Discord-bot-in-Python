@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Optional
 
-from utils.helpers import safe_interaction_reply
+from utils.helpers import safe_interaction_reply, sanitize_mentions
 
 logger = logging.getLogger("codeverse.sticky_message")
 
@@ -64,13 +64,17 @@ class StickyMessageModal(discord.ui.Modal):
             # token and produce a 10062 Unknown interaction error.
             await interaction.response.defer(ephemeral=True)
 
-            text = self.content.value
+            # Sanitize user content so sticky messages can't be abused for
+            # mass pings (@everyone/@here/role/user mentions are escaped).
+            text = sanitize_mentions(self.content.value)
 
             # Create the sticky message content
             sticky_content = f"__**Sticky Message**__\n\n{text}"
 
-            # Send the sticky message
-            sticky_msg = await self.channel.send(sticky_content)
+            # Send the sticky message (no mentions can ever be triggered)
+            sticky_msg = await self.channel.send(
+                sticky_content, allowed_mentions=discord.AllowedMentions.none()
+            )
 
             # Store in database
             conn = sqlite3.connect(DATABASE_NAME)
@@ -433,9 +437,14 @@ class StickyMessage(commands.Cog):
             # Small delay before reposting to ensure proper order
             await asyncio.sleep(0.2)
             
-            # Send new sticky message
-            sticky_content = f"__**Sticky Message**__\n\n{sticky_data['content']}"
-            new_sticky = await message.channel.send(sticky_content)
+            # Send new sticky message (re-sanitize in case the stored content
+            # predates the sanitizer; mentions can never be triggered)
+            sticky_content = (
+                f"__**Sticky Message**__\n\n{sanitize_mentions(sticky_data['content'])}"
+            )
+            new_sticky = await message.channel.send(
+                sticky_content, allowed_mentions=discord.AllowedMentions.none()
+            )
             
             # Update message ID in database and cache
             sticky_data['message_id'] = new_sticky.id

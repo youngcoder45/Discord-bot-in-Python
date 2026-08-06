@@ -15,7 +15,12 @@ from config import MODERATION_ROLE_ID, APPEALS_MODERATOR_USER_ID, APPEALS_LOG_CH
 
 logger = logging.getLogger("codeverse.appeals")
 from utils.database import DATABASE_NAME, init_db
-from utils.helpers import discard_mod_action, register_mod_action, safe_send
+from utils.helpers import (
+    discard_mod_action,
+    register_mod_action,
+    safe_send,
+    sanitize_mentions,
+)
 from utils.embeds import (
     create_error_embed as _base_create_error_embed,
 )
@@ -95,6 +100,26 @@ def _truncate(text: str, limit: int = 900) -> str:
     if len(text) <= limit:
         return text
     return text[: limit - 3] + "..."
+
+
+def _classify_dm_error(exc: Exception) -> str:
+    """Turn a DM-send exception into a precise, human-readable reason.
+
+    Discord surfaces different exceptions for the common failure modes:
+
+    - ``discord.Forbidden``   -> user has DMs closed or blocked the bot
+    - ``discord.NotFound``    -> unknown user / no mutual servers / account deleted
+    - ``discord.HTTPException`` -> rate limited, temporary API failure, etc.
+    """
+    if isinstance(exc, discord.Forbidden):
+        return "Forbidden (Cannot send messages to this user — DMs closed or bot blocked)"
+    if isinstance(exc, discord.NotFound):
+        return "NotFound (Unknown user or no shared servers with the bot)"
+    if isinstance(exc, discord.HTTPException):
+        status = getattr(exc, "status", "?")
+        text = getattr(exc, "text", "") or str(exc)
+        return f"HTTPException (status {status}: {text})"
+    return f"{type(exc).__name__} ({exc})"
 
 
 def _clean_reason(text: Optional[str]) -> str:
@@ -298,8 +323,9 @@ class AppealSubmissionModal(discord.ui.Modal):
         )
 
 
-class AppealDecisionConfirmView(discord.ui.View):
-    """Small confirmation dialog for staff decisions."""
+class AppealDecisionModal(discord.ui.Modal):
+    """Collects the mandatory review reason from staff before an appeal is
+    approved or denied. The reason is stored, logged and sent to the user."""
 
     def __init__(
         self,
@@ -307,21 +333,30 @@ class AppealDecisionConfirmView(discord.ui.View):
         record: AppealRecord,
         action: Literal["approved", "denied"],
     ):
-        super().__init__(timeout=90)
+        super().__init__(title="Appeal Decision", timeout=300)
         self.cog = cog
         self.record = record
         self.action = action
 
-    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success)
-    async def confirm(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        await self.cog.finalize_appeal_decision(interaction, self.record, self.action)
+        self.reason = discord.ui.TextInput(
+            label="Reason",
+            placeholder=(
+                "Explain why this appeal is being approved."
+                if action == "approved"
+                else "Explain why this appeal is being denied."
+            ),
+            style=discord.TextStyle.paragraph,
+            max_length=1000,
+            required=True,
+        )
+        self.add_item(self.reason)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(
-            content="Decision cancelled.", view=None
+    async def on_submit(self, interaction: discord.Interaction):
+        await self.cog.finalize_appeal_decision(
+            interaction,
+            self.record,
+            self.action,
+            reason=self.reason.value.strip(),
         )
 
 
@@ -422,14 +457,22 @@ class AppealReviewDashboard(discord.ui.LayoutView):
 
         meta_section = discord.ui.Section(
             discord.ui.TextDisplay(
-                "### Appeal Snapshot\n"
-                f"**User**\n• {self.record.username} (<@{self.record.user_id}>)\n"
-                f"**User ID**\n• `{self.record.user_id}`\n"
-                f"**Account Created**\n• {_format_relative(self._account_created)}\n"
-                f"**Joined Server**\n• {_format_relative(self._joined_at)}\n"
-                f"**Timeout Ends**\n• {_format_relative(self.record.timeout_expires_at)}\n"
-                f"**Reason**\n• {_clean_reason(self.record.punishment_reason)}\n"
-                f"**Appeal Time**\n• {_format_relative(self.record.submitted_at)}"
+                "### Action\n"
+                f"• Timeout applied by {self._action_moderator()}\n"
+                "\n"
+                "### Reason\n"
+                f"• {_clean_reason(self.record.punishment_reason)}\n"
+                "\n"
+                "-------------------------\n"
+                "\n"
+                "### Appeal Information\n"
+                f"• **Username:** {self.record.username} (<@{self.record.user_id}>)\n"
+                f"• **User ID:** `{self.record.user_id}`\n"
+                f"• **Appeal:** {_truncate(self.record.appeal_reason, 500)}\n"
+                f"• **Account Created:** {_format_relative(self._account_created)}\n"
+                f"• **Joined Server:** {_format_relative(self._joined_at)}\n"
+                f"• **Timeout Ends:** {_format_relative(self.record.timeout_expires_at)}\n"
+                f"• **Appeal Time:** {_format_relative(self.record.submitted_at)}"
             ),
             accessory=discord.ui.Thumbnail(
                 avatar,
@@ -483,6 +526,34 @@ class AppealReviewDashboard(discord.ui.LayoutView):
         if self.cog.bot.user:
             return self.cog.bot.user.display_avatar.url
         return "https://cdn.discordapp.com/embed/avatars/0.png"
+
+    def _action_moderator(self) -> str:
+        """Best-effort lookup of the staff member who applied the timeout.
+
+        Falls back to a generic label when the moderator cannot be resolved.
+        """
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT moderator_id
+                FROM moderation_log
+                WHERE user_id = ? AND guild_id = ?
+                  AND (action LIKE 'TIMEOUT%' OR action LIKE 'Timeout%' OR action LIKE 'timeout%')
+                ORDER BY id DESC LIMIT 1
+                """,
+                (self.record.user_id, self.record.guild_id),
+            )
+            row = cursor.fetchone()
+            conn.close()
+            if row and row[0]:
+                moderator = self.cog.bot.get_user(row[0])
+                if moderator:
+                    return moderator.mention
+        except Exception:
+            pass
+        return "server moderation staff"
 
     def _build_buttons(self) -> list[discord.ui.Button]:
         resolved = self.decision is not None
@@ -556,9 +627,8 @@ class AppealReviewDashboard(discord.ui.LayoutView):
                 "This appeal has already been processed.", ephemeral=True
             )
             return
-        await interaction.response.send_message(
-            view=AppealDecisionConfirmView(self.cog, self.record, "approved"),
-            ephemeral=True,
+        await interaction.response.send_modal(
+            AppealDecisionModal(self.cog, self.record, "approved")
         )
 
     async def reject(self, interaction: discord.Interaction):
@@ -569,9 +639,8 @@ class AppealReviewDashboard(discord.ui.LayoutView):
                 "This appeal has already been processed.", ephemeral=True
             )
             return
-        await interaction.response.send_message(
-            view=AppealDecisionConfirmView(self.cog, self.record, "denied"),
-            ephemeral=True,
+        await interaction.response.send_modal(
+            AppealDecisionModal(self.cog, self.record, "denied")
         )
 
     async def extend_timeout(self, interaction: discord.Interaction):
@@ -834,7 +903,9 @@ class Appeals(commands.Cog):
         logging_cog = self.bot.get_cog("LoggingCog")
         if not logging_cog or not hasattr(logging_cog, "log_event"):
             return
-        details = reason or record.review_reason or record.punishment_reason
+        details = sanitize_mentions(
+            reason or record.review_reason or record.punishment_reason or "No reason provided"
+        )
         await logging_cog.log_event(
             event_type,
             user_id=record.user_id,
@@ -1185,6 +1256,8 @@ class Appeals(commands.Cog):
         interaction: discord.Interaction,
         record: AppealRecord,
         decision: Literal["approved", "denied"],
+        *,
+        reason: Optional[str] = None,
     ) -> None:
         if not self._is_moderator(interaction):
             await interaction.response.send_message(
@@ -1205,6 +1278,9 @@ class Appeals(commands.Cog):
                 "This appeal has already been processed.", ephemeral=True
             )
             return
+
+        # The modal requires a reason; fall back gracefully for safety.
+        review_reason = (reason or "").strip() or f"{decision.title()} by {interaction.user}"
 
         if decision == "approved":
             member = self._resolve_member(record.guild_id, record.user_id)
@@ -1231,13 +1307,13 @@ class Appeals(commands.Cog):
                     record.guild_id,
                     record.user_id,
                     interaction.user.id,
-                    f"Appeal #{record.appeal_id} approved by {interaction.user}",
+                    f"Appeal #{record.appeal_id} approved by {interaction.user} — {review_reason}",
                     "TIMEOUT_REMOVED",
                     source="appeal",
                 )
                 await member.timeout(
                     None,
-                    reason=f"Appeal #{record.appeal_id} approved by {interaction.user}",
+                    reason=f"Appeal #{record.appeal_id} approved by {interaction.user} — {review_reason}",
                 )
             except Exception as e:
                 discard_mod_action(self.bot, record.guild_id, record.user_id, "TIMEOUT_REMOVED")
@@ -1261,7 +1337,7 @@ class Appeals(commands.Cog):
             (
                 decision,
                 interaction.user.id,
-                f"{decision.title()} by {interaction.user}",
+                review_reason,
                 interaction.message.jump_url if interaction.message else None,
                 record.appeal_id,
             ),
@@ -1269,7 +1345,10 @@ class Appeals(commands.Cog):
         conn.commit()
         conn.close()
 
-        decision_reason = f"{decision.title()} by {interaction.user.mention}"
+        decision_reason = (
+            f"{decision.title()} by {interaction.user.mention}\n"
+            f"**Reason:** {review_reason}"
+        )
         resolved_view = AppealReviewDashboard(
             self,
             updated_record,
@@ -1316,7 +1395,9 @@ class Appeals(commands.Cog):
             jump_url=updated_record.jump_url,
         )
 
-        await self._dm_decision(updated_record, decision, interaction.user)
+        await self._dm_decision(
+            updated_record, decision, interaction.user, reason=review_reason
+        )
 
     async def extend_timeout_for_appeal(
         self,
@@ -1489,12 +1570,23 @@ class Appeals(commands.Cog):
         record: AppealRecord,
         decision: Literal["approved", "denied"],
         moderator: discord.Member | discord.User,
+        *,
+        reason: Optional[str] = None,
     ) -> None:
         try:
             user = await self.bot.fetch_user(record.user_id)
-        except Exception:
+        except discord.NotFound:
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s) - user not found (deleted/unknown account)\nReason: NotFound\nGuild: %s\nAction: Appeal %s",
+                record.username, record.user_id, record.guild_name, decision.title(),
+            )
             return
-        guild = self.bot.get_guild(record.guild_id)
+        except Exception as e:
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s) - could not resolve user\nReason: %s\nGuild: %s\nAction: Appeal %s",
+                record.username, record.user_id, _classify_dm_error(e), record.guild_name, decision.title(),
+            )
+            return
         if decision == "approved":
             text = (
                 "## Your appeal has been reviewed and approved.\n"
@@ -1508,21 +1600,37 @@ class Appeals(commands.Cog):
             )
             accent = discord.Color(APPEALS_REJECT_COLOR)
 
+        removal_line = (
+            f"**Timeout removed by:** {moderator}\n"
+            f"**Removed on:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n"
+            f"**Original reason:** {_clean_reason(record.punishment_reason)}"
+        ) if decision == "approved" else None
+
         view = discord.ui.LayoutView(timeout=None)
         container = discord.ui.Container(accent_color=accent)
         container.add_item(discord.ui.TextDisplay(text))
-        if guild and guild.icon:
-            container.add_item(discord.ui.Separator())
-            container.add_item(
-                discord.ui.TextDisplay(
-                    f"**Reviewed By:** {moderator}\n**Appeal ID:** #{record.appeal_id}\n**Reason:** {record.review_reason or 'Reviewed by staff'}"
-                )
-            )
+        container.add_item(discord.ui.Separator())
+        details = (
+            f"**Reviewed By:** {moderator}\n"
+            f"**Appeal ID:** #{record.appeal_id}\n"
+            f"**Review Reason:** {reason or record.review_reason or 'Reviewed by staff'}"
+        )
+        if removal_line:
+            details += f"\n{removal_line}"
+        container.add_item(discord.ui.TextDisplay(details))
         view.add_item(container)
         try:
             await user.send(view=view)
-        except Exception:
-            pass
+        except (discord.Forbidden, discord.NotFound, discord.HTTPException) as e:
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s)\nReason: %s\nGuild: %s\nAction: Appeal %s",
+                record.username, record.user_id, _classify_dm_error(e), record.guild_name, decision.title(),
+            )
+        except Exception as e:
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s)\nReason: %s\nGuild: %s\nAction: Appeal %s",
+                record.username, record.user_id, _classify_dm_error(e), record.guild_name, decision.title(),
+            )
 
     async def _dm_extended_timeout(
         self,
@@ -1533,7 +1641,17 @@ class Appeals(commands.Cog):
     ) -> None:
         try:
             user = await self.bot.fetch_user(record.user_id)
-        except Exception:
+        except discord.NotFound:
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s) - user not found (deleted/unknown account)\nReason: NotFound\nGuild: %s\nAction: Timeout Extension",
+                record.username, record.user_id, record.guild_name,
+            )
+            return
+        except Exception as e:
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s) - could not resolve user\nReason: %s\nGuild: %s\nAction: Timeout Extension",
+                record.username, record.user_id, _classify_dm_error(e), record.guild_name,
+            )
             return
         view = discord.ui.LayoutView(timeout=None)
         container = discord.ui.Container(
@@ -1550,8 +1668,66 @@ class Appeals(commands.Cog):
         view.add_item(container)
         try:
             await user.send(view=view)
+        except (discord.Forbidden, discord.NotFound, discord.HTTPException) as e:
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s)\nReason: %s\nGuild: %s\nAction: Timeout Extension",
+                record.username, record.user_id, _classify_dm_error(e), record.guild_name,
+            )
+        except Exception as e:
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s)\nReason: %s\nGuild: %s\nAction: Timeout Extension",
+                record.username, record.user_id, _classify_dm_error(e), record.guild_name,
+            )
+
+    async def _find_timeout_remover(
+        self, member: discord.Member
+    ) -> tuple[Optional[str], Optional[str]]:
+        """Identify the moderator who removed a member's timeout.
+
+        Returns ``(moderator_mention_or_None, removal_reason_or_None)`` by
+        inspecting the guild audit log for a recent timeout removal.
+        """
+        try:
+            async for entry in member.guild.audit_logs(
+                action=discord.AuditLogAction.member_update, limit=10
+            ):
+                if not entry.target or entry.target.id != member.id:
+                    continue
+                if entry.created_at is None:
+                    continue
+                time_diff = (datetime.now(timezone.utc) - entry.created_at).total_seconds()
+                if time_diff > 60:
+                    continue
+                if entry.user and not entry.user.bot:
+                    return entry.user.mention, entry.reason or "No reason provided"
+                # Audit entry made by the bot (API timeout removal) - look for
+                # the human actor in the audit reason.
+                if entry.user and entry.user.id == member.guild.me.id:
+                    return None, entry.reason or "No reason provided"
+        except Exception as e:
+            print(f"[Appeals] Error finding timeout remover: {e}")
+        return None, None
+
+    def _original_timeout_reason(self, guild_id: int, user_id: int) -> Optional[str]:
+        """Return the reason the timeout was originally applied (if recorded)."""
+        try:
+            conn = sqlite3.connect(DATABASE_NAME)
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT reason
+                FROM moderation_log
+                WHERE user_id = ? AND guild_id = ?
+                  AND (action LIKE 'TIMEOUT%' OR action LIKE 'Timeout%' OR action LIKE 'timeout%')
+                ORDER BY id DESC LIMIT 1
+                """,
+                (user_id, guild_id),
+            )
+            row = cursor.fetchone()
+            conn.close()
+            return row[0] if row and row[0] else None
         except Exception:
-            pass
+            return None
 
     async def _disable_appeal_buttons_by_id(self, appeal_id: int, guild_id: int):
         """Find and disable appeal buttons in messages for a specific appeal ID"""
@@ -1756,12 +1932,12 @@ class Appeals(commands.Cog):
             await self._log_dm_success(
                 user, guild, action_type, reason or "No reason provided"
             )
-        except discord.Forbidden:
-            dm_error = "DMs are closed or bot is blocked"
-            logger.warning("Cannot DM %s (%s) - DMs closed or bot blocked", user, user.id)
         except Exception as e:
-            dm_error = str(e)
-            logger.warning("DM error to %s (%s): %s", user, user.id, e)
+            dm_error = _classify_dm_error(e)
+            logger.warning(
+                "[Appeals] Failed to DM %s (%s)\nReason: %s\nGuild: %s\nAction: Timeout Appeal Dashboard",
+                user, user.id, dm_error, guild.name,
+            )
 
         # Log DM failure to appeals channel
         if not dm_success and dm_error:
@@ -1915,6 +2091,8 @@ class Appeals(commands.Cog):
         _removal_source = self._pending_appeal_removals.get((after.guild.id, after.id))
         was_appeal_removal = False
         appeal_id_for_log = None
+        removal_moderator = None
+        removal_reason = None
         if _removal_source:
             if time.time() - _removal_source[1] <= 300:
                 was_appeal_removal = True
@@ -1975,6 +2153,8 @@ class Appeals(commands.Cog):
                         log_title = "Manual Timeout Removal Detected"
                         log_description = f"User {after.mention} (`{after.id}`) had their timeout manually removed while having a pending appeal."
                         color = APPEALS_TIMEOUT_END_COLOR
+                        # Identify the moderator and removal reason for audit.
+                        removal_moderator, removal_reason = await self._find_timeout_remover(after)
 
                     if was_appeal_removal:
                         # finalize_appeal_decision already marked the appeal
@@ -2019,6 +2199,29 @@ class Appeals(commands.Cog):
                         value=f"Until <t:{int(before_timeout.timestamp())}:F>",
                         inline=True,
                     )
+                    if not was_appeal_removal and not was_natural_expiry:
+                        log_embed.add_field(
+                            name="Timeout removed by",
+                            value=removal_moderator or "Unknown",
+                            inline=True,
+                        )
+                        log_embed.add_field(
+                            name="Removed on",
+                            value=f"<t:{int(datetime.now(timezone.utc).timestamp())}:F>",
+                            inline=True,
+                        )
+                        log_embed.add_field(
+                            name="Removal reason",
+                            value=removal_reason or "No reason provided",
+                            inline=False,
+                        )
+                        log_embed.add_field(
+                            name="Original timeout reason",
+                            value=_clean_reason(
+                                self._original_timeout_reason(after.guild.id, after.id)
+                            ),
+                            inline=False,
+                        )
                     log_embed.add_field(
                         name="Action",
                         value=action_text,
@@ -2098,6 +2301,7 @@ class Appeals(commands.Cog):
                 # send a duplicate DM.
                 self._pending_appeal_removals.pop((after.guild.id, after.id), None)
                 return
+
             # Auto-approve any pending appeals for this user in this guild
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
@@ -2108,6 +2312,15 @@ class Appeals(commands.Cog):
             appeals = cursor.fetchall()
 
             if appeals:
+                # Identify who removed the timeout and why via the audit log so
+                # we can display "Timeout removed by @Moderator" with date/reason.
+                removal_moderator, removal_reason = await self._find_timeout_remover(
+                    after
+                )
+                removal_time = datetime.now(timezone.utc)
+                original_timeout_reason = self._original_timeout_reason(
+                    after.guild.id, after.id
+                )
                 for (appeal_id,) in appeals:
                     cursor.execute(
                         'UPDATE unban_requests SET status = "approved" WHERE id = ?',
@@ -2119,7 +2332,52 @@ class Appeals(commands.Cog):
 
                 conn.commit()
 
-                # Try to DM the user about approval
+                # Log the manual removal (moderator, date, reason) to the
+                # appeals channel so staff can audit it.
+                try:
+                    log_embed = discord.Embed(
+                        title="Manual Timeout Removal Detected",
+                        description=f"User {after.mention} (`{after.id}`) had their timeout manually removed while having a pending appeal.",
+                        color=APPEALS_TIMEOUT_END_COLOR,
+                        timestamp=removal_time,
+                    )
+                    log_embed.add_field(
+                        name="Timeout removed by",
+                        value=removal_moderator or "Unknown",
+                        inline=True,
+                    )
+                    log_embed.add_field(
+                        name="Removed on",
+                        value=f"<t:{int(removal_time.timestamp())}:F>",
+                        inline=True,
+                    )
+                    log_embed.add_field(
+                        name="Removal reason",
+                        value=removal_reason or "No reason provided",
+                        inline=False,
+                    )
+                    log_embed.add_field(
+                        name="Original timeout reason",
+                        value=_clean_reason(original_timeout_reason),
+                        inline=False,
+                    )
+                    log_embed.add_field(
+                        name="Appeals auto-approved",
+                        value=f"#{', #'.join(str(a[0]) for a in appeals)}",
+                        inline=False,
+                    )
+                    appeals_channels = [
+                        channel
+                        for channel in after.guild.text_channels
+                        if "appeal" in channel.name.lower()
+                    ]
+                    if appeals_channels:
+                        await appeals_channels[0].send(embed=log_embed)
+                except Exception as e:
+                    print(f"[Appeals] Error logging manual timeout removal: {e}")
+
+                # DM the user about the approval, including the moderator,
+                # date and reason for the removal.
                 try:
                     dm = create_success_embed(
                         "Appeal Automatically Approved",
@@ -2127,11 +2385,31 @@ class Appeals(commands.Cog):
                         guild_name=after.guild.name,
                     )
                     dm.add_field(
-                        name="Result", value="**Timeout removed**", inline=True
+                        name="Timeout removed by",
+                        value=removal_moderator or "A moderator",
+                        inline=True,
+                    )
+                    dm.add_field(
+                        name="Removed on",
+                        value=f"<t:{int(removal_time.timestamp())}:F>",
+                        inline=True,
+                    )
+                    dm.add_field(
+                        name="Removal reason",
+                        value=removal_reason or "No reason provided",
+                        inline=False,
                     )
                     await after.send(embed=dm)
-                except Exception:
-                    pass
+                except (discord.Forbidden, discord.NotFound, discord.HTTPException) as e:
+                    logger.warning(
+                        "[Appeals] Failed to DM %s (%s)\nReason: %s\nGuild: %s\nAction: Auto-approved appeal DM",
+                        after, after.id, _classify_dm_error(e), after.guild.name,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "[Appeals] Failed to DM %s (%s)\nReason: %s\nGuild: %s\nAction: Auto-approved appeal DM",
+                        after, after.id, _classify_dm_error(e), after.guild.name,
+                    )
             conn.close()
 
     @commands.hybrid_command(name="appeals")
@@ -2154,11 +2432,11 @@ class Appeals(commands.Cog):
 
         if status == "all":
             cursor.execute(
-                "SELECT id, user_id, reason, status, timestamp FROM unban_requests ORDER BY timestamp DESC LIMIT 20"
+                "SELECT id, user_id, reason, status, timestamp, review_reason, reviewed_by FROM unban_requests ORDER BY timestamp DESC LIMIT 20"
             )
         else:
             cursor.execute(
-                "SELECT id, user_id, reason, status, timestamp FROM unban_requests WHERE status = ? ORDER BY timestamp DESC LIMIT 20",
+                "SELECT id, user_id, reason, status, timestamp, review_reason, reviewed_by FROM unban_requests WHERE status = ? ORDER BY timestamp DESC LIMIT 20",
                 (status,),
             )
 
@@ -2175,16 +2453,21 @@ class Appeals(commands.Cog):
         )
 
         for appeal in appeals:
-            appeal_id, user_id, reason, appeal_status, timestamp = appeal
+            appeal_id, user_id, reason, appeal_status, timestamp, review_reason, reviewed_by = appeal
             try:
                 user = await self.bot.fetch_user(user_id)
                 user_name = f"{user} ({user_id})"
             except:
                 user_name = f"Unknown ({user_id})"
 
+            decision_line = ""
+            if appeal_status in ("approved", "denied") and (review_reason or reviewed_by):
+                reviewer = f"<@{reviewed_by}>" if reviewed_by else "staff"
+                decision_line = f"\n**Decision reason:** {_truncate(str(review_reason or 'No reason provided'), 200)}\n**Reviewed by:** {reviewer}"
+
             embed.add_field(
                 name=f"Appeal #{appeal_id}",
-                value=f"**User:** {user_name}\n**Status:** {appeal_status.title()}\n**Reason:** {reason[:100]}{'...' if len(reason) > 100 else ''}\n**Time:** {timestamp}",
+                value=f"**User:** {user_name}\n**Status:** {appeal_status.title()}\n**Reason:** {sanitize_mentions(reason)[:100]}{'...' if len(reason) > 100 else ''}\n**Time:** {timestamp}{decision_line}",
                 inline=False,
             )
 
@@ -2201,7 +2484,7 @@ class Appeals(commands.Cog):
         conn = sqlite3.connect(DATABASE_NAME)
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT user_id, reason, status, timestamp FROM unban_requests WHERE id = ?",
+            "SELECT user_id, reason, status, timestamp, review_reason, reviewed_by, reviewed_at FROM unban_requests WHERE id = ?",
             (appeal_id,),
         )
         result = cursor.fetchone()
@@ -2214,7 +2497,7 @@ class Appeals(commands.Cog):
             await ctx.send(embed=embed)
             return
 
-        user_id, reason, status, timestamp = result
+        user_id, reason, status, timestamp, review_reason, reviewed_by, reviewed_at = result
 
         try:
             user = await self.bot.fetch_user(user_id)
@@ -2231,9 +2514,23 @@ class Appeals(commands.Cog):
         embed.add_field(name="Status", value=status.title(), inline=True)
         embed.add_field(name="Submitted", value=timestamp, inline=True)
         embed.add_field(name="Account Created", value=account_created, inline=True)
+        if status in ("approved", "denied"):
+            reviewer = f"<@{reviewed_by}>" if reviewed_by else "Unknown"
+            embed.add_field(
+                name="Decision Reason",
+                value=_truncate(str(review_reason or "No reason provided"), 900),
+                inline=False,
+            )
+            embed.add_field(name="Reviewed By", value=reviewer, inline=True)
+            if reviewed_at:
+                embed.add_field(
+                    name="Reviewed At",
+                    value=str(reviewed_at),
+                    inline=True,
+                )
         embed.add_field(
             name="Appeal Content",
-            value=reason[:1000] + "..." if len(reason) > 1000 else reason,
+            value=sanitize_mentions(reason)[:1000] + "..." if len(reason) > 1000 else sanitize_mentions(reason),
             inline=False,
         )
 
@@ -2447,141 +2744,6 @@ class Appeals(commands.Cog):
 
         except Exception as e:
             print(f"[Appeals] Error in on_member_unban: {e}")
-
-    @commands.hybrid_command(
-        name="check_appeals",
-        description="Check for appeals that may no longer be valid due to expired/removed punishments",
-    )
-    @commands.has_permissions(manage_guild=True)
-    @commands.guild_only()
-    async def check_appeals(self, ctx: commands.Context):
-        """Check all pending appeals for validity"""
-        try:
-            # Send initial processing message
-            processing_msg = await ctx.send("Checking pending appeals...")
-
-            conn = sqlite3.connect(DATABASE_NAME)
-            cursor = conn.cursor()
-            cursor.execute(
-                'SELECT id, user_id, reason FROM unban_requests WHERE status = "pending"'
-            )
-            pending_appeals = cursor.fetchall()
-            conn.close()
-
-            if not pending_appeals:
-                embed = create_success_embed(
-                    "Appeal Check Complete",
-                    "No pending appeals found.",
-                    guild_name=ctx.guild.name if ctx.guild else None,
-                )
-                await processing_msg.edit(content=None, embed=embed)
-                return
-
-            invalid_appeals = []
-            valid_appeals = []
-
-            for appeal_id, user_id, reason in pending_appeals:
-                # Check ban status
-                try:
-                    if ctx.guild:
-                        await ctx.guild.fetch_ban(discord.Object(id=user_id))
-                        valid_appeals.append((appeal_id, user_id, "Still banned"))
-                        continue
-                except discord.NotFound:
-                    invalid_appeals.append((appeal_id, user_id, "No longer banned"))
-                    continue
-                except discord.Forbidden:
-                    valid_appeals.append(
-                        (appeal_id, user_id, "Cannot check ban status")
-                    )
-                    continue
-
-                # Check timeout status
-                if ctx.guild:
-                    member = ctx.guild.get_member(user_id)
-                    if member:
-                        timeout_until = getattr(member, "timed_out_until", None)
-                        if timeout_until and timeout_until > datetime.now(timezone.utc):
-                            valid_appeals.append(
-                                (
-                                    appeal_id,
-                                    user_id,
-                                    f"Still timed out until <t:{int(timeout_until.timestamp())}:F>",
-                                )
-                            )
-                        else:
-                            invalid_appeals.append(
-                                (appeal_id, user_id, "Timeout expired or removed")
-                            )
-                    else:
-                        invalid_appeals.append(
-                            (appeal_id, user_id, "User left the server")
-                        )
-
-            embed = create_info_embed(
-                "Appeal Validity Check",
-                f"Found {len(pending_appeals)} pending appeals",
-                guild_name=ctx.guild.name if ctx.guild else None,
-            )
-
-            if valid_appeals:
-                valid_text = "\\n".join(
-                    [
-                        f"#{aid}: <@{uid}> - {status}"
-                        for aid, uid, status in valid_appeals[:10]
-                    ]
-                )
-                embed.add_field(
-                    name=f"Valid Appeals ({len(valid_appeals)})",
-                    value=valid_text,
-                    inline=False,
-                )
-
-            if invalid_appeals:
-                invalid_text = "\\n".join(
-                    [
-                        f"#{aid}: <@{uid}> - {status}"
-                        for aid, uid, status in invalid_appeals[:10]
-                    ]
-                )
-                embed.add_field(
-                    name=f"Invalid Appeals ({len(invalid_appeals)})",
-                    value=invalid_text,
-                    inline=False,
-                )
-
-                # Auto-resolve invalid appeals
-                conn = sqlite3.connect(DATABASE_NAME)
-                cursor = conn.cursor()
-                for appeal_id, user_id, status in invalid_appeals:
-                    cursor.execute(
-                        'UPDATE unban_requests SET status = "auto_resolved" WHERE id = ?',
-                        (appeal_id,),
-                    )
-                    print(f"[Appeals] Auto-resolved appeal #{appeal_id} - {status}")
-                conn.commit()
-                conn.close()
-
-                embed.add_field(
-                    name="Action Taken",
-                    value="Invalid appeals have been automatically resolved",
-                    inline=False,
-                )
-
-            if len(valid_appeals) > 10 or len(invalid_appeals) > 10:
-                embed.set_footer(
-                    text=f"{_appeals_footer_text(ctx.guild.name if ctx.guild else None)} • Showing first 10 of each category"
-                )
-
-            await processing_msg.edit(content=None, embed=embed)
-
-        except Exception as e:
-            print(f"[Appeals] Error in check_appeals: {e}")
-            error_embed = create_error_embed("Error", f"Failed to check appeals: {e}")
-            if "processing_msg" in locals():
-                await processing_msg.edit(content=None, embed=error_embed)
-            else:
-                await ctx.send(embed=error_embed)
 
 
 async def setup(bot):

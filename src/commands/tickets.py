@@ -1290,7 +1290,13 @@ class Tickets(commands.Cog):
         except Exception as e:
             print(f"[Tickets] Failed to send log: {e}")
 
-    @commands.hybrid_command(name="ticketpanel")
+    @commands.hybrid_group(name="ticket", description="Manage tickets, panels, and ticket settings.")
+    async def ticket_group(self, ctx: commands.Context):
+        """Ticket system commands. Use `?help ticket` for the subcommands."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @ticket_group.command(name="panel")
     @commands.has_permissions(administrator=True)
     @app_commands.describe(
         channel="Channel to send the ticket panel to",
@@ -1392,7 +1398,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="ticketlog")
+    @ticket_group.command(name="log")
     @commands.has_permissions(administrator=True)
     @app_commands.describe(
         channel="The channel to use for ticket logs (leave empty to view current setting)"
@@ -1465,7 +1471,7 @@ class Tickets(commands.Cog):
                 embed=create_error_embed("Setup Error", str(e)), ephemeral=True
             )
 
-    @commands.hybrid_command(name="ticketlog-disable")
+    @ticket_group.command(name="log-disable")
     @commands.has_permissions(administrator=True)
     async def ticket_log_disable(self, ctx):
         if not ctx.guild:
@@ -1492,7 +1498,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="ticketsupport")
+    @ticket_group.command(name="support")
     @commands.has_permissions(administrator=True)
     @app_commands.describe(role="Support role (leave empty to view current setting)")
     async def ticket_support_role(self, ctx, role: Optional[discord.Role] = None):
@@ -1534,7 +1540,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="ticketsupport-disable")
+    @ticket_group.command(name="support-disable")
     @commands.has_permissions(administrator=True)
     async def ticket_support_role_disable(self, ctx):
         if not ctx.guild:
@@ -1557,7 +1563,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="ticketreport")
+    @ticket_group.command(name="report")
     @commands.has_permissions(administrator=True)
     @app_commands.describe(role="Report role (leave empty to view current setting)")
     async def ticket_report_role(self, ctx, role: Optional[discord.Role] = None):
@@ -1599,7 +1605,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="ticketreport-disable")
+    @ticket_group.command(name="report-disable")
     @commands.has_permissions(administrator=True)
     async def ticket_report_role_disable(self, ctx):
         if not ctx.guild:
@@ -1622,7 +1628,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="ticketpartner")
+    @ticket_group.command(name="partner")
     @commands.has_permissions(administrator=True)
     @app_commands.describe(role="Partner role (leave empty to view current setting)")
     async def ticket_partner_role(self, ctx, role: Optional[discord.Role] = None):
@@ -1664,7 +1670,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="ticketpartner-disable")
+    @ticket_group.command(name="partner-disable")
     @commands.has_permissions(administrator=True)
     async def ticket_partner_role_disable(self, ctx):
         if not ctx.guild:
@@ -1687,7 +1693,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="ticketcategory")
+    @ticket_group.command(name="category")
     @commands.has_permissions(administrator=True)
     @app_commands.describe(
         category="The category channel for tickets (leave empty to view current setting)"
@@ -1750,7 +1756,7 @@ class Tickets(commands.Cog):
                 embed=create_error_embed("Setup Error", str(e)), ephemeral=True
             )
 
-    @commands.hybrid_command(name="ticketcategory-disable")
+    @ticket_group.command(name="category-disable")
     @commands.has_permissions(administrator=True)
     async def ticket_category_disable(self, ctx):
         """Remove the ticket category channel setting."""
@@ -1779,7 +1785,7 @@ class Tickets(commands.Cog):
             ephemeral=True,
         )
 
-    @commands.hybrid_command(name="tickets")
+    @ticket_group.command(name="list")
     @commands.has_permissions(manage_messages=True)
     @app_commands.describe(
         status="Filter tickets by status (open, closed, all)",
@@ -1839,7 +1845,7 @@ class Tickets(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="ticketstats")
+    @ticket_group.command(name="stats")
     @commands.has_permissions(manage_messages=True)
     async def ticket_stats(self, ctx):
         conn = sqlite3.connect(DATABASE_NAME)
@@ -1957,7 +1963,7 @@ class Tickets(commands.Cog):
                 f"Force closed by {ctx.author.name}: {reason} | Transcript saved; channel deletes in 24 hours",
             )
 
-    @commands.hybrid_command(name="forceclose")
+    @ticket_group.command(name="forceclose")
     @commands.has_permissions(manage_messages=True)
     @app_commands.describe(
         ticket_id="The ID of the ticket to force close (from embed footer)",

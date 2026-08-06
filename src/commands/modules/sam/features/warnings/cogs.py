@@ -152,14 +152,73 @@ class Warnings(commands.Cog):
     @commands.hybrid_group(name="warnings", description="Manage warnings.")
     @commands.guild_only()
     async def warnings_group(self, ctx: commands.Context):
-        """Manage warnings for users."""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+        """Warnings leaderboard; use the subcommands for detailed views.
+
+        Prefix:
+          ?warnings          -> server warnings leaderboard
+          ?warnings view @user -> that user's warning history
+        Slash:
+          /warnings leaderboard -> server warnings leaderboard
+          /warnings view user:@user -> that user's warning history
+        """
+        if ctx.invoked_subcommand is not None:
+            return
+        await self._display_leaderboard(ctx)
+
+    @warnings_group.command(
+        name="leaderboard", description="Show the warnings leaderboard for this server."
+    )
+    async def leaderboard(self, ctx: commands.Context):
+        """Show the top warned users in this server."""
+        await self._display_leaderboard(ctx)
+
+    async def _display_leaderboard(self, ctx: commands.Context) -> None:
+        """Render the server warnings leaderboard embed."""
+        try:
+            async with database.get_session() as session:
+                svc = self.warn_service_class(session)
+                entries = await svc.get_leaderboard(ctx.guild.id, 10)
+
+                if not entries:
+                    embed = discord.Embed(
+                        title="🏆 Warnings Leaderboard",
+                        description="No warnings have been issued yet in this server.",
+                        color=discord.Color.gold(),
+                    )
+                    await ctx.send(embed=embed)
+                    return
+
+                medals = ["🥇", "🥈", "🥉"]
+                lines = []
+                for i, (user_id, count) in enumerate(entries, start=1):
+                    marker = medals[i - 1] if i <= 3 else f"**{i}.**"
+                    lines.append(
+                        f"{marker} <@{user_id}> — **{count}** warning{'s' if count != 1 else ''}"
+                    )
+
+                embed = discord.Embed(
+                    title="🏆 Warnings Leaderboard",
+                    description="\n".join(lines),
+                    color=discord.Color.gold(),
+                )
+                embed.set_footer(text="Top 10 • Revoked warnings are excluded")
+                await ctx.send(embed=embed)
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Failed to load the warnings leaderboard: {str(e)}",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
 
     @warnings_group.command(name="view", description="View warnings for a user.")
     @commands.has_permissions(kick_members=True)
     async def view_warnings(self, ctx: commands.Context, user: discord.User):
         """View all warnings for a specific user."""
+        await self._display_user_warnings(ctx, user)
+
+    async def _display_user_warnings(self, ctx: commands.Context, user: discord.User) -> None:
+        """Render a user's warning history (total, moderator, date, reason)."""
         try:
             async with database.get_session() as session:
                 svc = self.warn_service_class(session)
@@ -179,6 +238,11 @@ class Warnings(commands.Cog):
                 embed = discord.Embed(
                     title=f"Warnings for {user.name}",
                     color=discord.Color.orange() if active_warnings else discord.Color.green()
+                )
+                embed.add_field(
+                    name="Total Warnings",
+                    value=f"**{len(active_warnings)}** active • **{len(revoked_warnings)}** revoked",
+                    inline=False,
                 )
                 
                 if active_warnings:

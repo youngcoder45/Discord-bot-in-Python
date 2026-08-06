@@ -170,25 +170,39 @@ Issue an official warning to a user.
 ---
 
 #### `/warnings` or `?warnings`
-**Permission Required:** Manage Messages
+**Permission Required:** None
+
+Show the server warnings leaderboard (top warned users).
+
+**Usage:**
+```
+/warnings
+?warnings
+```
+
+---
+
+#### `/warnings view` or `?warnings view`
+**Permission Required:** None
 
 View all warnings for a specific user.
 
 **Usage:**
 ```
-/warnings @username
-?warnings @username
+/warnings view user:@username
+?warnings view @username
 ```
 
 **Example:**
-- `/warnings @user` - Shows all active warnings for the user
+- `/warnings view @user` - Shows all active and revoked warnings for the user
 
 **Information Displayed:**
+- Total active/revoked warnings
 - Warning ID (Case #)
 - Date issued
 - Moderator who issued it
 - Reason for warning
-- Current status (active/appealed)
+- Current status (active/revoked)
 
 ---
 
@@ -379,20 +393,20 @@ Unlock all previously locked channels.
 
 ## User Information Commands
 
-#### `/userinfo` or `?userinfo`
+#### `/info` or `?info`
 **Permission Required:** None
 
-Get detailed information about a user.
+Get detailed information about a user. (Renamed from `userinfo`; the old `userinfo` name still works as a prefix alias.)
 
 **Usage:**
 ```
-/userinfo [@user]
-?userinfo [@user]
+/info [@user]
+?info [@user]
 ```
 
 **Examples:**
-- `/userinfo @user` - Info about mentioned user
-- `/userinfo` - Info about yourself
+- `/info @user` - Info about mentioned user
+- `/info` - Info about yourself
 
 **Information Shown:**
 - Account creation date
@@ -479,32 +493,32 @@ Users can create tickets by clicking the "Create Ticket" button in the ticket pa
 
 #### Ticket Commands
 
-##### `/ticketpanel`
+##### `/ticket panel`
 **Permission Required:** Administrator
 
 Create a new ticket panel in a channel.
 
 **Usage:**
 ```
-/ticketpanel [channel] [support_role] [report_role] [partner_role]
+/ticket panel [channel] [support_role] [report_role] [partner_role]
 ```
 
 **Example:**
 ```
-/ticketpanel channel:#tickets support_role:@Support report_role:@Moderator
+/ticket panel channel:#tickets support_role:@Support report_role:@Moderator
 ```
 
 ---
 
-##### `/tickets`
+##### `/ticket list`
 **Permission Required:** Manage Messages
 
 View all tickets, optionally filtered.
 
 **Usage:**
 ```
-/tickets [status] [user]
-?tickets [status] [user]
+/ticket list [status] [user]
+?ticket list [status] [user]
 ```
 
 **Status Options:**
@@ -513,21 +527,21 @@ View all tickets, optionally filtered.
 - `all` - All tickets (default)
 
 **Examples:**
-- `/tickets` - View all tickets
-- `/tickets open` - View only open tickets
-- `/tickets closed @user` - View user's closed tickets
+- `/ticket list` - View all tickets
+- `/ticket list open` - View only open tickets
+- `/ticket list closed @user` - View user's closed tickets
 
 ---
 
-##### `/ticketstats`
+##### `/ticket stats`
 **Permission Required:** Manage Messages
 
 View statistics about the ticket system.
 
 **Usage:**
 ```
-/ticketstats
-?ticketstats
+/ticket stats
+?ticket stats
 ```
 
 **Shows:**
@@ -582,7 +596,7 @@ Force close a ticket by ID.
 ### Documentation
 - Check user's warning history before actions
 - Review ticket history for context
-- Use `/userinfo` before major actions
+- Use `/info` before major actions
 - Keep mod team informed
 
 ---
@@ -642,8 +656,8 @@ Force close a ticket by ID.
 ### Quick Reference
 - **Prefix:** `?` or `/`
 - **Help Command:** `/help` or `?help`
-- **Check Warnings:** `/warnings @user`
-- **View Tickets:** `/tickets`
+- **Check Warnings:** `/warnings view @user`
+- **View Tickets:** `/ticket list`
 - **Staff Points:** `/staffpoints`
 
 ---

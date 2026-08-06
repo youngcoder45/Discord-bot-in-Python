@@ -56,6 +56,20 @@ Complete reference of all bot commands organized by category.
 
 ---
 
+### `/get-user-id` • `?get-user-id`
+**Permission:** None  
+**Description:** Get the Discord ID of a user. (Prefix alias: `getuserid`)
+
+**Usage:**
+```
+/get-user-id user:@user
+?get-user-id @user
+```
+
+**Response:** Shows the numeric user ID in an ephemeral message, e.g. "user id is `123456789012345678`".
+
+---
+
 ### `/info` • `?info`
 **Permission:** None  
 **Description:** Get detailed information about a user or yourself.
@@ -300,16 +314,33 @@ Complete reference of all bot commands organized by category.
 ---
 
 ### `/warnings` • `?warnings`
-**Permission:** Manage Messages  
-**Description:** View all warnings for a user.
+**Permission:** None  
+**Description:** Show the server warnings leaderboard. Run with no arguments.
 
 **Usage:**
 ```
-/warnings <@user>
-?warnings <@user>
+/warnings
+?warnings
 ```
 
 **Shows:**
+- Top warned users (ranked)
+- Warning count per user
+
+---
+
+### `/warnings view` • `?warnings view`
+**Permission:** None  
+**Description:** View all warnings for a specific user (total, history, moderator, date, reason).
+
+**Usage:**
+```
+/warnings view user:@user
+?warnings view @user
+```
+
+**Shows:**
+- Total active/revoked warnings
 - Case ID
 - Date issued
 - Moderator
@@ -337,50 +368,51 @@ Complete reference of all bot commands organized by category.
 
 ## Ticket System
 
-### `/ticketpanel`
+### `/ticket panel`
 **Permission:** Administrator  
 **Description:** Create a ticket panel in a channel.
 
 **Usage:**
 ```
-/ticketpanel [channel] [support_role] [report_role] [partner_role]
+/ticket panel [channel] [support_role] [report_role] [partner_role]
 ```
 
 **Example:**
 ```
-/ticketpanel channel:#support support_role:@Support
+/ticket panel channel:#support support_role:@Support
 ```
 
 ---
 
-### `/tickets`
+### `/ticket list`
 **Permission:** Manage Messages  
 **Description:** View and filter all tickets.
 
 **Usage:**
 ```
-/tickets [status] [user]
-?tickets [status] [user]
+/ticket list [status] [user]
+?ticket list [status] [user]
 ```
 
 **Status Options:** `open`, `closed`, `all`
 
 **Examples:**
 ```
-/tickets open
-/tickets closed @user
+/ticket list
+/ticket list open
+/ticket list closed @user
 ```
 
 ---
 
-### `/ticketstats`
+### `/ticket stats`
 **Permission:** Manage Messages  
 **Description:** View ticket system statistics.
 
 **Usage:**
 ```
-/ticketstats
-?ticketstats
+/ticket stats
+?ticket stats
 ```
 
 ---
@@ -397,26 +429,26 @@ Complete reference of all bot commands organized by category.
 
 ---
 
-### `/ticketlog`
+### `/ticket log`
 **Permission:** Administrator  
 **Description:** Set or view ticket log channel.
 
 **Usage:**
 ```
-/ticketlog [channel]
-?ticketlog [channel]
+/ticket log [channel]
+?ticket log [channel]
 ```
 
 ---
 
-### `/ticketsupport`
+### `/ticket support`
 **Permission:** Administrator  
 **Description:** Set support team role for tickets.
 
 **Usage:**
 ```
-/ticketsupport [role]
-?ticketsupport [role]
+/ticket support [role]
+?ticket support [role]
 ```
 
 ---
@@ -532,25 +564,6 @@ Complete reference of all bot commands organized by category.
 
 ## User Information
 
-### `/userinfo` • `?userinfo`
-**Permission:** None  
-**Description:** Get detailed user information.
-
-**Usage:**
-```
-/userinfo [@user]
-?userinfo [@user]
-```
-
-**Shows:**
-- Account creation
-- Server join date
-- Roles
-- Permissions
-- Status
-
----
-
 ### `/avatar` • `?avatar`
 **Permission:** None  
 **Description:** View user's avatar in full size.
@@ -624,18 +637,6 @@ Complete reference of all bot commands organized by category.
 ```
 /editembed <message_id>
 ?editembed <message_id>
-```
-
----
-
-### `/embedquick` • `?embedquick`
-**Permission:** Manage Messages  
-**Description:** Quick embed creation via command.
-
-**Usage:**
-```
-/embedquick <title> <description> [color]
-?embedquick <title> <description> [color]
 ```
 
 ---
@@ -776,13 +777,13 @@ Complete reference of all bot commands organized by category.
 
 | Permission Level | Commands Available |
 |-----------------|-------------------|
-| **None** | help, ping, info, userinfo, avatar, serverinfo, afk |
+| **None** | help, ping, info, get-user-id, avatar, serverinfo, afk |
 | **Manage Messages** | warn, warnings, purge, clean, embed, pin, unpin |
 | **Kick Members** | kick |
 | **Ban Members** | ban, unban, softban |
 | **Moderate Members** | timeout, untimeout |
 | **Manage Channels** | lock, unlock, slowmode |
-| **Administrator** | lockdown, unlockdown, ticketpanel, data commands |
+| **Administrator** | lockdown, unlockdown, ticket panel, data commands |
 | **Server Owner** | massban, nuke |
 | **Bot Owner** | sync, load |
 

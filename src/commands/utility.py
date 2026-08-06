@@ -6,7 +6,7 @@ import json
 import re
 from datetime import datetime, timezone
 
-from utils.helpers import safe_interaction_reply
+from utils.helpers import safe_interaction_reply, sanitize_mentions
 
 class EmbedEditModal(discord.ui.Modal):
     """Interactive modal for editing existing embeds"""
@@ -78,10 +78,11 @@ class EmbedEditModal(discord.ui.Modal):
             # exceed Discord's 3-second interaction window.
             await interaction.response.defer(ephemeral=True)
 
-            # Create the updated embed
+            # User content is sanitized so embeds can't be abused for mass
+            # pings (@everyone/@here/role/user mentions are escaped).
             embed = discord.Embed(
-                title=self.embed_title.value,
-                description=self.embed_description.value
+                title=sanitize_mentions(self.embed_title.value),
+                description=sanitize_mentions(self.embed_description.value)
             )
             
             # Set color
@@ -97,7 +98,7 @@ class EmbedEditModal(discord.ui.Modal):
             
             # Add footer if provided
             if self.embed_footer.value:
-                embed.set_footer(text=self.embed_footer.value)
+                embed.set_footer(text=sanitize_mentions(self.embed_footer.value))
             
             # Preserve original image if it exists
             if self.original_embed.image:
@@ -108,7 +109,7 @@ class EmbedEditModal(discord.ui.Modal):
                 embed.set_thumbnail(url=self.original_embed.thumbnail.url)
             
             # Edit the original message with the new embed
-            new_content = self.embed_premessage.value
+            new_content = sanitize_mentions(self.embed_premessage.value)
             
             if self.webhook:
                 await self.webhook.edit_message(self.original_message.id, content=new_content, embed=embed)
@@ -201,10 +202,11 @@ class EmbedCreatorModal(discord.ui.Modal):
             # below can exceed Discord's 3-second interaction window.
             await interaction.response.defer(ephemeral=True)
 
-            # Create the embed with the provided data
+            # User content is sanitized so embeds can't be abused for mass
+            # pings (@everyone/@here/role/user mentions are escaped).
             embed = discord.Embed(
-                title=self.embed_title.value,
-                description=self.embed_description.value
+                title=sanitize_mentions(self.embed_title.value),
+                description=sanitize_mentions(self.embed_description.value)
             )
             
             # Set color
@@ -220,7 +222,7 @@ class EmbedCreatorModal(discord.ui.Modal):
             
             # Add footer if provided
             if self.embed_footer.value:
-                embed.set_footer(text=self.embed_footer.value)
+                embed.set_footer(text=sanitize_mentions(self.embed_footer.value))
             
             # Use Webhook to send ephemeral-style user impersonated message
             target_channel = interaction.channel
@@ -237,13 +239,14 @@ class EmbedCreatorModal(discord.ui.Modal):
                         webhook = await target_channel.create_webhook(name="Embed Bot helper")
                     
                     # Send via webhook with 'The Codeverse Hub' identity
-                    content = self.embed_premessage.value if self.embed_premessage.value else discord.utils.MISSING
+                    content = sanitize_mentions(self.embed_premessage.value) if self.embed_premessage.value else discord.utils.MISSING
                     
                     await webhook.send(
                         content=content,
                         embed=embed,
                         username="The Codeverse Hub",
-                        avatar_url=self.cog.bot.user.display_avatar.url
+                        avatar_url=self.cog.bot.user.display_avatar.url,
+                        allowed_mentions=discord.AllowedMentions.none(),
                     )
                     webhook_sent = True
                     
@@ -254,20 +257,21 @@ class EmbedCreatorModal(discord.ui.Modal):
             if not webhook_sent:
                 # Fallback: Send plain message first if provided, then embedding as bot
                 if isinstance(target_channel, (discord.TextChannel, discord.Thread)):
-                    if self.embed_premessage.value:
+                    premessage = sanitize_mentions(self.embed_premessage.value)
+                    if premessage:
                         try:
                             # Send content and embed in same message if possible, or separate
                             # User asked for "part of embed text message", so use content=
-                            await target_channel.send(content=self.embed_premessage.value, embed=embed)
+                            await target_channel.send(content=premessage, embed=embed, allowed_mentions=discord.AllowedMentions.none())
                         except Exception:
                              # Try sending separate if failed (e.g. content too long?)
-                             await target_channel.send(self.embed_premessage.value)
-                             await target_channel.send(embed=embed)
+                             await target_channel.send(premessage, allowed_mentions=discord.AllowedMentions.none())
+                             await target_channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
                     else:
-                        await target_channel.send(embed=embed)
+                        await target_channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 else:
                     # Fallback for other channel types
-                    await interaction.followup.send(content=self.embed_premessage.value, embed=embed, ephemeral=True)
+                    await interaction.followup.send(content=sanitize_mentions(self.embed_premessage.value), embed=embed, ephemeral=True)
                     return
 
             # Send ephemeral confirmation to the user (followup: already deferred)
@@ -454,211 +458,7 @@ class EmbedBuilder(commands.Cog):
             )
             await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
 
-    @app_commands.command(
-        name="embedquick",
-        description="Create a quick embed with command parameters (legacy method)"
-    )
-    @app_commands.describe(
-        title="The title of the embed",
-        description="The main description/content of the embed",
-        color="Color of the embed (e.g., red, blue, green, #FF0000)",
-        thumbnail="URL for the thumbnail image (optional)",
-        image="URL for the main image (optional)",
-        footer="Footer text (optional)",
-        timestamp="Add current timestamp? (yes/no)",
-    )
-    async def create_embed_quick(
-        self, 
-        interaction: discord.Interaction,
-        title: str,
-        description: str,
-        color: str = "blue",
-        thumbnail: Optional[str] = None,
-        image: Optional[str] = None,
-        footer: Optional[str] = None,
-        timestamp: Optional[str] = "no"
-    ):
-        """Create a beautiful customized embed message (quick method with parameters)"""
-        try:
-            # Acknowledge immediately: the channel send below can exceed
-            # Discord's 3-second interaction window (10062).
-            await interaction.response.defer(ephemeral=True)
-
-            print(f"DEBUG: /embedquick called by {interaction.user} (ID: {interaction.user.id})")
-            print(f"DEBUG: Guild: {interaction.guild.name if interaction.guild else 'DM'}")
-            
-            # Create base embed with proper spacing
-            embed = discord.Embed(title=title, color=discord.Color.blue())
-            
-            # Handle description with proper formatting and spacing
-            # Format: {field|name|value|inline}
-            field_pattern = r'\{field\|(.*?)\|(.*?)(?:\|(true|false))?\}'
-            
-            # Extract and remove field definitions from description
-            fields = list(re.finditer(field_pattern, description))
-            clean_description = re.sub(field_pattern, '', description).strip()
-            
-            # Add proper spacing to description
-            if clean_description:
-                # Replace \n with actual newlines and add extra spacing
-                formatted_description = clean_description.replace('\\n', '\n').replace('\n', '\n\n')
-                embed.description = f"\n{formatted_description}\n"
-            
-            # Set color first (before fields)
-            if color.startswith('#'):
-                try:
-                    color_int = int(color[1:], 16)
-                    embed.color = discord.Color(color_int)
-                except ValueError:
-                    embed.color = discord.Color.blue()
-            else:
-                embed.color = self.colors.get(color.lower(), discord.Color.blue())
-            
-            # Add any fields found in the description with proper spacing
-            for i, match in enumerate(fields):
-                name = match.group(1).strip()
-                value = match.group(2).strip()
-                inline = match.group(3) != "false" if match.group(3) else True
-                
-                # Add spacing to field values
-                formatted_value = f"\n{value}\n" if not inline else value
-                embed.add_field(name=f"**{name}**", value=formatted_value, inline=inline)
-                
-                # Add spacing between fields (invisible field)
-                if not inline and i < len(fields) - 1:
-                    embed.add_field(name="\u200b", value="\u200b", inline=False)
-            
-            # Add thumbnail if provided
-            if thumbnail:
-                embed.set_thumbnail(url=thumbnail)
-            
-            # Add image if provided
-            if image:
-                embed.set_image(url=image)
-            
-            # Add footer if provided
-            if footer:
-                embed.set_footer(text=footer)
-            
-            # Add timestamp if requested
-            if timestamp and timestamp.lower() in ['yes', 'true', 'y']:
-                embed.timestamp = discord.utils.utcnow()
-            
-            # Send the embed to the channel (not as a reply)
-            if isinstance(interaction.channel, (discord.TextChannel, discord.Thread)):
-                await interaction.channel.send(embed=embed)
-                
-                # Send ephemeral confirmation to the user (followup: deferred)
-                success_embed = discord.Embed(
-                    title="✅ Embed Sent",
-                    description="Your embed has been sent to this channel!",
-                    color=discord.Color.green()
-                )
-                await interaction.followup.send(embed=success_embed, ephemeral=True)
-            else:
-                # Fallback if not in a proper channel
-                await interaction.followup.send(embed=embed)
-            
-        except Exception as e:
-            error_embed = discord.Embed(
-                title="❌ Embed Creation Failed",
-                description=f"Error: {str(e)}",
-                color=discord.Color.red()
-            )
-            # Safe: picks followup when deferred and swallows 10062 if expired.
-            await safe_interaction_reply(interaction, embed=error_embed, ephemeral=True)
-
     # embedrules command has been removed
-
-    @app_commands.command(
-        name="embedhelp",
-        description="Get help with creating embeds"
-    )
-    async def embed_help(self, interaction: discord.Interaction):
-        """Show help information for creating embeds"""
-        help_embed = discord.Embed(
-            title="🎨 **Dyno-Style Embed Creator**",
-            description="\n*Create beautiful, professional embeds with proper spacing and formatting*\n",
-            color=discord.Color.gold()
-        )
-        
-        help_embed.add_field(
-            name="🔧 **Interactive Embed Creator**",
-            value="\n**Use `/embed` for an interactive form:**\n"
-                  "• Opens a popup form with input fields\n"
-                  "• Fill in title, description, color, footer, and image\n"
-                  "• Creates beautiful, professional embeds\n"
-                  "• Easy to use - just type `/embed` and fill the form!\n",
-            inline=False
-        )
-        
-        help_embed.add_field(
-            name="✏️ **Edit Existing Embeds**",
-            value="\n**Use `/editembed` to modify bot embeds:**\n"
-                  "• Edit any embed previously created by the bot\n"
-                  "• Pre-populated form with existing content\n"
-                  "• Use message ID or right-click → Copy Message Link\n"
-                  "• Works across channels in the same server\n",
-            inline=False
-        )
-        
-        help_embed.add_field(
-            name="⚡ **Quick Embed Creator**",
-            value="\n**Use `/embedquick` for command-line style:**\n"
-                  "• `title` - The embed title\n"
-                  "• `description` - Main content (supports \\n for new lines)\n"
-                  "• `color` - Color name or hex (blue, red, #FF0000)\n"
-                  "• `thumbnail` - Small image URL\n"
-                  "• `image` - Large image URL\n"
-                  "• `footer` - Footer text\n"
-                  "• `timestamp` - Add current time (yes/no)\n",
-            inline=False
-        )
-        
-        # Separator
-        help_embed.add_field(name="\u200b", value="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", inline=False)
-        
-        # Field syntax (for embedquick)
-        help_embed.add_field(
-            name="📋 **Adding Fields (embedquick only)**",
-            value="\n**Add fields in description using:**\n"
-                  "`{field|Field Name|Field Value|true}`\n"
-                  "*The last 'true/false' controls if fields are inline*\n",
-            inline=False
-        )
-        
-        # Rules embed section removed
-        
-        # Separator
-        help_embed.add_field(name="\u200b", value="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", inline=False)
-        
-        # Colors
-        help_embed.add_field(
-            name="🎨 **Available Colors**",
-            value="\n**Basic:** red, blue, green, gold, purple\n"
-                  "**Extra:** orange, teal, magenta\n"
-                  "**Custom:** Use hex codes like #FF0000\n",
-            inline=True
-        )
-        
-        # Examples
-        help_embed.add_field(
-            name="💡 **Example Commands**",
-            value="\n**Interactive embed:**\n"
-                  "```/embed```\n"
-                  "*Then fill out the popup form!*\n"
-                  "\n**Edit existing embed:**\n"
-                  "```/editembed message_id:123456789```\n"
-                  "```/editembed message_url:https://discord.com/channels/.../.../.../```\n"
-                  "\n**Quick embed:**\n"
-                  "```/embedquick title:Welcome! description:Hello everyone!\\n\\nEnjoy your stay! color:blue```\n",
-            inline=True
-        )
-        
-        help_embed.set_footer(text="🌟 Professional embeds made easy!", icon_url="https://cdn.discordapp.com/emojis/741205308478832650.png")
-        help_embed.timestamp = discord.utils.utcnow()
-        
-        await interaction.response.send_message(embed=help_embed, ephemeral=True)
 
     @commands.group(name="ls", invoke_without_command=True)
     async def ls_command(self, ctx):

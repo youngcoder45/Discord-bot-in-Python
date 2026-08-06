@@ -75,10 +75,9 @@ COGS_TO_LOAD = [
     # Logging System (Essential - LOAD FIRST)
     'commands.logging',       # Centralized logging system for all events
     'commands.tickets',
-    # Moderation & Protection (Essential)
+    # Moderation (Essential)
     'commands.modcog',        # Combined moderation commands with warnings system
-    'commands.advanced_moderation',  # Advanced moderation with automod, tempban, mute, safety features
-    'commands.protection',    # Protection features (anti-spam, anti-raid, anti-nuke)
+    'commands.advanced_moderation',  # Advanced moderation with tempban, mute, safety features
     'commands.appeals',       # Appeal system for bans and mutes
     'commands.spam_catch',    # Spam detection and catching
     'commands.sticky_message', # Sticky message feature for important announcements

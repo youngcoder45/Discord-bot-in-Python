@@ -26,3 +26,25 @@ class WarnRepository(AbstractRepository[Warn]):
         statement = select(Warn).where(Warn.guild_id == guild_id, Warn.user_id == user_id)
         result = await self.session.execute(statement)
         return list(result.scalars().all())
+
+    async def get_leaderboard(self, guild_id: int, limit: int = 10) -> list[tuple[int, int]]:
+        """Return the top users by active (non-revoked) warning count.
+
+        Args:
+            guild_id: The guild to build the leaderboard for.
+            limit: Maximum number of entries to return.
+
+        Returns:
+            A list of ``(user_id, active_warning_count)`` tuples ordered from
+            most to fewest warnings.
+        """
+        from sqlmodel import func, select  # type: ignore[import-not-found]
+        statement = (
+            select(Warn.user_id, func.count(Warn.id))
+            .where(Warn.guild_id == guild_id, Warn.revoked.is_(False))
+            .group_by(Warn.user_id)
+            .order_by(func.count(Warn.id).desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return [(user_id, count) for user_id, count in result.all()]

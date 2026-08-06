@@ -80,7 +80,7 @@
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
 | `?serverinfo` / `/serverinfo` | Detailed server statistics and info | None |
-| `?userinfo [@user]` / `/userinfo [@user]` | Comprehensive user information | None |
+| `?info [@user]` / `/info [@user]` | Comprehensive user information (alias: `userinfo`) | None |
 | `?roleinfo <role>` / `/roleinfo <role>` | Detailed role information | None |
 | `?channelinfo [#channel]` / `/channelinfo [#channel]` | Channel information and stats | None |
 
@@ -96,7 +96,7 @@
 | `?warn <member> [reason]` / `/warn <member> [reason]` | Issue warning to member | Manage Messages |
 | `?slowmode <seconds> [#channel]` / `/slowmode <seconds> [#channel]` | Set channel slowmode (0-6hrs) | Manage Channels |
 | `?nick <member> [nickname]` / `/nick <member> [nickname]` | Change member nickname | Manage Nicknames |
-| `/getuserid <user>` | Get the Discord ID of a user | None |
+| `?get-user-id [@user]` / `/get-user-id [user]` | Get the Discord ID of a user (alias: `getuserid`) | None |
 
 #### Advanced Moderation Commands
 | Command | Description | Permission Required |
@@ -128,33 +128,6 @@
 - ✅ **Permission Validation** - Checks role hierarchy and bot permissions
 - ✅ **Embed Integration** - Works with `/editembed` for easy editing
 - ✅ **Real-time Tracking** - Live reaction monitoring and role management
-
-#### Anti-Nuke Protection System
-**Dual-window rate limiting with automatic action reversal and actor blocking**
-
-**Protection Thresholds:**
-- **1-Minute Window:** Max 5 bans/kicks per minute
-- **20-Minute Window:** Max 12 bans/kicks across 20 minutes
-- **Violation Response:** Automatic ban reversal, 5-minute actor block, staff alerts
-
-**Features:**
-- **Dual-Window Tracking** - Sophisticated sliding window detection
-- **Actor Attribution** - Identifies who performed illegal actions via audit logs
-- **Auto-Unban** - Bans are automatically reversed when limits exceeded
-- **Actor Blocking** - Violators blocked for 5 minutes from taking moderation actions
-- **Staff Alerts** - Professional embed notifications with detailed information
-- **Real-Time Status** - `/antinuke status` shows current protection metrics
-
-**Commands:**
-- **`/antinuke status`** - View current anti-nuke protection status and real-time metrics
-- **`/antinuke [action] [value]`** - Configure protection settings *(Admin)*
-
-**Example Alert:**
-When a user tries to ban/kick more than the limits, staff receives an embed showing:
-- Violator identity and action
-- Violation details (action count, time window, limit exceeded)
-- Block duration (5 minutes)
-- Automatic action taken (ban reversed)
 
 ### Point-Based Moderation System
 **Advanced escalation-based moderation** with monthly resets and approval workflow
@@ -650,7 +623,7 @@ python main.py
 ```bash
 # Test moderation commands
 /serverinfo
-/userinfo @user
+/info @user
 /purge 5
 
 # Advanced moderation (Admin only)

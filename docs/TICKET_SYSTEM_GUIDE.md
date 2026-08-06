@@ -146,7 +146,7 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 
 **Command:**
 ```
-/ticketpanel [channel] [support_role] [report_role] [partner_role]
+/ticket panel [channel] [support_role] [report_role] [partner_role]
 ```
 
 **Parameters:**
@@ -157,7 +157,7 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 
 **Example:**
 ```
-/ticketpanel channel:#support support_role:@Support report_role:@Moderator partner_role:@Manager
+/ticket panel channel:#support support_role:@Support report_role:@Moderator partner_role:@Manager
 ```
 
 **What happens:**
@@ -210,18 +210,18 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 
 ### Ticket Commands
 
-#### `/tickets` - View All Tickets
+#### `/ticket list` - View All Tickets
 **Usage:**
 ```
-/tickets [status] [user]
+/ticket list [status] [user]
 ```
 
 **Examples:**
 ```
-/tickets - All tickets
-/tickets open - Only open tickets
-/tickets closed - Only closed tickets
-/tickets open @user - User's open tickets
+/ticket list - All tickets
+/ticket list open - Only open tickets
+/ticket list closed - Only closed tickets
+/ticket list open @user - User's open tickets
 ```
 
 **Shows:**
@@ -234,10 +234,10 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 
 ---
 
-#### `/ticketstats` - Statistics
+#### `/ticket stats` - Statistics
 **Usage:**
 ```
-/ticketstats
+/ticket stats
 ```
 
 **Shows:**
@@ -249,10 +249,10 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 
 ---
 
-#### `/forceclose` - Force Close Ticket
+#### `/ticket forceclose` - Force Close Ticket
 **Usage:**
 ```
-/forceclose <ticket_id> [reason]
+/ticket forceclose <ticket_id> [reason]
 ```
 
 **When to use:**
@@ -263,21 +263,21 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 
 **Example:**
 ```
-/forceclose 42 User left server
+/ticket forceclose 42 User left server
 ```
 
 ---
 
-#### `/ticketlog` - Configure Log Channel
+#### `/ticket log` - Configure Log Channel
 **Usage:**
 ```
-/ticketlog [channel]
+/ticket log [channel]
 ```
 
 **Examples:**
 ```
-/ticketlog - View current log channel
-/ticketlog #ticketlog - Set log channel
+/ticket log - View current log channel
+/ticket log #ticketlog - Set log channel
 ```
 
 **What's logged:**
@@ -288,36 +288,36 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 
 ---
 
-#### `/ticketsupport` - Set Support Role
+#### `/ticket support` - Set Support Role
 **Usage:**
 ```
-/ticketsupport [role]
+/ticket support [role]
 ```
 
 **Examples:**
 ```
-/ticketsupport - View current role
-/ticketsupport @Support - Set support role
+/ticket support - View current role
+/ticket support @Support - Set support role
 ```
 
 **Purpose:** Role to ping for general support tickets
 
 ---
 
-#### `/ticketreport` - Set Report Team Role
+#### `/ticket report` - Set Report Team Role
 **Usage:**
 ```
-/ticketreport [role]
+/ticket report [role]
 ```
 
 **Purpose:** Role to ping for report tickets
 
 ---
 
-#### `/ticketpartner` - Set Partner Team Role
+#### `/ticket partner` - Set Partner Team Role
 **Usage:**
 ```
-/ticketpartner [role]
+/ticket partner [role]
 ```
 
 **Purpose:** Role to ping for partnership tickets
@@ -425,7 +425,7 @@ Tickets are stored with:
 
 ### Ticket Button Not Working
 **Cause:** Bot restarted, view lost  
-**Fix:** Run `/ticketpanel` again or wait for bot to restore views
+**Fix:** Run `/ticket panel` again or wait for bot to restore views
 
 ### User Can't Create Ticket
 **Possible causes:**
@@ -451,7 +451,7 @@ Tickets are stored with:
 
 ### Roles Not Being Pinged
 **Cause:** Roles not configured  
-**Fix:** Use `/ticketsupport`, `/ticketreport`, `/ticketpartner` commands
+**Fix:** Use `/ticket support`, `/ticket report`, `/ticket partner` commands
 
 ---
 
@@ -471,8 +471,8 @@ Tickets are stored with:
 
 **3. Configure bot**
 ```
-/ticketpanel channel:#tickets support_role:@Support report_role:@Moderator partner_role:@Manager
-/ticketlog #ticketlog
+/ticket panel channel:#tickets support_role:@Support report_role:@Moderator partner_role:@Manager
+/ticket log #ticketlog
 ```
 
 **4. Set permissions**
@@ -488,7 +488,7 @@ Tickets are stored with:
 
 ### Monitoring
 
-Use `/ticketstats` regularly to:
+Use `/ticket stats` regularly to:
 - Track ticket volume
 - Identify busy categories
 - Monitor response times

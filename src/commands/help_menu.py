@@ -29,7 +29,6 @@ COG_CATEGORIES: dict[str, str] = {
     "AdvancedModeration": "Moderation",
     "Warnings": "Moderation",
     # AutoMod & Protection covers the anti-abuse systems.
-    "Protection": "AutoMod & Protection",
     "SpamCatch": "AutoMod & Protection",
     "Appeals": "Appeals",
     "Tickets": "Tickets",
@@ -222,7 +221,7 @@ def build_categories(bot: commands.Bot, ctx) -> dict[str, list]:
         if getattr(app_cmd, "parent", None) is not None:
             continue  # subcommand of a group (shown via detail view)
         # A command registered as a plain prefix command AND as a slash command
-        # (e.g. getuserid in protection.py) is shown once under its prefix form.
+        # is shown once under its prefix form.
         if app_cmd.name in registered_prefix_names:
             continue
         if not _is_visible_command(app_cmd, is_owner):

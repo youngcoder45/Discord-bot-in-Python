@@ -81,6 +81,10 @@ class WarnService:
     async def get_warnings_for_user(self, user_id: int, guild_id: int) -> list[Warn]:
         return await self.repo.find_by_user_id_and_guild_id(user_id, guild_id)
 
+    async def get_leaderboard(self, guild_id: int, limit: int = 10) -> list[tuple[int, int]]:
+        """Return the top users by active (non-revoked) warning count."""
+        return await self.repo.get_leaderboard(guild_id, limit)
+
     async def clear_warnings_for_user(
         self, user_id: int, guild_id: int, moderator_id: int, reason: str
     ) -> list[Warn]:

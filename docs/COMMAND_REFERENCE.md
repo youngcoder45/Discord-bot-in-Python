@@ -24,7 +24,8 @@ This document provides a comprehensive list of all commands available in the Cod
 |---------|-------------|-------|
 | `/help`, `?help` | Interactive help menu with dropdown categories | `/help [command]` |
 | `/ping`, `?ping` | Check bot latency and responsiveness | `/ping` |
-| `/info`, `?info` | View bot information, uptime, and instance details | `/info` |
+| `/info`, `?info` | Get detailed user information (alias: `userinfo`) | `/info [@user]` |
+| `/get-user-id`, `?get-user-id` | Get the Discord ID of a user (alias: `getuserid`) | `/get-user-id [user]` | None |
 
 ---
 
@@ -43,11 +44,10 @@ This document provides a comprehensive list of all commands available in the Cod
 | `/clean`, `?clean` | Delete bot messages and commands | `/clean [count=100]` | Manage Messages |
 | `/role`, `?role` | Toggle a role for a user | `/role <user> <role_name>` | Manage Roles |
 | `/serverinfo`, `?serverinfo` | Get detailed server information | `/serverinfo` | None |
-| `/warnings add`, `?warnings add` | Add a warning to a user | `/warnings add <user> [reason]` | Kick Members |
-| `/warnings remove`, `?warnings remove` | Remove a warning from a user | `/warnings remove <user> <case_id> [reason]` | Kick Members |
-| `/warnings list`, `?warnings list` | List warnings for a user | `/warnings list <user>` | Kick Members |
+| `/warnings` or `?warnings` | Show the server warnings leaderboard | `/warnings` | None |
+| `/warnings view`, `?warnings view` | View all warnings for a user (total, moderator, date, reason) | `/warnings view <user>` | None |
+| `/warnings modify`, `?warnings modify` | Revoke a warning by case ID | `/warnings modify <case_id> [reason]` | Kick Members |
 | `/warnings clear`, `?warnings clear` | Clear all warnings for a user | `/warnings clear <user> [reason]` | Kick Members |
-| `/warnings view`, `?warnings view` | View details of a specific warning | `/warnings view <case_id>` | Kick Members |
 
 ### Advanced Moderation
 **Source:** `src/commands/advanced_moderation.py`
@@ -55,7 +55,6 @@ This document provides a comprehensive list of all commands available in the Cod
 | Command | Description | Usage | Permission |
 |---------|-------------|-------|------------|
 | `/serverinfo`, `?serverinfo` | Get detailed server information | `/serverinfo` | None |
-| `/userinfo`, `?userinfo` | Get detailed user information | `/userinfo [@user]` | None |
 | `/roleinfo`, `?roleinfo` | Get information about a role | `/roleinfo <role>` | None |
 | `/lockdown`, `?lockdown` | Restrict sending messages in a channel | `/lockdown [#channel] [reason]` | Manage Channels |
 | `/unlock`, `?unlock` | Remove sending restrictions from a channel | `/unlock [#channel] [reason]` | Manage Channels |
@@ -115,7 +114,6 @@ This document provides a comprehensive list of all commands available in the Cod
 |---------|-------------|-------|------------|
 | `/embed`, `?embed` | Interactive embed creator | `/embed` | Manage Messages |
 | `/editembed`, `?editembed` | Edit existing embeds | `/editembed <message_id>` | Manage Messages |
-| `/embedquick`, `?embedquick` | Quick embed creation | `/embedquick <title> <description> [color]` | Manage Messages |
 
 ### Data Management
 **Source:** `src/commands/data_management.py`
@@ -138,17 +136,6 @@ This document provides a comprehensive list of all commands available in the Cod
 
 ---
 
-## Protection Systems
-**Source:** `src/commands/protection.py`
-
-| Command | Description | Usage | Permission |
-|---------|-------------|-------|------------|
-| `/antispam`, `?antispam` | Anti-spam protection settings | `/antispam <status>` | Administrator |
-| `/antiraid`, `?antiraid` | Configure anti-raid protection | `/antiraid <status>` | Administrator |
-| `/antinuke`, `?antinuke` | Server anti-nuke protection | `/antinuke <status>` | Administrator |
-
----
-
 ## File Structure Overview
 
 ```
@@ -164,7 +151,6 @@ src/
 │   ├── moderation.py                     # Basic moderation commands
 │   ├── moderation_extended.py            # Extended moderation commands
 │   ├── point_moderation.py               # Point-based moderation system
-│   ├── protection.py                     # Anti-spam, anti-raid, anti-nuke
 │   ├── staff_points.py                   # Staff aura system
 
 │   ├── utility.py                        # Embed builder
