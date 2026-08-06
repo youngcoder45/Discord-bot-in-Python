@@ -130,7 +130,7 @@ class LogFormatter:
                 "description",
                 f"Appeal activity recorded for #{log_item.get('fields', [{}])[0].get('value', 'unknown')}",
             )
-            embed.color = discord.Color(color_map.get(decision.upper(), 0x5865F2))
+            embed.color = discord.Color(color_map.get(decision.upper(), 0x2B2D31))
             fields = log_item.get("fields", [])
             for field in fields:
                 name = getattr(field, "name", None) or field.get("name")

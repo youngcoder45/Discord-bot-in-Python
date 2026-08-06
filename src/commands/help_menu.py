@@ -252,7 +252,7 @@ def build_home_embed(bot: commands.Bot, categories: dict[str, list[commands.Comm
             "**Slash:** `/` (e.g. `/ping`)\n"
             "Use `/help <command>` or `?help <command>` for detailed info on a specific command."
         ),
-        color=0x2B2D31,
+        color=0x5865F2,
         timestamp=datetime.now(timezone.utc),
     )
 
@@ -448,7 +448,7 @@ def build_command_embed(
     embed = discord.Embed(
         title=f"`{cmd.qualified_name}`",
         description=(cmd.help or cmd.short_doc or "No description provided."),
-        color=0x2B2D31,
+        color=0x5865F2,
         timestamp=datetime.now(timezone.utc),
     )
 
@@ -546,7 +546,7 @@ def build_category_embed(
     embed = discord.Embed(
         title=f"{label} Commands",
         description=f"{len(cmds)} command{'s' if len(cmds) != 1 else ''} • `?help <command>` or `/help <command>` for details",
-        color=0x2B2D31,
+        color=0x5865F2,
         timestamp=datetime.now(timezone.utc),
     )
 

@@ -146,7 +146,7 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 
 **Command:**
 ```
-/ticket panel [channel] [support_role] [report_role] [partner_role]
+/ticket panel [channel] [support_role] [report_role] [partner_role] [color]
 ```
 
 **Parameters:**
@@ -154,10 +154,13 @@ The CodeVerse Bot ticket system provides a professional support mechanism using 
 - `support_role` - Role to ping for general tickets
 - `report_role` - Role to ping for report tickets
 - `partner_role` - Role to ping for partnership tickets
+- `color` - Panel embed color: a hex code (`#00ff00`) or a named color (`blue`, `red`, `green`, ...) (default: blurple)
 
-**Example:**
+**Examples:**
 ```
 /ticket panel channel:#support support_role:@Support report_role:@Moderator partner_role:@Manager
+/ticket panel color:#00ff00
+/ticket panel color:red
 ```
 
 **What happens:**

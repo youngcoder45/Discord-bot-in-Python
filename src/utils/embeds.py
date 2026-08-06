@@ -2,6 +2,9 @@ import discord
 from datetime import datetime, timezone
 from config import MODERATION_POINT_CAP, MODERATION_POINT_RESET_DAYS
 
+# Brand color used for neutral/informational embeds across the bot.
+BRAND_COLOR = 0x5865F2  # Discord Blurple
+
 def create_points_embed(guild_name: str, points: int, reason: str, total_points: int) -> discord.Embed:
     """Create embed for moderation points notification"""
     embed = discord.Embed(
@@ -142,7 +145,7 @@ def create_success_embed(title: str, description: str) -> discord.Embed:
 
 def create_info_embed(title: str, description: str) -> discord.Embed:
     """Create info embed"""
-    embed = discord.Embed(title=title, description=description, color=0x0000ff)
+    embed = discord.Embed(title=title, description=description, color=BRAND_COLOR)
     embed.timestamp = datetime.now(timezone.utc)
     embed.set_footer(text="CodeVerse Bot")
     return embed

@@ -374,7 +374,7 @@ Complete reference of all bot commands organized by category.
 
 **Usage:**
 ```
-/ticket panel [channel] [support_role] [report_role] [partner_role]
+/ticket panel [channel] [support_role] [report_role] [partner_role] [color]
 ```
 
 **Example:**

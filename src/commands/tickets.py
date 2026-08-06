@@ -15,6 +15,50 @@ from utils.helpers import safe_interaction_reply
 
 logger = logging.getLogger("codeverse.tickets")
 
+# Named colors accepted by the ticket panel command. Each maps to a hex value;
+# users can also pass any raw hex code like #00ff00 or 00ff00.
+TICKET_NAMED_COLORS: dict[str, int] = {
+    "blue": 0x0000FF,
+    "red": 0xFF0000,
+    "green": 0x00FF00,
+    "yellow": 0xFFFF00,
+    "orange": 0xFFA500,
+    "purple": 0x800080,
+    "pink": 0xFF69B4,
+    "blurple": 0x5865F2,
+    "black": 0x000000,
+    "white": 0xFFFFFF,
+    "gray": 0x808080,
+    "grey": 0x808080,
+    "gold": 0xFFD700,
+    "cyan": 0x00FFFF,
+    "magenta": 0xFF00FF,
+    "lime": 0x32CD32,
+    "brown": 0xA52A2A,
+    "navy": 0x000080,
+    "teal": 0x008080,
+    "crimson": 0xDC143C,
+}
+
+
+def parse_ticket_color(value: str) -> int | None:
+    """Parse a user-supplied color into an integer hex value.
+
+    Accepts either a named color ("blue", "red", ...) or a hex code
+    ("#00ff00", "00ff00"). Returns None when the value is invalid.
+    """
+    if not value:
+        return None
+    cleaned = value.strip().lstrip("#").lower()
+    if cleaned in TICKET_NAMED_COLORS:
+        return TICKET_NAMED_COLORS[cleaned]
+    try:
+        if len(cleaned) == 6:
+            return int(cleaned, 16)
+    except ValueError:
+        pass
+    return None
+
 
 class TicketCategoryView(discord.ui.View):
     """View for selecting ticket category"""
@@ -61,7 +105,7 @@ class TicketConfirmationView(discord.ui.View):
         embed = discord.Embed(
             title="Create a New Ticket",
             description="Please select the category that best describes your issue:",
-            color=0x2B2D31,
+            color=0x5865F2,
         )
         embed.add_field(
             name="Available Categories",
@@ -158,7 +202,7 @@ class TicketPanelView(discord.ui.View):
         embed = discord.Embed(
             title="Select Ticket Category",
             description="Please choose the category that best describes your issue:",
-            color=0x2B2D31,
+            color=0x5865F2,
         )
         embed.add_field(
             name="Available Categories",
@@ -210,11 +254,11 @@ class Tickets(commands.Cog):
         try:
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
-            cursor.execute("SELECT guild_id, channel_id, message_id FROM ticket_panels")
+            cursor.execute("SELECT guild_id, channel_id, message_id, color FROM ticket_panels")
             panels = cursor.fetchall()
             conn.close()
 
-            for guild_id, channel_id, message_id in panels:
+            for guild_id, channel_id, message_id, panel_color in panels:
                 try:
                     guild = self.bot.get_guild(guild_id)
                     if not guild:
@@ -228,6 +272,14 @@ class Tickets(commands.Cog):
                         _message = await channel.fetch_message(message_id)
                         view = TicketPanelView(self)
                         self.bot.add_view(view, message_id=message_id)
+                        # Re-apply the stored panel color to the embed after a
+                        # restart, since the DB is the source of truth.
+                        # Note: check ``is not None`` so black (0x000000) restores too.
+                        if panel_color is not None and _message.embeds:
+                            embed = _message.embeds[0]
+                            if embed.color.value != panel_color:
+                                embed.color = discord.Color(panel_color)
+                                await _message.edit(embed=embed)
                         logger.info(
                             f"Restored ticket panel view for message {message_id} in guild {guild_id}"
                         )
@@ -361,12 +413,18 @@ class Tickets(commands.Cog):
                 guild_id INTEGER NOT NULL,
                 channel_id INTEGER NOT NULL,
                 message_id INTEGER NOT NULL,
+                color INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_by INTEGER NOT NULL,
                 UNIQUE(guild_id, channel_id, message_id)
             )
             """
         )
+        # Migrate pre-existing databases that predate the color column.
+        try:
+            cursor.execute("ALTER TABLE ticket_panels ADD COLUMN color INTEGER")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
         # Custom log channels
         cursor.execute(
@@ -598,7 +656,7 @@ class Tickets(commands.Cog):
                     "**Ready to apply?** Click 'Create This Ticket' to begin the partnership application process."
                 ),
                 "examples": "Discord server partnerships, tech community collaborations, educational alliances",
-                "color": 0x2B2D31,
+                "color": 0x5865F2,
             },
             "support": {
                 "name": "General Support",
@@ -611,7 +669,7 @@ class Tickets(commands.Cog):
                     "**Be patient** - Our team will help you as soon as possible"
                 ),
                 "examples": "How to use features, account questions, general guidance",
-                "color": 0x2B2D31,
+                "color": 0x5865F2,
             },
             "role_issue": {
                 "name": "Role Issues",
@@ -623,7 +681,7 @@ class Tickets(commands.Cog):
                     "**Self-assignable roles** - Problems with reaction roles or commands"
                 ),
                 "examples": "Didn't get level up role, can't access channel, role color wrong",
-                "color": 0x2B2D31,
+                "color": 0x5865F2,
             },
             "report": {
                 "name": "Reports",
@@ -636,7 +694,7 @@ class Tickets(commands.Cog):
                     "**Your involvement** - Were you directly affected?"
                 ),
                 "examples": "Harassment, spam, rule breaking, inappropriate content",
-                "color": 0x2B2D31,
+                "color": 0x5865F2,
             },
             "warn_appeal": {
                 "name": "Warn Appeals",
@@ -648,7 +706,7 @@ class Tickets(commands.Cog):
                     "**Honesty** - Be honest about the situation"
                 ),
                 "examples": "Unjust warning, misunderstanding, incorrect punishment",
-                "color": 0x2B2D31,
+                "color": 0x5865F2,
             },
             "other": {
                 "name": "Other Issues",
@@ -661,7 +719,7 @@ class Tickets(commands.Cog):
                     "**Additional context** - Any other details that might help"
                 ),
                 "examples": "Feedback, suggestions, questions not covered by other categories",
-                "color": 0x2B2D31,
+                "color": 0x5865F2,
             },
         }
 
@@ -1303,6 +1361,7 @@ class Tickets(commands.Cog):
         support_role="Role to use for support tickets (optional)",
         report_role="Role to use for report tickets (optional)",
         partner_role="Role to use for partnership tickets (optional)",
+        color="Panel color: hex code (#00ff00) or name (blue, red, green, ...)",
     )
     async def ticket_panel(
         self,
@@ -1311,6 +1370,7 @@ class Tickets(commands.Cog):
         support_role: Optional[discord.Role] = None,
         report_role: Optional[discord.Role] = None,
         partner_role: Optional[discord.Role] = None,
+        color: Optional[str] = None,
     ):
         """Create a persistent ticket panel"""
         # Defer the response to prevent timeout issues
@@ -1322,6 +1382,19 @@ class Tickets(commands.Cog):
             await ctx.followup.send(
                 embed=create_error_embed(
                     "Invalid Channel", "Please provide a valid text channel."
+                ),
+                ephemeral=True,
+            )
+            return
+
+        panel_color = parse_ticket_color(color) if color else 0x5865F2
+        if panel_color is None:
+            named = ", ".join(sorted(TICKET_NAMED_COLORS))
+            await ctx.followup.send(
+                embed=create_error_embed(
+                    "Invalid Color",
+                    f"Could not parse `{color}`. Use a hex code like `#00ff00` "
+                    f"or a named color: `{named}`.",
                 ),
                 ephemeral=True,
             )
@@ -1341,7 +1414,7 @@ class Tickets(commands.Cog):
                 "• Other Issues\n\n"
                 "> Note:- Creating tickets for fun or spam may lead to disciplinary action."
             ),
-            color=0x2B2D31,
+            color=panel_color,
         )
 
         view = TicketPanelView(self)
@@ -1353,10 +1426,10 @@ class Tickets(commands.Cog):
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    INSERT OR IGNORE INTO ticket_panels (guild_id, channel_id, message_id, created_by)
-                    VALUES (?, ?, ?, ?)
+                    INSERT OR IGNORE INTO ticket_panels (guild_id, channel_id, message_id, color, created_by)
+                    VALUES (?, ?, ?, ?, ?)
                     """,
-                    (ctx.guild.id, target_channel.id, panel_message.id, ctx.author.id),
+                    (ctx.guild.id, target_channel.id, panel_message.id, panel_color, ctx.author.id),
                 )
 
                 if support_role:

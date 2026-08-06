@@ -466,7 +466,7 @@ class EmbedBuilder(commands.Cog):
         embed = discord.Embed(
             title="Server Listing Utilities",
             description="Inspect roles, channels, and permissions on this server.",
-            color=0x000000
+            color=0x5865F2
         )
         embed.add_field(name="?ls channels", value="List all channels (categories, text, voice)", inline=False)
         embed.add_field(name="?ls channels ?w <Target> <Perm>", value="Find channels where User/Role has Permission", inline=False)
@@ -502,7 +502,7 @@ class EmbedBuilder(commands.Cog):
         # Create list of enabled permissions
         enabled_perms = [p[0].replace('_', ' ').title() for p in perms if p[1]]
         
-        embed = discord.Embed(title=f"Role: {role.name}", color=0x000000)
+        embed = discord.Embed(title=f"Role: {role.name}", color=0x5865F2)
         embed.add_field(name="ID", value=str(role.id), inline=True)
         embed.add_field(name="Color", value=str(role.color), inline=True)
         embed.add_field(name="Position", value=str(role.position), inline=True)
@@ -594,7 +594,7 @@ class EmbedBuilder(commands.Cog):
         embed = discord.Embed(
             title=f"Roles with '{matched_perm.replace('_', ' ').title()}'",
             description=f"Found {len(roles_with_perm)} roles.",
-            color=0x000000
+            color=0x5865F2
         )
         
         chunk = ""
@@ -607,7 +607,7 @@ class EmbedBuilder(commands.Cog):
                 embed.description = chunk
                 await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 chunk = line
-                embed = discord.Embed(title="Continued...", color=0x000000)
+                embed = discord.Embed(title="Continued...", color=0x5865F2)
             else:
                 chunk += line
                 
@@ -638,7 +638,7 @@ class EmbedBuilder(commands.Cog):
         embed = discord.Embed(
             title="Cosmetic Roles (No Permissions)",
             description="These roles have 0 permission value.",
-            color=0x000000
+            color=0x5865F2
         )
         
         # Chunking for description limit
@@ -650,7 +650,7 @@ class EmbedBuilder(commands.Cog):
                 embed.description = chunk
                 await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 chunk = line
-                embed = discord.Embed(title="Continued...", color=0x000000)
+                embed = discord.Embed(title="Continued...", color=0x5865F2)
             else:
                 chunk += line
             count += 1
@@ -683,7 +683,7 @@ class EmbedBuilder(commands.Cog):
                 embed = discord.Embed(
                     title=f"Permissions for {role.name}" if i == 0 else f"Permissions for {role.name} (Continued)",
                     description="\n".join(f"• {p}" for p in chunk),
-                    color=role.color if role.color.value != 0 else 0x000000
+                    color=role.color if role.color.value != 0 else 0x5865F2
                 )
                 if i == len(perms_chunked) - 1:
                     embed.set_footer(text=f"Total: {len(perms)} permissions")
@@ -706,7 +706,7 @@ class EmbedBuilder(commands.Cog):
         embed = discord.Embed(
             title="Functional Roles (With Permissions)",
             description="These roles have at least one permission enabled.",
-            color=0x000000
+            color=0x5865F2
         )
         
         chunk = ""
@@ -718,7 +718,7 @@ class EmbedBuilder(commands.Cog):
                 embed.description = chunk
                 await ctx.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 chunk = line
-                embed = discord.Embed(title="Continued...", color=0x000000)
+                embed = discord.Embed(title="Continued...", color=0x5865F2)
             else:
                 chunk += line
             count += 1
@@ -860,7 +860,7 @@ class EmbedBuilder(commands.Cog):
                 embed = discord.Embed(
                     title=f"Channel Audit: {perm_attr}",
                     description=f"Showing channels where **{target.mention}** can `{perm_attr}`.",
-                    color=0x000000
+                    color=0x5865F2
                 )
                 
                 # Build list text
@@ -901,7 +901,7 @@ class EmbedBuilder(commands.Cog):
             else:
                 no_category.append(c)
                 
-        embed = discord.Embed(title=f"Channels in {ctx.guild.name}", color=0x000000)
+        embed = discord.Embed(title=f"Channels in {ctx.guild.name}", color=0x5865F2)
         
         description = ""
         
@@ -1036,7 +1036,7 @@ class EmbedBuilder(commands.Cog):
                 embed = discord.Embed(
                     title=f"Category Audit: {perm_attr}",
                     description=f"Showing categories where **{target.mention}** can `{perm_attr}`.",
-                    color=0x000000
+                    color=0x5865F2
                 )
                 
                 lines = [f"{c.name.upper()} (`{c.id}`)" for c in matched]
@@ -1057,7 +1057,7 @@ class EmbedBuilder(commands.Cog):
         # Default: List all categories
         categories = sorted(ctx.guild.categories, key=lambda c: c.position)
         
-        embed = discord.Embed(title=f"Categories in {ctx.guild.name}", color=0x000000)
+        embed = discord.Embed(title=f"Categories in {ctx.guild.name}", color=0x5865F2)
         
         lines = [f"{c.name} (`{c.id}`)" for c in categories]
         full_text = "\n".join(lines)
@@ -1076,7 +1076,7 @@ class EmbedBuilder(commands.Cog):
         
         embed = discord.Embed(
             title=f"Bots in {ctx.guild.name} ({len(bots)})",
-            color=0x000000
+            color=0x5865F2
         )
         
         description = ""
@@ -1098,7 +1098,7 @@ class EmbedBuilder(commands.Cog):
              embed = discord.Embed(
                 title=f"Server Boosters (Tier {ctx.guild.premium_tier})",
                 description="This server has no boosters yet!",
-                color=0x000000
+                color=0x5865F2
              )
              await ctx.send(embed=embed)
              return
@@ -1106,7 +1106,7 @@ class EmbedBuilder(commands.Cog):
         embed = discord.Embed(
             title=f"Server Boosters ({ctx.guild.premium_subscription_count} boosts)",
             description=f"Current Level: **Tier {ctx.guild.premium_tier}**",
-            color=0x000000
+            color=0x5865F2
         )
         
         lines = []

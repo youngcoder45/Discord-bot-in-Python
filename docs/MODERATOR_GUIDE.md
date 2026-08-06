@@ -500,7 +500,7 @@ Create a new ticket panel in a channel.
 
 **Usage:**
 ```
-/ticket panel [channel] [support_role] [report_role] [partner_role]
+/ticket panel [channel] [support_role] [report_role] [partner_role] [color]
 ```
 
 **Example:**

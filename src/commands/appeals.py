@@ -36,7 +36,7 @@ def _appeals_footer_text(guild_name: str | None = None) -> str:
     return f"{guild_name} • Appeals" if guild_name else "Appeals"
 
 
-APPEALS_PANEL_COLOR = 0x0A0A0A
+APPEALS_PANEL_COLOR = 0x5865F2
 APPEALS_ACCEPT_COLOR = 0x00FF00
 APPEALS_REJECT_COLOR = 0xFF0000
 APPEALS_TIMEOUT_END_COLOR = 0xF9F504
@@ -46,7 +46,6 @@ def create_error_embed(
     title: str, description: str, guild_name: str | None = None
 ) -> discord.Embed:
     embed = _base_create_error_embed(title, description)
-    embed.color = APPEALS_PANEL_COLOR
     embed.set_footer(text=_appeals_footer_text(guild_name))
     embed.timestamp = datetime.now(timezone.utc)
     return embed
@@ -56,7 +55,6 @@ def create_success_embed(
     title: str, description: str, guild_name: str | None = None
 ) -> discord.Embed:
     embed = _base_create_success_embed(title, description)
-    embed.color = APPEALS_PANEL_COLOR
     embed.set_footer(text=_appeals_footer_text(guild_name))
     embed.timestamp = datetime.now(timezone.utc)
     return embed
@@ -66,7 +64,6 @@ def create_info_embed(
     title: str, description: str, guild_name: str | None = None
 ) -> discord.Embed:
     embed = _base_create_info_embed(title, description)
-    embed.color = APPEALS_PANEL_COLOR
     embed.set_footer(text=_appeals_footer_text(guild_name))
     embed.timestamp = datetime.now(timezone.utc)
     return embed

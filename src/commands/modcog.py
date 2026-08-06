@@ -1216,7 +1216,7 @@ class ModCog(commands.Cog):
         embed = discord.Embed(
             title="Verification Panel",
             description=f"Select a verification type for {target_member.mention}:",
-            color=0x2B2D31
+            color=0x5865F2
         )
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -1291,7 +1291,7 @@ class VerificationView(discord.ui.View):
         embed = discord.Embed(
             title="Verification Panel",
             description=f"Selected: **{self.VERIFICATION_ROLES[self.selected_verification]['label']}** for {self.target_member.mention}",
-            color=0x2B2D31
+            color=0x5865F2
         )
         
         await interaction.response.defer()

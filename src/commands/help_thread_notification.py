@@ -43,7 +43,7 @@ class HelpThreadNotification(commands.Cog):
         embed = discord.Embed(
             title=f"New Help Thread: {thread.name}",
             description=description,
-            color=0x000000,
+            color=0x5865F2,
             url=thread.jump_url,
         )
 
