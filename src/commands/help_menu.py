@@ -22,7 +22,11 @@ logger = logging.getLogger(__name__)
 # here are grouped under a "Miscellaneous" category automatically.
 COG_CATEGORIES: dict[str, str] = {
     "Core": "Core",
-    "Diagnostics": "Diagnostics",
+    # Admin is a single section for staff-facing tooling: diagnostics,
+    # the ticket system and the permit system.
+    "Diagnostics": "Admin",
+    "Tickets": "Admin",
+    "PermitSystem": "Admin",
     # Moderation is a single broad section: basic moderation (ModCog),
     # advanced moderation tools and the SAM warnings system.
     "ModCog": "Moderation",
@@ -31,9 +35,7 @@ COG_CATEGORIES: dict[str, str] = {
     # AutoMod & Protection covers the anti-abuse systems.
     "SpamCatch": "AutoMod & Protection",
     "Appeals": "Appeals",
-    "Tickets": "Tickets",
     "ReactionRoles": "Reaction Roles",
-    "PermitSystem": "Permits",
     "LoggingCog": "Logging",
     # Utilities is the general-purpose section: embed builder plus the
     # smaller helper systems (sticky messages, rules, threads, help threads).
