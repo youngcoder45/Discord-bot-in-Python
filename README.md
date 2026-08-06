@@ -175,7 +175,7 @@
 
 ### Professional Support Ticket System
 **Enterprise-grade thread-based ticket system** with specialized role routing and information preview
-- **`/ticketpanel [#channel] [@support] [@report] [@partner]`** - Create ticket panel with specialized roles (Admin)
+- **`/ticket panel [#channel] [@support] [@report] [@partner] [color]`** - Create ticket panel with specialized roles and optional color (Admin)
 - **`?close`** - Intelligent ticket closure (auto-detects ticket threads)
 - **` Create Ticket`** - Interactive button with category selection and information preview
 - Closed tickets keep their channel visible for 24 hours after the transcript is saved, so staff can review the conversation without downloading the transcript first
@@ -183,18 +183,18 @@
 #### Setup & Configuration Commands
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
-| `/ticketsupport [@role]` | Set/view general support team role | Administrator |
-| `/ticketreport [@role]` | Set/view specialized report team role | Administrator |
-| `/ticketpartner [@role]` | Set/view specialized partnership team role | Administrator |
-| `/ticketlog [#channel]` | Set/view ticket logging channel | Administrator |
-| `/ticketsupport-disable` | Remove support role setting | Administrator |
-| `/ticketreport-disable` | Remove report team role setting | Administrator |
-| `/ticketpartner-disable` | Remove partner team role setting | Administrator |
+| `/ticket support [@role]` | Set/view general support team role | Administrator |
+| `/ticket report [@role]` | Set/view specialized report team role | Administrator |
+| `/ticket partner [@role]` | Set/view specialized partnership team role | Administrator |
+| `/ticket log [#channel]` | Set/view ticket logging channel | Administrator |
+| `/ticket support-disable` | Remove support role setting | Administrator |
+| `/ticket report-disable` | Remove report team role setting | Administrator |
+| `/ticket partner-disable` | Remove partner team role setting | Administrator |
 
 #### Management Commands
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
-| `/forceclose <thread_id> [reason]` | Force close any ticket with reason | Administrator |
+| `/ticket forceclose <thread_id> [reason]` | Force close any ticket with reason | Administrator |
 | ` Close` | Close button within ticket threads | Staff/Thread Creator |
 | ` Claim` | Claim ticket button (Staff only) | Staff |
 

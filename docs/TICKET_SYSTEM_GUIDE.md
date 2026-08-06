@@ -448,7 +448,7 @@ Tickets are stored with:
 - Database error
 
 **Fix:**
-- Use `/forceclose <ticket_id>`
+- Use `/ticket forceclose <ticket_id>`
 - Check bot permissions
 - Check logs for errors
 
@@ -517,7 +517,7 @@ A: Yes, panels are stored in database and restored on startup.
 A: Currently, categories are hardcoded. Contact developer for changes.
 
 **Q: What if thread is manually deleted?**  
-A: Use `/forceclose <ticket_id>` to mark as closed in database.
+A: Use `/ticket forceclose <ticket_id>` to mark as closed in database.
 
 ---
 

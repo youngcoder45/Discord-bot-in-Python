@@ -203,12 +203,10 @@ class Warnings(commands.Cog):
                     await ctx.send(embed=embed)
                     return
 
-                medals = ["🥇", "🥈", "🥉"]
                 lines = []
                 for i, (user_id, count) in enumerate(entries, start=1):
-                    marker = medals[i - 1] if i <= 3 else f"**{i}.**"
                     lines.append(
-                        f"{marker} <@{user_id}> **{count}** warning{'s' if count != 1 else ''}"
+                        f"**{i}.** <@{user_id}> — **{count}** warning{'s' if count != 1 else ''}"
                     )
 
                 embed = discord.Embed(

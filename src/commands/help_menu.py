@@ -262,9 +262,9 @@ def build_home_embed(
     )
 
     stats = [
-        f"• **Commands:** {total}",
-        f"• **Categories:** {len(categories)}",
-        f"• **Uptime:** {uptime}",
+        f"- **Commands:** {total}",
+        f"- **Categories:** {len(categories)}",
+        f"- **Uptime:** {uptime}",
     ]
     embed.add_field(name="Quick Stats", value="\n".join(stats), inline=False)
 
@@ -499,7 +499,7 @@ def build_command_embed(
             lines = [f"`{s.name}` - {s.description or 'No description'}" for s in subs]
             embed.add_field(name="Subcommands", value="\n".join(lines), inline=False)
 
-    embed.set_footer(text=f"CodeVerse Bot • {_total_visible_count(bot)} total commands")
+    embed.set_footer(text=f"CodeVerse Bot - {_total_visible_count(bot)} total commands")
     return embed
 
 
@@ -528,7 +528,7 @@ def _section_lines(cmds: list, prefix: str) -> list[str]:
         )
         if len(summary) > 70:
             summary = summary[:67] + "…"
-        lines.append(f"`{_display_name(cmd)}` - {summary}")
+        lines.append(f"`{_display_name(cmd)}` — {summary}")
     return lines
 
 
@@ -566,7 +566,7 @@ def build_category_embed(
 
     embed = discord.Embed(
         title=f"{label} Commands",
-        description=f"{len(cmds)} command{'s' if len(cmds) != 1 else ''} • `?help <command>` or `/help <command>` for details",
+        description=f"{len(cmds)} command{'s' if len(cmds) != 1 else ''} - `?help <command>` or `/help <command>` for details",
         color=0x5865F2,
         timestamp=datetime.now(timezone.utc),
     )

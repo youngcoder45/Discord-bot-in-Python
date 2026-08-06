@@ -552,20 +552,20 @@ View statistics about the ticket system.
 
 ---
 
-##### `/forceclose`
+##### `/ticket forceclose`
 **Permission Required:** Manage Messages
 
 Force close a ticket by ID.
 
 **Usage:**
 ```
-/forceclose <ticket_id> [reason]
+/ticket forceclose <ticket_id> [reason]
 ?forceclose <ticket_id> [reason]
 ```
 
 **Example:**
 ```
-/forceclose 42 User not responding
+/ticket forceclose 42 User not responding
 ```
 
 ---

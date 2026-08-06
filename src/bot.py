@@ -229,8 +229,16 @@ async def on_ready():
         if guild.id in AUTHORIZED_SERVERS:
             logger.info(f"✅ Bot is operating in authorized server: {guild.name} (ID: {guild.id})")    # Sync slash commands
     try:
-        # Sync to authorized guilds for faster updates
+        # Sync to authorized guilds the bot is actually in. Syncing to a guild
+        # the bot is not a member of (or lacks access to) raises 403/50001
+        # "Missing Access", so we skip those and keep the local sync fallback.
+        present_guild_ids = {guild.id for guild in bot.guilds}
         for guild_id in AUTHORIZED_SERVERS:
+            if guild_id not in present_guild_ids:
+                logger.warning(
+                    f"Skipping slash command sync for guild {guild_id}: bot is not in this guild"
+                )
+                continue
             try:
                 guild = discord.Object(id=guild_id)
                 bot.tree.copy_global_to(guild=guild)

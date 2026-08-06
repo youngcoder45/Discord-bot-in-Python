@@ -417,13 +417,13 @@ Complete reference of all bot commands organized by category.
 
 ---
 
-### `/forceclose`
+### `/ticket forceclose`
 **Permission:** Manage Messages  
 **Description:** Force close a ticket by ID.
 
 **Usage:**
 ```
-/forceclose <ticket_id> [reason]
+/ticket forceclose <ticket_id> [reason]
 ?forceclose <ticket_id> [reason]
 ```
 
