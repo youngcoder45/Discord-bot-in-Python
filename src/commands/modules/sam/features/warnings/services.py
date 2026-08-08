@@ -81,14 +81,20 @@ class WarnService:
     async def get_warnings_for_user(self, user_id: int, guild_id: int) -> list[Warn]:
         return await self.repo.find_by_user_id_and_guild_id(user_id, guild_id)
 
+    async def get_leaderboard(self, guild_id: int, limit: int = 10) -> list[tuple[int, int]]:
+        """Return the top users by active (non-revoked) warning count."""
+        return await self.repo.get_leaderboard(guild_id, limit)
+
     async def clear_warnings_for_user(
         self, user_id: int, guild_id: int, moderator_id: int, reason: str
     ) -> list[Warn]:
         warnings = await self.repo.find_by_user_id_and_guild_id(user_id, guild_id)
-        for i, warning in enumerate(warnings):
-            warnings[i] = await self.recall_warning(
+        result_warnings = []
+        for warning in warnings:
+            revoked = await self.recall_warning(
                 warning.id, guild_id, moderator_id, reason
             )
+            result_warnings.append(revoked)
         await logging_api.log(
             get_log_action(
                 "Member Warnings Cleared",
@@ -98,7 +104,7 @@ class WarnService:
                 reason,
             )
         )
-        return warnings
+        return result_warnings
 
     async def get_warning(self, case_id: int, guild_id: int) -> Warn:
         warn = await self.repo.get(case_id)

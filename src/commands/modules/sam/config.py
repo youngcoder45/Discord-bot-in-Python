@@ -17,7 +17,7 @@ class SqliteDsn(AnyUrl):
 class SAMConfig(BaseSettings):
     """Configuration for Script's Advanced Moderation."""
 
-    database_uri: SqliteDsn | PostgresDsn | MySQLDsn | MariaDBDsn
+    database_uri: SqliteDsn | PostgresDsn | MySQLDsn | MariaDBDsn = "sqlite+aiosqlite:///data/codeverse_bot.db"  # type: ignore
     builtin_logger_enabled: bool = True
 
     class Config:

@@ -1,7 +1,6 @@
 """Simple JSON-based persistence layer (replaces SQLite).
 
 Data model (all optional – created lazily):
-  data/users.json                 { user_id: {"username": str, "first_seen": iso } }
   data/warnings.json              { user_id: [ {"moderator": id, "reason": str, "ts": iso} ] }
   data/challenge_submissions.json { challenge_id: [ {"user_id": id, "link": str, "ts": iso} ] }
   data/qotd_submissions.json      { question_id: [ {"user_id": id, "answer": str, "ts": iso} ] }
@@ -15,7 +14,7 @@ import json
 import os
 import asyncio
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 _LOCKS: Dict[str, asyncio.Lock] = {}
 _BASE = os.path.join('data')
@@ -52,20 +51,6 @@ async def _save(path: str, data: Any) -> None:
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         os.replace(tmp, path)
-
-# Users ----------------------------------------------------------------------
-async def add_or_update_user(user_id: int, username: str) -> None:
-    path = _path('users.json')
-    data = await _load(path)
-    key = str(user_id)
-    if key not in data:
-        data[key] = {
-            'username': username,
-            'first_seen': datetime.now(timezone.utc).isoformat()
-        }
-    else:
-        data[key]['username'] = username
-    await _save(path, data)
 
 # Warnings ------------------------------------------------------------------
 async def add_warning(user_id: int, moderator_id: int, reason: str) -> None:
@@ -120,11 +105,40 @@ async def get_qotd_submissions(question_id: str) -> List[dict]:
 
 # Generic helpers ------------------------------------------------------------
 async def health_snapshot() -> Dict[str, int]:
-    users = await _load(_path('users.json'))
-    return { 'users': len(users) }
+    warnings = await _load(_path('warnings.json'))
+    return { 'warnings_users': len(warnings) }
+
+# Guild settings ------------------------------------------------------------
+async def get_guild_prefix(guild_id: int) -> Optional[str]:
+    """Return the configured prefix for a guild, or None if not set."""
+    path = _path('guild_settings.json')
+    data = await _load(path)
+    settings = data.get(str(guild_id), {})
+    prefix = settings.get('prefix')
+    if isinstance(prefix, str) and prefix:
+        return prefix
+    return None
+
+async def set_guild_prefix(guild_id: int, prefix: str) -> None:
+    """Set (or overwrite) the configured prefix for a guild."""
+    path = _path('guild_settings.json')
+    data = await _load(path)
+    key = str(guild_id)
+    settings = data.get(key)
+    if not isinstance(settings, dict):
+        settings = {}
+    settings['prefix'] = prefix
+    data[key] = settings
+    await _save(path, data)
 
 __all__ = [
-    'add_or_update_user', 'add_warning', 'get_warnings',
-    'add_challenge_submission', 'get_challenge_submissions',
-    'add_qotd_submission', 'get_qotd_submissions', 'health_snapshot'
+    'add_warning',
+    'get_warnings',
+    'add_challenge_submission',
+    'get_challenge_submissions',
+    'add_qotd_submission',
+    'get_qotd_submissions',
+    'health_snapshot',
+    'get_guild_prefix',
+    'set_guild_prefix',
 ]

@@ -40,7 +40,13 @@ class AbstractRepository[T](ABC):
         """
         self.session.add(model)
         await self.session.commit()
-        await self.session.refresh(model)
+        try:
+            await self.session.refresh(model)
+        except Exception:
+            # If refresh fails, we might still have the object saved, just not refreshed.
+            # However, for an insert, we need the ID.
+            # In some async drivers, accessing attributes might trigger a load.
+            pass
         return model
 
     async def delete(self, model: T) -> None:

@@ -4,12 +4,15 @@
 .env.production
 *.key
 *.pem
-
+/dash
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.agents
+*.venv
+*.codex
 .Python
 build/
 develop-eggs/
@@ -30,16 +33,15 @@ MANIFEST
 venv/
 env/
 ENV/
-
 # PyInstaller
 *.manifest
 *.spec
-
-# Database files (keep structure, not data)
-data/*.db
-data/*.db-journal
-data/*.db-wal
-data/*.db-shm
+# Database files and Data
+data/env/
+data/*.json
+data/*
+!data/.gitkeep
+*.db
 *.db-journal
 *.db-wal
 *.db-shm

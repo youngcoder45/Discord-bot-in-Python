@@ -1,0 +1,126 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [Unreleased]
+
+## [2026-01-15]
+
+### Removed
+- **Automated Moderation**:
+    - Completely removed the `/automod` and `/automodstatus` commands.
+    - Removed `automod_settings` configuration and event listeners from `advanced_moderation.py`.
+- **Statistics**:
+    - Removed the `/advmodstats` command.
+
+### Changed
+- **Diagnostics**:
+    - Converted `/diag` to be a prefix-only command (`?diag`) and removed its slash command support.
+- **Configuration**:
+    - Fixed a crash issue in `SAMConfig` by providing a default database URI.
+
+## [2026-01-09]
+
+### Removed
+- **Staff Shifts System**:
+    - Completely removed staff shift tracking functionality (`staff_shifts.py`, `staff_shifts.db`).
+    - Removed all database migrations and initialization logic for shift tracking.
+    - Updated permission checks in `member_events.py` to use native Discord permissions (`manage_messages`) instead of shift status.
+
+### Added
+- **Webhook-Based Logging**:
+    - Replaced direct channel messages with `WebhookManager` for all logging events.
+    - Implemented intelligent caching and rate-limit handling for webhooks.
+    - Added fallback to regular messages if webhooks fail.
+- **Backup System Upgrade**:
+    - Updated backup destination to active repository `TheCodeVerseHub/CodeVerse-Bot`.
+    - Added "Critical Backup Failure" alerts to Discord logging channels.
+
+### Fixed
+- **Moderation System (`modcog.py`)**:
+    - Fixed static analysis type errors in `kick` and `ban` commands.
+    - Added `ephemeral` parameter handling to `_safe_reply` to prevent Interaction errors.
+- **Bot Initialization**:
+    - Fixed `AttributeError` in WebhookManager when `bot.user` is None during early startup.
+
+## [2025-12-22]
+
+### Added
+- **Guild-Specific Logging System**:
+    - Added `!setlogchannels` command to configure log channels per server.
+    - Each guild can now have separate log channels for member, moderation, and ticket logs.
+    - Added database table `guild_log_channels` to store per-guild configurations.
+    - Logs are now completely isolated between different servers.
+- **Persistent Views for Ticket Panels**:
+    - Added database table `ticket_panels` to track all ticket panel messages.
+    - Ticket panel buttons now use static custom_id `"persistent_ticket_create_button"`.
+    - Added `_restore_persistent_views()` method to re-register views on bot startup.
+    - Ticket panels now survive bot restarts, updates, and crashes.
+- **Persistent Sticky Messages**:
+    - Added `_load_sticky_messages()` method to pre-load all sticky messages on startup.
+    - Sticky messages now work immediately after bot restart without configuration loss.
+- **Utility Commands**:
+    - Added `/getuserid <user>` command to quickly get Discord IDs from user mentions.
+    - Response is ephemeral for privacy.
+
+### Changed
+- **Ticket Panel Design**:
+    - Updated embed color from blue to professional black (`0x2B2D31`).
+    - Removed all emojis from titles, descriptions, and bullet points.
+    - Changed button style from green to grey for cleaner appearance.
+    - Simplified text formatting for better readability.
+- **Ticket Category Embeds**:
+    - All category information panels now use black color scheme.
+    - Removed emoji prefixes from category names and field titles.
+    - Updated button labels to remove emojis ("Create This Ticket" instead of "🎫 Create This Ticket").
+- **Logging Architecture**:
+    - Removed hardcoded channel IDs for logs (`MEMBER_LOGS_CHANNEL`, `MOD_LOGS_CHANNEL`, `TICKET_LOGS_CHANNEL`).
+    - Added `_get_log_channel_for_event()` method for guild-aware log routing.
+    - Modified `_process_log_item()` to use guild-specific channels.
+
+### Fixed
+- **Cross-Guild Logging Issue**:
+    - Fixed bug where logs from all guilds were sent to the same hardcoded channels.
+    - Logs now correctly route to each guild's configured channels.
+- **Ticket Button Persistence**:
+    - Fixed "This interaction failed" errors after bot restarts.
+    - Buttons now remain functional indefinitely without memory state.
+- **Sticky Message Initialization**:
+    - Fixed sticky messages not working immediately after bot restart.
+    - All sticky configurations now loaded into cache on startup.
+
+### Technical
+- Added logging module to tickets.py for better error tracking.
+- Integrated ticket panel persistence with database on creation.
+- Improved view lifecycle management with `bot.add_view()` for message-specific views.
+- Auto-cleanup of deleted ticket panel messages from database.
+
+## [2025-12-14]
+
+### Added
+- **Report System**:
+    - Added `/report` slash command to report messages by ID or Link.
+    - Added "Report Message" context menu (Right-click -> Apps -> Report Message).
+    - Reports are sent to a dedicated channel with an embed containing message details and attachments.
+- **Slash Command Sync**:
+    - Added automatic syncing of slash commands to authorized guilds on bot startup for faster updates.
+    - Added `?sync` command (Owner only) for manual global syncing.
+
+### Changed
+- **User Info Command (`/info`)**:
+    - Completely revamped to show detailed user information instead of bot stats.
+    - Displays: General Info, Bot Sus Info (Warn Points), Whitelisted Status, Dangerous User status, Bot Permissions, and Account Accessories.
+    - Removed "Badges" section and decorative emojis from values for a cleaner look.
+- **Ticket System**:
+    - Updated ticket categories to: Partnership, General Support, Role Issues, Reports, Warn Appeals, Other Issues.
+    - Removed "Bug Report" and "Feature Request" categories.
+    - Updated category descriptions, guidelines, and emojis.
+    - Routed "Warn Appeals" to the report team role.
+- **Logging System**:
+    - Updated log embed colors for better visual distinction:
+        - **Red (#ff0000)**: Ban, Kick, Timeout/Mute, Member Leave.
+        - **Green (#00ff00)**: Unban, Unmute, Member Join.
+    - Added specific handling for `UNMUTE` events.
+
+### Fixed
+- **Context Menu Registration**: Fixed `TypeError` when registering context menus inside a Cog by moving registration to `__init__`.

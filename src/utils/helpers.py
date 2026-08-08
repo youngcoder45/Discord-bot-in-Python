@@ -1,115 +1,221 @@
-import random
-import re
-import requests
-import discord
 import asyncio
-from datetime import datetime, timezone
-from typing import Optional, List, Dict
+import re
+from datetime import datetime, timezone, timedelta
+from typing import Any, Optional
+import logging
 
-def get_random_quote(quotes: List[str]) -> str:
-    """Get a random motivational/programming quote"""
-    return random.choice(quotes)
+import discord  # type: ignore[import-not-found]
+from discord.ext import commands  # type: ignore[import-not-found]
 
-def get_random_question(questions: List[Dict]) -> Dict:
-    """Get a random programming question"""
-    return random.choice(questions)
-
-def create_embed(title: str, description: str = "", color: discord.Color = discord.Color.blue()) -> discord.Embed:
-    """Create a basic embed with consistent styling"""
-    embed = discord.Embed(
-        title=title,
-        description=description,
-        color=color,
-        timestamp=datetime.now(tz=timezone.utc)
-    )
-    embed.set_footer(text="CodeVerse Bot")
-    return embed
-
-def create_success_embed(title: str, description: str = "") -> discord.Embed:
-    """Create a success embed (green)"""
-    return create_embed(title, description, discord.Color.green())
-
-def create_error_embed(title: str, description: str = "") -> discord.Embed:
-    """Create an error embed (red)"""
-    return create_embed(title, description, discord.Color.red())
-
-def create_warning_embed(title: str, description: str = "") -> discord.Embed:
-    """Create a warning embed (yellow)"""
-    return create_embed(title, description, discord.Color.yellow())
-
-def create_info_embed(title: str, description: str = "") -> discord.Embed:
-    """Create an info embed (blue)"""
-    return create_embed(title, description, discord.Color.blue())
-
-async def fetch_programming_meme() -> str:
-    """Fetch a random programming meme from an API"""
-    try:
-        # Using programming memes subreddit API
-        response = requests.get(
-            "https://meme-api.herokuapp.com/gimme/ProgrammerHumor",
-            timeout=5
-        )
-        if response.status_code == 200:
-            data = response.json()
-            return data.get('url', '')
-    except Exception:
-        pass
-    
-    # Fallback memes if API fails
-    fallback_memes = [
-        "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
-        "There are only 10 types of people in the world: those who understand binary and those who don't.",
-        "99 little bugs in the code, 99 little bugs. Take one down, patch it around, 117 little bugs in the code.",
-        "A SQL query goes into a bar, walks up to two tables and asks: 'Can I join you?'",
-        "How many programmers does it take to change a light bulb? None, that's a hardware problem."
-    ]
-    return random.choice(fallback_memes)
-
-def sanitize_input(text: str, max_length: int = 1000) -> str:
-    """Sanitize user input to prevent abuse"""
-    # Remove potential mentions and excessive whitespace
-    text = re.sub(r'@(everyone|here)', '[at]\\1', text)
-    text = re.sub(r'<@[!&]?\d+>', '[mention]', text)
-    text = ' '.join(text.split())  # Remove excessive whitespace
-    
-    return text[:max_length] if len(text) > max_length else text
+logger = logging.getLogger("codeverse.helpers")
 
 async def log_action(action: str, user_id: int, details: str = "", **extra):
-    """Log moderation actions - redirects to LoggingCog if available"""
+    """Log moderation actions via logging module (centralized LoggingCog handles Discord output)."""
     timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    log_entry = f"[{timestamp}] {action} - User: {user_id} - {details}"
-    print(log_entry)  # Fallback print if logging cog not available
+    logger.info("[%s] %s - User: %s - %s", timestamp, action, user_id, details)
+
+
+def sanitize_mentions(text: str) -> str:
+    """Escape mass-mention tokens in user-generated content.
+
+    Replaces ``@everyone``/``@here`` and raw user/role mentions (``<@123>``,
+    ``<@!123>``, ``<@&456>``) with a zero-width space after the ``@`` so the
+    text is preserved but cannot trigger any mention ping. This is applied to
+    any user content the bot re-posts (embeds, sticky messages, etc.) to
+    prevent accidental or abusive mass pinging.
+
+    Returns the sanitized string unchanged if ``text`` is empty/None.
+    """
+    if not text:
+        return text or ""
+    # @everyone / @here (case-insensitive)
+    text = re.sub(r"@(everyone|here)\b", "@\u200b\\1", text, flags=re.IGNORECASE)
+    # Raw user / role mentions: <@123>, <@!123>, <@&456>
+    text = re.sub(r"<@([!&]?\d+)>", "<@\u200b\\1>", text)
+    return text
+
+
+def parse_duration(text: str) -> Optional[timedelta]:
+    """Parse a duration string like '1d 2h 30m' into a timedelta.
     
-    # Try to use LoggingCog if available
-    import inspect
-    current_frame = inspect.currentframe()
+    Supports: d (days), h (hours), m (minutes), s (seconds).
+    Returns None if the format is invalid.
+    """
+    text = text.strip().lower().replace(",", " ")
+    match = re.fullmatch(
+        r"(?:(\d+)\s*d)?\s*(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?\s*(?:(\d+)\s*s)?",
+        text,
+    )
+    if not match:
+        return None
+    days, hours, minutes, seconds = (
+        int(part) if part else 0 for part in match.groups()
+    )
+    delta = timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    return delta if delta.total_seconds() > 0 else None
+
+
+def find_channel_by_name(guild: discord.Guild, *keywords: str) -> Optional[discord.TextChannel]:
+    """Find the first text channel whose name contains any of the given keywords.
+    
+    Example: find_channel_by_name(guild, "appeal", "mod", "staff")
+    """
+    for channel in guild.text_channels:
+        name = channel.name.lower()
+        if any(kw.lower() in name for kw in keywords):
+            return channel
+    return None
+
+
+async def safe_interaction_reply(
+    interaction: discord.Interaction,
+    *,
+    content: str | None = None,
+    embed: discord.Embed | None = None,
+    embeds: list[discord.Embed] | None = None,
+    view: discord.ui.View | None = None,
+    ephemeral: bool = False,
+) -> Optional[discord.Message]:
+    """Reply to a Discord interaction without ever crashing on `10062`.
+
+    Automatically picks the correct API based on the interaction's state:
+    - Not yet acknowledged -> ``interaction.response.send_message``
+    - Already deferred/responded -> ``interaction.followup.send``
+
+    Handles (logs, never re-raises):
+    - ``discord.NotFound`` (10062 Unknown interaction - token expired)
+    - ``discord.InteractionResponded`` (race between check and send)
+    - ``discord.HTTPException`` (rate limits / transient API failures)
+
+    Returns the sent message or ``None`` if the reply could not be delivered.
+    """
+    send_kwargs: dict[str, Any] = {}
+    if content is not None:
+        send_kwargs["content"] = content
+    if embed is not None:
+        send_kwargs["embed"] = embed
+    if embeds is not None:
+        send_kwargs["embeds"] = embeds
+    if view is not None:
+        send_kwargs["view"] = view
+    if ephemeral:
+        send_kwargs["ephemeral"] = True
+
     try:
-        # Find the bot instance to access the logging cog
-        if current_frame and current_frame.f_back and hasattr(current_frame.f_back, 'f_locals'):
-            # Look for the bot in the calling function's locals
-            for key, value in current_frame.f_back.f_locals.items():
-                if hasattr(value, 'get_cog'):
-                    bot = value
-                    # Try the new cog name first
-                    logging_cog = bot.get_cog('LoggingCog')
-                    if not logging_cog:
-                        # Try legacy name if new name not found
-                        logging_cog = bot.get_cog('LoggingCog')
-                        
-                    if logging_cog:
-                        # Extract guild_id and moderator_id if available
-                        guild_id = extra.get('guild_id', 0)
-                        moderator_id = extra.get('moderator_id', 0)
-                        asyncio.create_task(logging_cog.log_mod_action(
-                            action_type=action,
-                            user_id=user_id,
-                            guild_id=guild_id,
-                            moderator_id=moderator_id,
-                            reason=details,
-                            **extra
-                        ))
-                    break
-    except Exception as e:
-        print(f"Error redirecting to LoggingCog: {e}")
-    finally:
-        del current_frame  # Avoid reference cycles
+        if not interaction.response.is_done():
+            return await interaction.response.send_message(**send_kwargs)
+        return await interaction.followup.send(**send_kwargs)
+    except discord.NotFound:
+        # The interaction token expired before we could respond (error 10062).
+        logger.warning(
+            "Interaction %s expired before a reply could be sent (error 10062).",
+            interaction.id,
+        )
+    except discord.InteractionResponded:
+        # Race: the interaction was acknowledged between our check and the send.
+        try:
+            return await interaction.followup.send(**send_kwargs)
+        except discord.NotFound:
+            logger.warning(
+                "Interaction %s expired before a followup could be sent (error 10062).",
+                interaction.id,
+            )
+        except discord.HTTPException as e:
+            logger.error("safe_interaction_reply followup failed: %s", e)
+    except discord.HTTPException as e:
+        logger.error(
+            "safe_interaction_reply failed for interaction %s: %s",
+            interaction.id,
+            e,
+        )
+    return None
+
+
+async def safe_send(
+    ctx_or_interaction: commands.Context | discord.Interaction,
+    *,
+    content: str | None = None,
+    embed: discord.Embed | None = None,
+    view: discord.ui.View | None = None,
+    ephemeral: bool = False,
+) -> Optional[discord.Message]:
+    """Unified reply helper for hybrid commands.
+
+    Works with both prefix (ctx.send) and slash (interaction response/followup) flows.
+    Interaction flows are routed through :func:`safe_interaction_reply`, so an
+    expired interaction (10062) can never raise.
+    """
+    send_kwargs: dict[str, Any] = {}
+    if content is not None:
+        send_kwargs["content"] = content
+    if embed is not None:
+        send_kwargs["embed"] = embed
+    if view is not None:
+        send_kwargs["view"] = view
+
+    interaction = getattr(ctx_or_interaction, "interaction", ctx_or_interaction)
+    if isinstance(interaction, discord.Interaction):
+        # Interaction-based reply (slash / hybrid invoked via slash).
+        message = await safe_interaction_reply(
+            interaction, **send_kwargs, ephemeral=ephemeral
+        )
+        if message is not None:
+            return message
+
+    if isinstance(ctx_or_interaction, commands.Context):
+        try:
+            return await ctx_or_interaction.send(**send_kwargs)
+        except Exception as e:
+            logger.warning("safe_send ctx.send failed: %s", e)
+    return None
+
+
+def is_moderator(
+    user: discord.Member | discord.User,
+    guild: discord.Guild,
+    *,
+    mod_role_id: Optional[int] = None,
+    additional_user_ids: Optional[set[int]] = None,
+) -> bool:
+    """Check if a user has moderator permissions.
+    
+    Returns True if the user:
+    - Has a role matching mod_role_id, OR
+    - Is in additional_user_ids, OR
+    - Has MANAGE_MESSAGES or ADMINISTRATOR permissions.
+    """
+    if not isinstance(user, discord.Member):
+        return False
+    
+    allowed: set[int] = set(additional_user_ids or ())
+    if mod_role_id:
+        role = guild.get_role(mod_role_id)
+        if role:
+            allowed.add(role.id)
+    
+    return (
+        any(r.id in allowed for r in user.roles)
+        or user.guild_permissions.manage_messages
+        or user.guild_permissions.administrator
+    )
+
+
+def register_mod_action(bot, guild_id: int, user_id: int, moderator_id: int, reason: str, action_type: str, source=None):
+    """Tell the LoggingCog who really performed a moderation action.
+
+    Called by moderation commands BEFORE the Discord API call so the logging
+    event listener attributes the log entry to the actual command invoker
+    instead of the bot (Discord audit logs show the bot application for
+    API-performed actions). `source` is an optional context flag (e.g. "appeal")
+    describing how the action happened.
+    """
+    logging_cog = bot.get_cog("LoggingCog")
+    if logging_cog and hasattr(logging_cog, "register_command_action"):
+        logging_cog.register_command_action(guild_id, user_id, moderator_id, reason, action_type, source=source)
+
+
+def discard_mod_action(bot, guild_id: int, user_id: int, action_type: str):
+    """Remove a pending moderation action (e.g. after the API call failed)."""
+    logging_cog = bot.get_cog("LoggingCog")
+    if logging_cog and hasattr(logging_cog, "discard_command_action"):
+        logging_cog.discard_command_action(guild_id, user_id, action_type)

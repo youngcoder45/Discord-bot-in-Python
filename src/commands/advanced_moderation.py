@@ -1,13 +1,18 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
+import discord  # type: ignore[import-not-found]
+from discord.ext import commands  # type: ignore[import-not-found]
+from discord import app_commands  # type: ignore[import-not-found]
 import asyncio
 import time
+import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import sqlite3
 from typing import Optional, List
 import re
+
+from utils.helpers import register_mod_action, discard_mod_action
+
+logger = logging.getLogger(__name__)
 
 class AdvancedModeration(commands.Cog):
     """Advanced moderation features with built-in safety mechanisms"""
@@ -16,16 +21,6 @@ class AdvancedModeration(commands.Cog):
         self.bot = bot
         # Rate limiting for safety
         self.command_cooldowns = defaultdict(list)
-        # Automod disabled by user request
-        self.automod_settings = {
-            'invite_links': False,
-            'excessive_caps': False,
-            'excessive_mentions': False,
-            'banned_words': [],
-            'auto_dehoist': False
-        }
-        # Logging channel ID
-        self.log_channel_id = 1399746928585085068
         
     def _check_rate_limit(self, user_id: int, command: str, max_uses: int = 5, window: int = 60) -> bool:
         """Check if user is rate limited for a command (safety mechanism)"""
@@ -40,58 +35,6 @@ class AdvancedModeration(commands.Cog):
         
         user_commands.append(now)
         return True
-
-    async def _log_action(self, guild: discord.Guild, embed: discord.Embed):
-        """Log moderation action to designated channel"""
-        try:
-            log_channel = self.bot.get_channel(self.log_channel_id)
-            if log_channel:
-                await log_channel.send(embed=embed)
-        except Exception:
-            pass  # Silently fail if logging fails
-
-    @commands.hybrid_command(name="automod")
-    @commands.has_permissions(administrator=True)
-    @app_commands.describe(
-        feature="Automod feature to toggle",
-        status="Enable or disable the feature"
-    )
-    async def automod_config(self, ctx, feature: str, status: bool):
-        """Configure automod features (Admin only)"""
-        valid_features = ['invite_links', 'excessive_caps', 'excessive_mentions', 'auto_dehoist']
-        
-        if feature not in valid_features:
-            embed = discord.Embed(
-                title="❌ Invalid Feature",
-                description=f"Valid features: {', '.join(valid_features)}",
-                color=0xe74c3c
-            )
-            await ctx.send(embed=embed, ephemeral=True)
-            return
-        
-        self.automod_settings[feature] = status
-        
-        embed = discord.Embed(
-            title="✅ Automod Updated",
-            description=f"**{feature}** has been {'enabled' if status else 'disabled'}",
-            color=0x2ecc71
-        )
-        await ctx.send(embed=embed)
-
-    @commands.hybrid_command(name="automodstatus")
-    @commands.has_permissions(manage_messages=True)
-    async def automod_status(self, ctx):
-        """View current automod settings"""
-        embed = discord.Embed(
-            title="🤖 Automod Settings",
-            color=0x3498db
-        )
-        
-        for feature, enabled in self.automod_settings.items():
-            status = "✅ Enabled" if enabled else "❌ Disabled"
-            embed.add_field(name=feature.replace('_', ' ').title(), value=status, inline=True)
-        
-        await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="tempban")
     @commands.has_permissions(ban_members=True)
@@ -120,22 +63,15 @@ class AdvancedModeration(commands.Cog):
             return
 
         try:
-            # Send DM before ban
-            try:
-                embed = discord.Embed(
-                    title="Temporary Ban Notice",
-                    description=f"You have been temporarily banned from **{ctx.guild.name}**",
-                    color=0xe74c3c
-                )
-                embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
-                embed.add_field(name="Reason", value=reason, inline=False)
-                embed.add_field(name="Unban Time", value=f"<t:{int(time.time() + duration * 60)}:F>", inline=False)
-                await member.send(embed=embed)
-            except:
-                pass
+            # Note: per server policy we do not DM users for ban actions.
+            
+            # Register the actual invoker so the logging system attributes the
+            # tempban to the moderator instead of the bot.
+            ban_reason = f"Tempban ({duration}m): {reason}"
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, ban_reason, "BAN")
             
             # Ban the member
-            await member.ban(reason=f"Tempban ({duration}m): {reason}")
+            await member.ban(reason=ban_reason)
             
             # Schedule unban
             self.bot.loop.create_task(self._schedule_unban(ctx.guild, member, duration * 60))
@@ -143,7 +79,7 @@ class AdvancedModeration(commands.Cog):
             embed = discord.Embed(
                 title="⏰ Temporary Ban Issued",
                 description=f"**{member}** has been temporarily banned",
-                color=0xe74c3c
+                color=0xff0000
             )
             embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
@@ -152,23 +88,13 @@ class AdvancedModeration(commands.Cog):
             
             await ctx.send(embed=embed)
             
-            # Log to designated channel
-            log_embed = discord.Embed(
-                title="🔨 Temporary Ban Issued",
-                description=f"**{member}** was temporarily banned",
-                color=0xe74c3c
-            )
-            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
-            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
-            log_embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
-            log_embed.add_field(name="Reason", value=reason, inline=False)
-            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
-            log_embed.timestamp = datetime.now()
-            await self._log_action(ctx.guild, log_embed)
+            # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "BAN")
             await ctx.send("❌ I don't have permission to ban this member", ephemeral=True)
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "BAN")
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
     async def _schedule_unban(self, guild: discord.Guild, member: discord.Member, delay: int):
@@ -176,8 +102,10 @@ class AdvancedModeration(commands.Cog):
         await asyncio.sleep(delay)
         try:
             await guild.unban(member, reason="Temporary ban expired")
-        except:
+        except discord.NotFound:
             pass  # Member may have been manually unbanned
+        except Exception as e:
+            logger.warning("Auto-unban failed for %s in guild %s: %s", member, guild.id, e)
 
     @commands.hybrid_command(name="mute")
     @commands.has_permissions(moderate_members=True)
@@ -202,8 +130,13 @@ class AdvancedModeration(commands.Cog):
             return
 
         try:
-            until = datetime.now() + timedelta(minutes=duration)
-            await member.timeout(until, reason=reason)
+            until = datetime.now(timezone.utc) + timedelta(minutes=duration)
+            # Add moderator info to reason for logging
+            audit_reason = f"{reason} | By: {ctx.author} ({ctx.author.id})"
+            # Register the actual invoker so the logging system attributes the
+            # mute to the moderator instead of the bot.
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_APPLIED")
+            await member.timeout(until, reason=audit_reason)
             
             embed = discord.Embed(
                 title="🔇 Member Muted",
@@ -217,23 +150,13 @@ class AdvancedModeration(commands.Cog):
             
             await ctx.send(embed=embed)
             
-            # Log to designated channel
-            log_embed = discord.Embed(
-                title="🔇 Member Muted",
-                description=f"**{member}** was muted",
-                color=0xf39c12
-            )
-            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
-            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
-            log_embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
-            log_embed.add_field(name="Reason", value=reason, inline=False)
-            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
-            log_embed.timestamp = datetime.now()
-            await self._log_action(ctx.guild, log_embed)
+            # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
             await ctx.send("❌ I don't have permission to timeout this member", ephemeral=True)
         except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
     @commands.hybrid_command(name="unmute")
@@ -242,82 +165,123 @@ class AdvancedModeration(commands.Cog):
     async def unmute(self, ctx, member: discord.Member):
         """Remove timeout from a member"""
         try:
-            await member.timeout(None, reason=f"Unmuted by {ctx.author}")
+            audit_reason = f"Unmuted | By: {ctx.author} ({ctx.author.id})"
+            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, "Unmuted", "TIMEOUT_REMOVED")
+            await member.timeout(None, reason=audit_reason)
             
             embed = discord.Embed(
                 title="🔊 Member Unmuted",
                 description=f"**{member}** has been unmuted",
-                color=0x2ecc71
+                color=0x00ff00
             )
             embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
             
             await ctx.send(embed=embed)
             
-            # Log to designated channel
-            log_embed = discord.Embed(
-                title="🔊 Member Unmuted",
-                description=f"**{member}** was unmuted",
-                color=0x2ecc71
-            )
-            log_embed.add_field(name="Moderator", value=f"{ctx.author} ({ctx.author.id})", inline=True)
-            log_embed.add_field(name="Target", value=f"{member} ({member.id})", inline=True)
-            log_embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
-            log_embed.timestamp = datetime.now()
-            await self._log_action(ctx.guild, log_embed)
+            # Log to designated channel handled by LoggingCog (via audit logs)
             
         except discord.Forbidden:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_REMOVED")
             await ctx.send("❌ I don't have permission to remove timeout from this member", ephemeral=True)
+        except Exception as e:
+            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_REMOVED")
+            await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
+
+    @commands.command(name="hide")
+    @commands.has_permissions(manage_channels=True)
+    async def hide_channel(self, ctx, channel: Optional[discord.TextChannel] = None):
+        """Hide a channel from @everyone"""
+        guild = ctx.guild
+        if guild is None:
+            await ctx.send("❌ This command can only be used in a server.")
+            return
+
+        resolved_channel = channel or ctx.channel
+
+        # Type guard to ensure channel is TextChannel
+        if not isinstance(resolved_channel, discord.TextChannel):
+            await ctx.send("❌ This command can only be used in text channels.", ephemeral=True)
+            return
+
+        target_channel: discord.TextChannel = resolved_channel
+        
+        try:
+            overwrite = target_channel.overwrites_for(guild.default_role)
+            overwrite.view_channel = False
+            await target_channel.set_permissions(guild.default_role, overwrite=overwrite, 
+                                        reason=f"Channel hidden by {ctx.author}")
+            
+            embed = discord.Embed(
+                title="👁️‍🗨️ Channel Hidden",
+                description=f"**{target_channel.name}** has been hidden from @everyone",
+                color=0x95a5a6
+            )
+            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+            await ctx.send(embed=embed)
+            
+            # Log to designated channel
+            logging_cog = self.bot.get_cog("LoggingCog")
+            if logging_cog:
+                await logging_cog.log_event(
+                    event_type="CHANNEL_UPDATE",
+                    guild_id=guild.id,
+                    moderator_id=ctx.author.id,
+                    details=f"**#{target_channel.name}** was hidden from @everyone"
+                )
+            
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to manage this channel", ephemeral=True)
         except Exception as e:
             await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
-    # Note: slowmode command removed - it's already implemented in modcog.py
+    @commands.command(name="unhide")
+    @commands.has_permissions(manage_channels=True)
+    async def unhide_channel(self, ctx, channel: Optional[discord.TextChannel] = None):
+        """Unhide a channel for @everyone"""
+        guild = ctx.guild
+        if guild is None:
+            await ctx.send("❌ This command can only be used in a server.")
+            return
 
-    @commands.hybrid_command(name="advmodstats")
-    @commands.has_permissions(manage_messages=True)
-    @app_commands.describe(moderator="Get stats for specific moderator")
-    async def advanced_mod_stats(self, ctx, moderator: Optional[discord.Member] = None):
-        """View moderation statistics"""
-        embed = discord.Embed(
-            title="📊 Moderation Statistics",
-            color=0x3498db
-        )
+        resolved_channel = channel or ctx.channel
+
+        # Type guard to ensure channel is TextChannel
+        if not isinstance(resolved_channel, discord.TextChannel):
+            await ctx.send("❌ This command can only be used in text channels.", ephemeral=True)
+            return
+
+        target_channel: discord.TextChannel = resolved_channel
         
-        if moderator:
-            embed.description = f"Statistics for {moderator.mention}"
-            # Add rate limit info for transparency
-            commands_used = {}
-            for key, times in self.command_cooldowns.items():
-                if key.startswith(str(moderator.id)):
-                    command = key.split('_', 1)[1]
-                    commands_used[command] = len([t for t in times if time.time() - t < 3600])  # Last hour
+        try:
+            overwrite = target_channel.overwrites_for(guild.default_role)
+            overwrite.view_channel = True
+            await target_channel.set_permissions(guild.default_role, overwrite=overwrite, 
+                                        reason=f"Channel unhidden by {ctx.author}")
             
-            if commands_used:
-                stats = "\n".join([f"**{cmd}**: {count} (last hour)" for cmd, count in commands_used.items()])
-                embed.add_field(name="Recent Command Usage", value=stats, inline=False)
-            else:
-                embed.add_field(name="Recent Activity", value="No commands used in the last hour", inline=False)
-        else:
-            embed.description = "Server moderation overview"
-            total_commands = sum(len(times) for times in self.command_cooldowns.values())
-            embed.add_field(name="Total Commands Used", value=str(total_commands), inline=True)
+            embed = discord.Embed(
+                title="👁️ Channel Unhidden",
+                description=f"**{target_channel.name}** is now visible to @everyone",
+                color=0x00ff00
+            )
+            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
+            await ctx.send(embed=embed)
             
-            # Automod status
-            enabled_features = [f for f, enabled in self.automod_settings.items() if enabled]
-            embed.add_field(name="Active Automod Features", value=", ".join(enabled_features) or "None", inline=False)
-        
-        await ctx.send(embed=embed)
+            # Log to designated channel
+            logging_cog = self.bot.get_cog("LoggingCog")
+            if logging_cog:
+                await logging_cog.log_event(
+                    event_type="CHANNEL_UPDATE",
+                    guild_id=guild.id,
+                    moderator_id=ctx.author.id,
+                    details=f"**#{target_channel.name}** is now visible to @everyone"
+                )
+            
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to manage this channel", ephemeral=True)
+        except Exception as e:
+            await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        """Advanced automod message scanning - DISABLED BY USER REQUEST"""
-        # All automod features disabled per user request
-        pass
-
-    @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        """Auto-dehoist - DISABLED BY USER REQUEST"""
-        # Auto-dehoist disabled per user request
-        pass
+    # Note: slowmode command already exists in modcog.py, so not implementing here to avoid conflicts
 
 async def setup(bot):
     await bot.add_cog(AdvancedModeration(bot))

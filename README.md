@@ -10,17 +10,73 @@
 
 ![Status](https://img.shields.io/badge/status-active-success) ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![Features](https://img.shields.io/badge/features-100+-green)
 
-*Professional Staff Management • Advanced Moderation • Data Persistence • Programming Utilities • Community Engagement*
+*Professional Staff Management • Advanced Moderation • Support Ticket System • Data Persistence • Programming Utilities • Community Engagement*
 
 </div>
 
 ## Features Overview
+### Recent Updates (January 15, 2026)
+- **Bot Optimization** - Removed unused Automod features and statistics commands for better performance.
+- **Command Updates** - `/diag` is now prefix-only (`?diag`) for simplified diagnostics.
+- **Stability Fixes** - Fixed configuration loading issues for local databases.
+
+### Recent Updates (January 2026)
+- **Log System Refactor** - Migrated to Webhook-based logging to eliminate rate-limit bottlenecks.
+- **Backup System Upgrade** - Switched to active cloud repository with real-time failure alerting.
+- **Codebase Optimization** - Removed legacy shift tracking systems for better performance.
+- **Enhanced Stability** - Fixes for static analysis errors in moderation commands.
+### Recent Updates (December 22, 2025)
+- **Guild-Specific Logging** - Fixed cross-guild logging issue. Each server now has its own log channels configured separately.
+- **Persistent Panels** - Ticket panels and sticky messages now survive bot restarts and updates without breaking.
+- **Redesigned Ticket System** - Clean, professional black theme without emojis for better aesthetics.
+- **New Utility Command** - Added `/getuserid` command to quickly get user IDs from mentions.
+- **Enhanced Stability** - Major improvements to button persistence and interaction handling.
+
+### Recent Updates (December 2025)
+- **Enhanced Ticket System** - New categories: Partnership, Role Issues, Warn Appeals. Improved UI and guidelines.
+- **Revamped User Info** - `/info` now provides detailed user analytics, including warning history, whitelist status, and permissions.
+- **New Report System** - `/report` command and "Report Message" context menu for direct reporting to moderators.
+- **Visual Logging Improvements** - Color-coded log embeds (Red for negative actions, Green for positive) for better visibility.
+- **Slash Command Sync** - Automatic syncing of slash commands to authorized guilds on startup.
+
+### Recent Updates (November 2025)
+- ** Professional Support Ticket System** - Enterprise thread-based ticket system with specialized role routing, information preview, and partnership guidelines
+- ** Thread Lock with Emoji Prefix** - `/lock` command now automatically renames threads with prefix for visibility
+- ** Appeal Confirmation System** - Appeals now show confirmation embed with Yes/No buttons before submission; window persists until punishment expires; new `/appealcancel` command for canceling pending appeals
+- ** Dual-Window Anti-Nuke Protection** - Max 5 bans/kicks per minute OR 12 per 20 minutes; automatic action reversal and actor blocking on violation; detailed staff alerts
+- ** Enhanced Thread Close** - `/close` command now sends professional embed notification before archiving (prevents message from reopening); restricted to mods and thread creator only
+- ** Lock/Unlock Emoji Management** - `/lock` adds emoji prefix, `/unlock` removes it to restore original thread name
 
 ### Core Commands
 - **`?ping`** / **`/ping`** - Check bot latency and responsiveness
-- **`?info`** / **`/info`** - View bot information, uptime, and instance details
-- **`?diag`** / **`/diag`** - Comprehensive bot diagnostics and health status
+- **`?info`** / **`/info`** - View detailed user information, warnings, and permissions
+- **`?report`** / **`/report`** - Report a message to moderators (supports ID or Link)
+- **`?diag`** - Comprehensive bot diagnostics and health status (Prefix Only)
 - **`?help`** / **`/help`** - Display all available commands with usage
+
+### Ticket System
+**Professional thread-based ticket system with specialized categories**
+
+**Setup Commands:**
+- `?ticket_panel [#channel] [support_role] [report_role] [partner_role]` - Create a persistent ticket panel
+- Panel buttons remain functional after bot restarts and updates
+- Supports custom role assignments for different ticket types
+
+**Categories:**
+- **Partnership** - Business partnerships and collaborations (with detailed requirements)
+- **General Support** - Get help with using services and features
+- **Role Issues** - Issues related to roles and permissions
+- **Reports** - Report inappropriate behavior or rule violations
+- **Warn Appeals** - Appeal warnings or moderation actions
+- **Other Issues** - Anything else that needs attention
+
+**Features:**
+- ✅ **Persistent Panels** - Ticket buttons work forever, even after bot restarts
+- ✅ **Clean Design** - Professional black theme without emojis
+- ✅ **Database-Backed** - All panels stored in database for reliability
+- ✅ **Auto-Restore** - Views automatically re-registered on bot startup
+- ✅ **Thread-Based** - Private threads for better organization
+- ✅ **Role Routing** - Different ticket types notify different staff roles
 
 ### Advanced Moderation System
 
@@ -28,7 +84,7 @@
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
 | `?serverinfo` / `/serverinfo` | Detailed server statistics and info | None |
-| `?userinfo [@user]` / `/userinfo [@user]` | Comprehensive user information | None |
+| `?info [@user]` / `/info [@user]` | Comprehensive user information (alias: `userinfo`) | None |
 | `?roleinfo <role>` / `/roleinfo <role>` | Detailed role information | None |
 | `?channelinfo [#channel]` / `/channelinfo [#channel]` | Channel information and stats | None |
 
@@ -44,17 +100,38 @@
 | `?warn <member> [reason]` / `/warn <member> [reason]` | Issue warning to member | Manage Messages |
 | `?slowmode <seconds> [#channel]` / `/slowmode <seconds> [#channel]` | Set channel slowmode (0-6hrs) | Manage Channels |
 | `?nick <member> [nickname]` / `/nick <member> [nickname]` | Change member nickname | Manage Nicknames |
+| `?get-user-id [@user]` / `/get-user-id [user]` | Get the Discord ID of a user (alias: `getuserid`) | None |
 
 #### Advanced Moderation Commands
 | Command | Description | Permission Required |
 |---------|-------------|-------------------|
 | `?lockdown [#channel] [reason]` / `/lockdown [#channel] [reason]` | Lock channel (prevent normal users from speaking) | Manage Channels |
 | `?unlock [#channel] [reason]` / `/unlock [#channel] [reason]` | Unlock previously locked channel | Manage Channels |
+| `?hide [#channel]` | Hide channel from @everyone (channel visibility) | Manage Channels |
+| `?unhide [#channel]` | Unhide channel for @everyone (restore visibility) | Manage Channels |
 | `?nuke [#channel] [reason]` / `/nuke [#channel] [reason]` | Delete and recreate channel (clears all messages) | Manage Channels |
 | `?massban <user_ids> [days] [reason]` / `/massban <user_ids> [days] [reason]` | Ban multiple users by ID (max 20) | Ban Members |
 | `?listbans` / `/listbans` | List all banned users in server | Ban Members |
 | `?addrole <@user> <role> [reason]` / `/addrole <@user> <role> [reason]` | Add role to user | Manage Roles |
 | `?removerole <@user> <role> [reason]` / `/removerole <@user> <role> [reason]` | Remove role from user | Manage Roles |
+
+### 🎭 Reaction Role System
+**Automated role assignment through emoji reactions**
+
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `/rr <title> <#channel> <description> <role1> [role2]... [role_toggle] [emoji1]...` | Create reaction role message (up to 10 roles) | Manage Roles |
+| `/rrlist` | List all active reaction role messages in server | Manage Roles |
+| `/rrremove <message_id>` | Remove reaction role tracking for a message | Manage Roles |
+
+**Features:**
+- ✅ **Up to 10 Roles** - Support for multiple emoji-role pairs per message
+- ✅ **Automatic Assignment** - Instantly adds/removes roles on reaction
+- ✅ **Optional Role Toggle** - Limit members to one role from a specific reaction-role message
+- ✅ **Data Persistence** - Survives bot restarts with SQLite storage
+- ✅ **Permission Validation** - Checks role hierarchy and bot permissions
+- ✅ **Embed Integration** - Works with `/editembed` for easy editing
+- ✅ **Real-time Tracking** - Live reaction monitoring and role management
 
 ### Point-Based Moderation System
 **Advanced escalation-based moderation** with monthly resets and approval workflow
@@ -75,11 +152,85 @@
 - **`?approve <appeal_id> [reason]`** / **`/approve <appeal_id> [reason]`** - Approve unban appeal (Admin)
 - **`?deny <appeal_id> <reason>`** / **`/deny <appeal_id> <reason>`** - Deny unban appeal (Admin)
 - **`?appealinfo <appeal_id>`** / **`/appealinfo <appeal_id>`** - Get detailed appeal information (Admin)
+- **`?appealcancel`** - Cancel pending appeal with confirmation *(User)*
+
+**Appeal Confirmation System** *(NEW)*
+- **Confirmation Embed** - Users see appeal preview with Yes/No buttons before submission
+- **Persistent Window** - Confirmation window stays open until punishment (ban/timeout) expires
+- **Appeal Revision** - Users can click "No" to revise their appeal before sending
+- **No Response** - If user doesn't respond, nothing happens (stays open indefinitely)
+- **Auto-Expiry Check** - System validates punishment is still active before final submission
+- **Appeal Cancel** - Users can cancel pending appeals with `/appealcancel` command
+
+**Appeal Workflow:**
+1. User gets kicked/banned/timed out
+2. Bot sends DM with appeal form
+3. **NEW:** Shows confirmation embed with preview
+4. User clicks Yes/No or ignores
+5. If Yes: Appeal submitted to staff for review
+6. If No: User can revise and submit again
+7. Staff approves or denies with reason
+
 - **Auto-DM system** - Appeals automatically sent when users are kicked/banned/timed out
 - **Professional embeds** - Clean, modern design without emojis
 - **Staff notifications** - Automatic notifications in designated appeals channel
 - **User guidance** - Clear instructions for appeal process and requirements
 - **Status tracking** - Pending, approved, denied status with timestamps
+
+### Professional Support Ticket System
+**Enterprise-grade thread-based ticket system** with specialized role routing and information preview
+- **`/ticket panel [#channel] [@support] [@report] [@partner] [color]`** - Create ticket panel with specialized roles and optional color (Admin)
+- **`?close`** - Intelligent ticket closure (auto-detects ticket threads)
+- **` Create Ticket`** - Interactive button with category selection and information preview
+- Closed tickets keep their channel visible for 24 hours after the transcript is saved, so staff can review the conversation without downloading the transcript first
+
+#### Setup & Configuration Commands
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `/ticket support [@role]` | Set/view general support team role | Administrator |
+| `/ticket report [@role]` | Set/view specialized report team role | Administrator |
+| `/ticket partner [@role]` | Set/view specialized partnership team role | Administrator |
+| `/ticket log [#channel]` | Set/view ticket logging channel | Administrator |
+| `/ticket support-disable` | Remove support role setting | Administrator |
+| `/ticket report-disable` | Remove report team role setting | Administrator |
+| `/ticket partner-disable` | Remove partner team role setting | Administrator |
+
+#### Management Commands
+| Command | Description | Permission Required |
+|---------|-------------|-------------------|
+| `/ticket forceclose <thread_id> [reason]` | Force close any ticket with reason | Administrator |
+| ` Close` | Close button within ticket threads | Staff/Thread Creator |
+| ` Claim` | Claim ticket button (Staff only) | Staff |
+
+#### Key Features
+- ** Information Preview** - Users see detailed guidelines and examples before creating tickets
+- ** Specialized Routing** - Different teams handle different ticket types:
+  - **Bug Reports** → General support team
+  - **General Support** → General support team  
+  - **Partnerships** → Partner team (with server requirements and terms)
+  - **Reports** → Report team (with evidence guidelines)
+  - **Suggestions** → General support team
+- ** Thread-Based** - Each ticket creates a private thread with automatic staff assignment
+- ** Complete Logging** - All ticket actions logged with timestamps and details
+- ** Smart Closure** - Intelligent detection between regular threads and ticket threads
+- ** Role Integration** - Automatic addition of relevant team members to ticket threads
+- ** Fallback System** - Specialized roles fall back to general support if not configured
+
+#### Partnership Requirements *(Built-in Guidelines)*
+- **Server Requirements:** 100+ members, 1/9 activity ratio, 500+ daily messages, SFW content
+- **Community Focus:** Tech/IT related but different specialization from CodeVerse
+- **Staff Requirements:** Active and reliable moderation team
+- **Mutual Benefits:** Custom advertisement channels, partnership channels, collaborative events
+- **Terms & Conditions:** Clear partnership removal conditions and guidelines
+
+#### Ticket Workflow
+1. User clicks ** Create Ticket** button
+2. Selects category from dropdown menu
+3. Views detailed information and guidelines for selected category
+4. Clicks **Create This Ticket** button to confirm
+5. Private thread created with appropriate team automatically added
+6. Staff receives notification and can manage via embed controls
+7. Ticket tracked and logged throughout entire lifecycle
 
 ### Staff Aura System (Points & Recognition)
 **Comprehensive staff recognition and promotion system** with leaderboards and statistics
@@ -95,16 +246,7 @@
 - **`?aura config <action> [value]`** / **`/aura config <action> [value]`** - Configure system (Admin only)
 - **Automatic aura for "thanks"** - Staff get +1 aura when thanked via mention/reply
 
-### Staff Shift Tracking System
-**Professional staff shift logging system** for tracking on-duty time with comprehensive admin controls
-- **`?shift start [note]`** / **`/shift start [note]`** - Start your staff shift (Staff only)
-- **`?shift end [note]`** / **`/shift end [note]`** - End your staff shift (Staff only)
-- **`?shift discard`** / **`/shift discard`** - Discard current shift (Staff only)
-- **`?shift admin active`** / **`/shift admin active`** - View all active shifts (Admin only)
-- **`?shift admin history [user] [days]`** / **`/shift admin history [user] [days]`** - View shift history with filters (Admin only)
-- **`?shift admin end <user> [reason]`** / **`/shift admin end <user> [reason]`** - Force end user's shift (Admin only)
-- **`?shift admin stats [user] [days]`** / **`/shift admin stats [user] [days]`** - View shift statistics (Admin only)
-- **`?shift admin summary [days]`** / **`/shift admin summary [days]`** - Staff activity summary (Admin only)
+
 - **`?shift settings logs [#channel]`** / **`/shift settings logs [#channel]`** - Set shift log channel (Admin only)
 - **`?shift settings addrole <role>`** / **`/shift settings addrole <role>`** - Add staff role (Admin only)
 - **`?shift settings removerole <role>`** / **`/shift settings removerole <role>`** - Remove staff role (Admin only)
@@ -121,16 +263,33 @@
 - **Multiple candidate support** (up to 10 candidates per election)
 - **Automatic result calculation** with percentage breakdown
 
-### Data Persistence & Backup System
-**Enterprise-grade data backup and restoration** - Never lose your data on deployments!
-- **`?data status`** / **`/data status`** - Check backup system status and health
-- **`?data backup`** / **`/data backup`** - Create immediate backup (Admin only)
-- **`?data restore`** / **`/data restore`** - Restore from backup with confirmation (Admin only)
-- **`?data export`** / **`/data export`** - Export data as downloadable file (Admin only)
-- **GitHub-based cloud storage** with automatic backups every 6 hours
-- **Local backup files** as fallback storage
-- **Complete data protection** for staff shifts, points, elections, and configurations
-- **Zero-downtime deployment** support with automatic data restoration
+### Data Persistence
+**Reliable data storage system**
+- Uses SQLite and JSON for stable data storage
+- Critical data (users, warnings, tickets) is persisted immediately to disk
+- **Note**: Automated cloud backups disabled for performance optimization
+
+
+### Logging System
+**Guild-specific logging with separate channels per server**
+
+**Configuration:**
+- **`!setlogchannels [#member-logs] [#mod-logs] [#ticket-logs]`** - Configure log channels for your server
+- Run without arguments to view current configuration
+- Each server has independent log channel settings
+- Logs never cross between different guilds
+
+**Log Categories:**
+- **Member Logs** - Join/leave events, role updates, nickname changes
+- **Moderation Logs** - Bans, kicks, warns, timeouts, unbans, appeals
+- **Ticket Logs** - Ticket creation, closure, claiming, transcripts
+
+**Features:**
+- ✅ **Guild-Specific** - Each server's logs go only to that server's channels
+- ✅ **Color-Coded** - Red for negative actions, green for positive
+- ✅ **Detailed Information** - User IDs, timestamps, reasons, moderators
+- ✅ **Database-Backed** - All logs stored in database for history
+- ✅ **Auto-Cleanup** - Failed logs handled gracefully
 
 ### Community & Engagement
 - **`?quote`** / **`/quote`** - Get inspirational programming quotes
@@ -158,6 +317,35 @@
 - **Advanced embed customization** with colors, fields, footers, and images
 - **JSON import/export** for embed templates
 - **Message editing capabilities** for dynamic content
+
+### Thread Management System
+**Professional thread and post management tools with enhanced visibility and safety**
+
+#### Thread Control Commands
+- **`?close [thread_id]`** / **`/close [thread_id]`** - Archive thread with embed notification *(Mods / Thread Creator)*
+  - Sends professional embed before archiving to prevent message-induced reopening
+  - Only moderators and thread creator can execute
+  - Creates audit trail for compliance
+  
+- **`?lock [thread_id]`** / **`/lock [thread_id]`** - Lock thread and add emoji prefix *(Manage Threads)*
+  - Example: `"discussion about linux"` → `" discussion about linux"`
+  - Prevents accidental reopening by members
+  - Clear visual indicator for locked threads
+  
+- **`?unlock [thread_id]`** / **`/unlock [thread_id]`** - Unlock thread and remove emoji *(Manage Threads)*
+  - Restores original thread name automatically
+  - Allows members to participate again
+
+#### Message Management
+- **`?pin [message_id]`** / **`/pin [message_id]`** - Pin important messages *(Manage Messages)*
+- **`?unpin [message_id]`** / **`/unpin [message_id]`** - Unpin messages *(Manage Messages)*
+- **`?purge <amount>`** / **`/purge <amount>`** - Delete 1-100 messages *(Manage Messages)*
+
+#### Features
+- Works in channels and threads
+- Reply feature for pinning specific messages
+- Automatic permission validation
+- Requires `manage_messages` or `manage_threads` permissions
 
 ### AFK System
 **Away From Keyboard status management with auto-responses**
@@ -251,10 +439,10 @@ After the bot is running, configure your server:
    /data status
    ```
 
-2. **Configure staff shifts (if using staff management)**:
+2. **Configure staff management (Optional)**:
    ```
-   /shift settings logs #staff-logs
-   /shift settings addrole @Moderator
+   /aura config enable true
+   /aura config channel #staff-updates
    ```
 
 3. **Test core functionality**:
@@ -279,7 +467,6 @@ codeverse-bot/
 │   │   ├── moderation.py        # Basic moderation commands
 │   │   ├── moderation_extended.py # Advanced moderation (lockdown, nuke, massban, etc.)
 │   │   ├── staff_points.py      # Staff aura/points system with leaderboards
-│   │   ├── staff_shifts.py      # Staff shift tracking system
 │   │   ├── election.py          # Staff election system with weighted voting
 │   │   ├── data_management.py   # Data backup/restore/export system
 │   │   ├── afk.py               # AFK system with auto-responses and tracking
@@ -302,7 +489,6 @@ codeverse-bot/
 │       └── code_snippets.json   # Code snippet templates
 ├── data/                        # Database files (SQLite)
 │   ├── codeverse_bot.db         # Main bot database
-│   ├── staff_shifts.db          # Staff shift tracking data
 │   ├── staff_points.db          # Staff aura/points data
 │   └── afk.db                   # AFK system database
 ├── backup/                      # Local backup storage
@@ -347,7 +533,7 @@ python bot_diagnostics.py
 python quick_test.py
 ```
 
-## 🌐 Deployment
+## Deployment
 
 ### Railway
 1. Connect your GitHub repository
@@ -432,11 +618,6 @@ python main.py
 
 #### 3. Staff Management Setup (Optional)
 ```bash
-# Configure staff shift tracking
-/shift settings logs #staff-logs
-/shift settings addrole @Moderator
-/shift settings addrole @Admin
-
 # Configure staff aura system
 /aura config enable true
 /aura config channel #staff-updates
@@ -446,7 +627,7 @@ python main.py
 ```bash
 # Test moderation commands
 /serverinfo
-/userinfo @user
+/info @user
 /purge 5
 
 # Advanced moderation (Admin only)
@@ -473,34 +654,34 @@ python main.py
 
 This bot follows **enterprise-grade design principles** for scalability and maintainability:
 
-### 🎯 Core Design Principles
-- ✅ **Hybrid command support** - Both prefix (`?`) and slash (`/`) commands for maximum compatibility
-- ✅ **Modular cog architecture** - Each feature set is a separate, maintainable module
-- ✅ **Comprehensive data persistence** - Zero data loss with automated backup systems
-- ✅ **Type-safe implementation** - Full type hints for reliability and maintainability
-- ✅ **Professional error handling** - Graceful degradation and informative error messages
-- ✅ **Permission-based security** - Role and permission checks for all sensitive operations
-- ✅ **Scalable database design** - SQLite for local efficiency, cloud backup for reliability
+### Core Design Principles
+- **Hybrid command support** - Both prefix (`?`) and slash (`/`) commands for maximum compatibility
+- **Modular cog architecture** - Each feature set is a separate, maintainable module
+- **Comprehensive data persistence** - Zero data loss with automated backup systems
+- **Type-safe implementation** - Full type hints for reliability and maintainability
+- **Professional error handling** - Graceful degradation and informative error messages
+- **Permission-based security** - Role and permission checks for all sensitive operations
+- **Scalable database design** - SQLite for local efficiency, cloud backup for reliability
 
-### 🏢 Enterprise Features
-- 🔐 **Advanced staff management** - Comprehensive shift tracking and aura systems
-- 📊 **Data analytics and reporting** - Detailed statistics and performance metrics
-- 🔄 **Automatic data backup & restore** - GitHub-based cloud storage with local fallbacks
-- 🗳️ **Democratic processes** - Built-in election system for community governance
-- 🛡️ **Advanced moderation tools** - Professional-grade server management capabilities
-- 📈 **Monitoring and diagnostics** - Real-time health checks and performance monitoring
+### Enterprise Features
+- **Advanced staff management** - Comprehensive shift tracking and aura systems
+- **Data analytics and reporting** - Detailed statistics and performance metrics
+- **Automatic data backup & restore** - GitHub-based cloud storage with local fallbacks
+- **Democratic processes** - Built-in election system for community governance
+- **Advanced moderation tools** - Professional-grade server management capabilities
+- **Monitoring and diagnostics** - Real-time health checks and performance monitoring
 
-### 🚀 Performance & Reliability
-- ⚡ **Fast startup times** - Optimized initialization and cog loading
-- 🔧 **Zero-downtime deployment** - Data persistence across restarts and updates
-- 📱 **Multi-platform support** - Works on Windows, Linux, and macOS
-- 🌐 **Hosting platform agnostic** - Supports Railway, Heroku, VPS, and local hosting
-- 🔍 **Comprehensive logging** - Detailed logging for debugging and monitoring
+### Performance & Reliability
+- **Fast startup times** - Optimized initialization and cog loading
+- **Zero-downtime deployment** - Data persistence across restarts and updates
+- **Multi-platform support** - Works on Windows, Linux, and macOS
+- **Hosting platform agnostic** - Supports Railway, Heroku, VPS, and local hosting
+- **Comprehensive logging** - Detailed logging for debugging and monitoring
 
-### ✨ What Makes This Bot Special
+### What Makes This Bot Special
 
 #### Fully-Featured Staff Management
-Unlike basic bots, this includes professional staff shift tracking, aura/points systems, and comprehensive admin controls that rival commercial solutions.
+Unlike basic bots, this includes professional staff aura/points systems, and comprehensive admin controls that rival commercial solutions.
 
 #### Enterprise Data Protection
 Automatic GitHub-based cloud backups ensure your data survives any deployment issues, server crashes, or hosting changes.
@@ -522,16 +703,16 @@ Clean, modular code with full type hints, comprehensive documentation, and easy 
 - **Architecture**: Cog-based modular design with dependency injection
 - **Type Safety**: Full type annotations and runtime validation
 
-## 👤 Author & Credits
+## Author & Credits
 | Role | Person |
 |------|--------|
 | Original Creator | @Youngcoder45 |
-| Maintainer | @youngcoder45 and @hyscript7|
+| Maintainer | [@youngcoder45](https://github.com/youngcoder45) and [@hyscript7](https://github.com/hyscript7)|
 | Library | discord.py |
 
-Community contributions welcome—submit PRs or issues.
+Community contributions welcome, Submit PRs or issues.
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -539,13 +720,14 @@ Community contributions welcome—submit PRs or issues.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## Support
 
-- 🐛 **Issues**: Report bugs via GitHub Issues
-- 💬 **Discord**: https://discord.gg/3xKFvKhuGR
-- 📧 **Email**: youngcoder45@gmail.com
+
+- **Issues**: Report bugs via GitHub Issues
+- **Discord**: https://discord.gg/3xKFvKhuGR
+- **Email**: contact@aditya-verma.me
 

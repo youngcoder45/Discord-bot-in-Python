@@ -15,6 +15,20 @@ async def log_consumer(bot: commands.Bot, action: logging_api.LogAction):
     Consumes a LogAction from the SAM logging_api and sends it to the
     CodeVerse bot's server log channel.
     """
+    # Try centralized logging first
+    logging_cog = bot.get_cog("LoggingCog")
+    if logging_cog:
+        await logging_cog.log_event(
+            event_type="EXTERNAL_LOG",
+            title=action.title,
+            description=action.description,
+            timestamp=action.timestamp,
+            fields=action.fields,
+            color=0x3498db # Blue default
+        )
+        return
+
+    # Legacy fallback
     log_channel_id = os.getenv('SERVER_LOGS_CHANNEL_ID')
     if not log_channel_id:
         return
