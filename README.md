@@ -1,7 +1,3 @@
-> [!WARNING]
-> This Project is no longer be maintained and has been moved to [CodeVerseHub-Bot](https://github.com/TheCodeVerseHub/CodeVerse-Bot)
-
-
 <div align="center">
 
 # CodeVerse Bot
