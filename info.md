@@ -273,10 +273,13 @@ Extracted from decorators in `src/commands/**` and `src/events/**`.
 | `mute` | hybrid | src/commands/advanced_moderation.py:115 |
 | `nickname` | hybrid | src/commands/modcog.py:879 |
 | `nuke` | hybrid | src/commands/modcog.py:757 |
-| `permit_group add` | slash | src/commands/permits.py:107 |
-| `permit_group check` | slash | src/commands/permits.py:147 |
-| `permit_group list` | slash | src/commands/permits.py:129 |
-| `permit_group new` | slash | src/commands/permits.py:98 |
+| `permit_group add` | slash | src/commands/permits.py:228 |
+| `permit_group check` | slash | src/commands/permits.py:268 |
+| `permit_group check-all` | slash | src/commands/permits.py:444 |
+| `permit_group delete` | slash | src/commands/permits.py:321 |
+| `permit_group list` | slash | src/commands/permits.py:250 |
+| `permit_group new` | slash | src/commands/permits.py:219 |
+| `permit_group rename` | slash | src/commands/permits.py:364 |
 | `pin` | prefix | src/commands/thread.py:187 |
 | `ping` | hybrid | src/commands/core.py:93 |
 | `purge` | hybrid | src/commands/modcog.py:97 |
