@@ -5,6 +5,7 @@ Merges functionality from moderation.py, moderation_extended.py, and sam warning
 
 import discord  # type: ignore[import-not-found]
 import asyncio
+import re
 import sqlite3
 from discord.ext import commands  # type: ignore[import-not-found]
 from discord import app_commands  # type: ignore[import-not-found]
@@ -469,7 +470,7 @@ class ModCog(commands.Cog):
             discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
             await ctx.send(f"❌ Failed to timeout: {str(e)}")
 
-    @commands.hybrid_command(name="untimeout", help="Remove timeout from a member")
+    @commands.hybrid_command(name="untimeout", aliases=["unmute"], help="Remove timeout from a member")
     @app_commands.describe(member="Member to remove timeout from", reason="Reason for removing timeout")
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
@@ -481,7 +482,10 @@ class ModCog(commands.Cog):
         
         try:
             register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_REMOVED")
-            await member.timeout(None, reason=reason)
+            # Include the invoker in the audit-log reason (Discord audit logs show
+            # the bot application otherwise, since the action is API-performed).
+            audit_reason = f"{reason} | By: {ctx.author} ({ctx.author.id})"
+            await member.timeout(None, reason=audit_reason)
             
             embed = discord.Embed(
                 title="✅ Timeout Removed",

@@ -56,7 +56,7 @@ Commands are hybrid unless marked **(prefix only)** or **(slash only)**.
 | `/role` • `?role` | Add/remove a role on a member | Manage Roles |
 | `/addmod` • `?addmod` | Promote a member to the moderator role | Administrator |
 | `/timeout` • `?timeout` (`?mute` alias) | Timeout a member (`10m`, `2h`, `1d`); `?mute` is prefix-only | Moderate Members |
-| `/untimeout` • `?untimeout` | Remove a timeout | Moderate Members |
+| `/untimeout` • `?untimeout` (`?unmute` alias) | Remove a timeout; `?unmute` is prefix-only | Moderate Members |
 | `/slowmode` • `?slowmode` | View/set slowmode (0–21600s) | Manage Channels |
 | `/lock` • `?lock` | Lock a channel or thread | Manage Channels |
 | `/unlock` • `?unlock` | Unlock a channel or thread | Manage Channels |
@@ -75,7 +75,6 @@ Commands are hybrid unless marked **(prefix only)** or **(slash only)**.
 | Command | Description | Permission |
 |---------|-------------|-----------|
 | `/tempban` • `?tempban` | Temporarily ban a member | Ban Members |
-| `/unmute` • `?unmute` | Remove a timeout | Moderate Members |
 | `?hide` **(prefix only)** | Hide a channel from @everyone | Manage Channels |
 | `?unhide` **(prefix only)** | Unhide a channel | Manage Channels |
 

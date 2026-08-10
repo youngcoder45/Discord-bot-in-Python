@@ -104,34 +104,6 @@ class AdvancedModeration(commands.Cog):
         except Exception as e:
             logger.warning("Auto-unban failed for %s in guild %s: %s", member, guild.id, e)
 
-    @commands.hybrid_command(name="unmute")
-    @commands.has_permissions(moderate_members=True)
-    @app_commands.describe(member="Member to unmute")
-    async def unmute(self, ctx, member: discord.Member):
-        """Remove timeout from a member"""
-        try:
-            audit_reason = f"Unmuted | By: {ctx.author} ({ctx.author.id})"
-            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, "Unmuted", "TIMEOUT_REMOVED")
-            await member.timeout(None, reason=audit_reason)
-            
-            embed = discord.Embed(
-                title="🔊 Member Unmuted",
-                description=f"**{member}** has been unmuted",
-                color=0x00ff00
-            )
-            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
-            
-            await ctx.send(embed=embed)
-            
-            # Log to designated channel handled by LoggingCog (via audit logs)
-            
-        except discord.Forbidden:
-            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_REMOVED")
-            await ctx.send("❌ I don't have permission to remove timeout from this member", ephemeral=True)
-        except Exception as e:
-            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_REMOVED")
-            await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
-
     @commands.command(name="hide")
     @commands.has_permissions(manage_channels=True)
     async def hide_channel(self, ctx, channel: Optional[discord.TextChannel] = None):

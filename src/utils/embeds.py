@@ -63,23 +63,6 @@ def create_unban_embed(user: discord.User, moderator: discord.Member, reason: st
     embed.add_field(name='Reason', value=reason, inline=False)
     return embed
 
-def create_mute_embed(user: discord.Member, moderator: discord.Member, duration: str, reason: str) -> discord.Embed:
-    """Create embed for mute notification"""
-    embed = discord.Embed(title='User Muted', color=0x95a5a6)
-    embed.add_field(name='User', value=user.mention, inline=True)
-    embed.add_field(name='Duration', value=duration, inline=True)
-    embed.add_field(name='Moderator', value=moderator.mention, inline=True)
-    embed.add_field(name='Reason', value=reason, inline=False)
-    return embed
-
-def create_unmute_embed(user: discord.Member, moderator: discord.Member, reason: str) -> discord.Embed:
-    """Create embed for unmute notification"""
-    embed = discord.Embed(title='User Unmuted', color=0x00ff00)
-    embed.add_field(name='User', value=user.mention, inline=True)
-    embed.add_field(name='Moderator', value=moderator.mention, inline=True)
-    embed.add_field(name='Reason', value=reason, inline=False)
-    return embed
-
 def create_purge_embed(amount: int, moderator: discord.Member, target_user: discord.Member | None = None) -> discord.Embed:
     """Create embed for purge notification"""
     embed = discord.Embed(title='Messages Purged', color=0x0000ff)

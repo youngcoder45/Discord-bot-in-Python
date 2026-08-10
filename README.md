@@ -105,7 +105,7 @@ A full, maintained reference lives in [`docs/COMMAND_REFERENCE.md`](docs/COMMAND
 |---------|-------------|
 | `/purge` • `/clean` | Delete messages / clean bot messages |
 | `/kick` • `/ban` • `/unban` • `/softban` | Member removal |
-| `/timeout` (alias `?mute`) • `/untimeout` • `/unmute` • `/tempban` | Temporary actions |
+| `/timeout` (alias `?mute`) • `/untimeout` (alias `?unmute`) • `/tempban` | Temporary actions |
 | `/slowmode` • `/lock` • `/unlock` • `/lockdown` • `/unlockdown` | Channel control |
 | `/nuke` • `/massban` | Owner-only destructive tools |
 | `/role` • `/addmod` • `/nickname` | Role & nickname management |
@@ -176,7 +176,7 @@ codeverse-bot/
 │   │   ├── core.py              # Core commands (ping, info, help, report, prefix)
 │   │   ├── diagnostics.py       # ?diag
 │   │   ├── modcog.py            # Main moderation commands
-│   │   ├── advanced_moderation.py # tempban, unmute, hide/unhide
+│   │   ├── advanced_moderation.py # tempban, hide/unhide
 │   │   ├── appeals.py           # Appeal workflow
 │   │   ├── tickets.py           # Ticket system
 │   │   ├── permits.py           # Permit permission groups
