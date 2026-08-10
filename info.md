@@ -68,9 +68,8 @@ These are the extensions the bot tries to load on startup:
   - Advanced actions like tempban and mute/unmute, plus some “safety” / anti-abuse guardrails.
 
 ### Protection / Anti-abuse
-- `commands.protection`
-  - Anti-spam / anti-raid / anti-nuke style controls.
-  - Anti-raid join-flood detection and anti-nuke rate limiting.
+- `commands.protection` (exists in the repo but is **not** in `COGS_TO_LOAD`)
+  - Anti-spam / anti-raid / anti-nuke style controls (unused at runtime).
 - `commands.spam_catch`
   - Channel-level spam catching (e.g., auto-timeout for posting in protected channels).
 
@@ -87,11 +86,9 @@ These are the extensions the bot tries to load on startup:
 - `commands.reaction_roles`
   - Reaction-role configuration stored in a database.
 
-### Staff aura points
-- `commands.staff_points`
-  - “Aura” point tracking stored in `data/staff_points.db`.
-  - Commands for add/remove/set/reset + history + leaderboard.
-  - Also supports “auto-award” flow via the message handler (see Events).
+### Staff aura points (not loaded)
+- `commands.staff_points` exists in the repo but is **not** in `COGS_TO_LOAD` (removed).
+  - “Aura” point tracking stored in `data/staff_points.db` (unused at runtime).
 
 ### Permits
 - `commands.permits`
@@ -133,7 +130,7 @@ There are multiple join listeners:
   - Sends a **welcome DM embed** to every joining member (if DMs are open).
   - Message contains several hard-coded channel mentions (channel IDs baked into the string).
 
-- `commands.protection` also has a join listener
+- `commands.protection` also has a join listener (not loaded — `commands.protection` is not in `COGS_TO_LOAD`)
   - Tracks join bursts for raid detection (does not DM).
 
 - `events.message_handler:on_member_join`

@@ -433,28 +433,8 @@ View a user's avatar in full size.
 
 ## Staff Management
 
-### Staff Points System
-
-#### `/staffpoints` or `?staffpoints`
-**Permission Required:** Manage Messages (to view others)
-
-View staff points (aura) leaderboard or specific user.
-
-**Usage:**
-```
-/staffpoints [@user]
-?staffpoints [@user]
-```
-
-**Examples:**
-- `/staffpoints` - View leaderboard
-- `/staffpoints @moderator` - View specific user's points
-
-**How Points Work:**
-- Staff gain points by helping members
-- Members thank staff using keywords: "thanks", "thank you", "ty"
-- Points determine staff rankings
-- Top staff members shown on leaderboard
+> ⚠️ The **Staff Points / Aura system** (`/staffpoints`, `/aura`) has been **removed** and is no longer loaded.
+> Use the **Warning system** (`/warn`, `/warnings view`) and **Permit system** (`/permit`) for staff tooling instead.
 
 ---
 
@@ -658,7 +638,8 @@ Force close a ticket by ID.
 - **Help Command:** `/help` or `?help`
 - **Check Warnings:** `/warnings view @user`
 - **View Tickets:** `/ticket list`
-- **Staff Points:** `/staffpoints`
+- **Permits:** `/permit check-all`
+- **Warnings:** `/warnings view @user`
 
 ---
 
