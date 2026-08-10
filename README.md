@@ -12,7 +12,7 @@
 
 ## Features Overview
 
-- **Moderation suite** — purge, kick, ban, softban, timeout, slowmode, locks/lockdowns, tempban, mute, and more, with permit-based delegation for staff.
+- **Moderation suite** — purge, kick, ban, softban, timeout (`?mute` works as a prefix alias), slowmode, locks/lockdowns, tempban, and more, with permit-based delegation for staff.
 - **Warning system** — issue, revoke, and review warnings (`/warn`, `/warnings view|modify|clear`).
 - **Support tickets** — persistent, thread-based ticket system with category routing, transcripts, and logging.
 - **Permit system** — create named permission groups (roles), assign them to members, and let staff act without native Discord permissions. Full lifecycle: `new`, `add`, `list`, `check`, `delete`, `rename`, `check-all`.
@@ -105,7 +105,7 @@ A full, maintained reference lives in [`docs/COMMAND_REFERENCE.md`](docs/COMMAND
 |---------|-------------|
 | `/purge` • `/clean` | Delete messages / clean bot messages |
 | `/kick` • `/ban` • `/unban` • `/softban` | Member removal |
-| `/timeout` • `/untimeout` • `/mute` • `/unmute` • `/tempban` | Temporary actions |
+| `/timeout` (alias `?mute`) • `/untimeout` • `/unmute` • `/tempban` | Temporary actions |
 | `/slowmode` • `/lock` • `/unlock` • `/lockdown` • `/unlockdown` | Channel control |
 | `/nuke` • `/massban` | Owner-only destructive tools |
 | `/role` • `/addmod` • `/nickname` | Role & nickname management |
@@ -176,7 +176,7 @@ codeverse-bot/
 │   │   ├── core.py              # Core commands (ping, info, help, report, prefix)
 │   │   ├── diagnostics.py       # ?diag
 │   │   ├── modcog.py            # Main moderation commands
-│   │   ├── advanced_moderation.py # tempban, mute, hide/unhide
+│   │   ├── advanced_moderation.py # tempban, unmute, hide/unhide
 │   │   ├── appeals.py           # Appeal workflow
 │   │   ├── tickets.py           # Ticket system
 │   │   ├── permits.py           # Permit permission groups

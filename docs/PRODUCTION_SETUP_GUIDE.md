@@ -10,7 +10,6 @@
 
 ### 1. **Rate Limiting Protection**
 - **Tempban**: Max 3 uses per 5 minutes per user
-- **Mute**: Max 5 uses per 5 minutes per user
 - **Point System**: 2-moderator approval required for bans
 - **Mass Actions**: Built-in limits (max 20 users for massban)
 
@@ -22,7 +21,7 @@
 
 ### 3. **Command Limits & Safeguards**
 - **Tempban**: Maximum 7 days (10,080 minutes)
-- **Mute**: Maximum 28 days (40,320 minutes) 
+- **Timeout**: Maximum 28 days (40,320 minutes) 
 - **Slowmode**: Maximum 6 hours (21,600 seconds)
 - **Point System**: 100-point monthly cap with resets
 - **Auto-timeout**: Commands that could cause server damage require confirmation

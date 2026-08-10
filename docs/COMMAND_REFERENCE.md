@@ -67,7 +67,7 @@ This document provides a comprehensive list of all commands available in the Cod
 | `/softban`, `?softban` | Ban and immediately unban to delete recent messages | `/softban <member> [reason]` | Ban Members |
 | `/role`, `?role` | Add or remove a role from a user | `/role <member> <role>` | Manage Roles |
 | `/addmod`, `?addmod` | Promote a user to the configured moderator role | `/addmod <member>` | Administrator |
-| `/timeout`, `?timeout` | Timeout a member for a duration (`10m`, `2h`, `1d`) | `/timeout <member> <duration> [reason]` | Moderate Members |
+| `/timeout`, `?timeout` (alias `?mute`) | Timeout a member for a duration (`10m`, `2h`, `1d`); `?mute` is a prefix-only alias of `/timeout` | `/timeout <member> <duration> [reason]` | Moderate Members |
 | `/untimeout`, `?untimeout` | Remove a timeout from a member | `/untimeout <member> [reason]` | Moderate Members |
 | `/slowmode`, `?slowmode` | View or set slowmode (0–21600s) | `/slowmode [seconds]` | Manage Channels |
 | `/lock`, `?lock` | Lock a channel or thread | `/lock [channel]` | Manage Channels |
@@ -85,7 +85,6 @@ This document provides a comprehensive list of all commands available in the Cod
 | Command | Description | Usage | Permission |
 |---------|-------------|-------|------------|
 | `/tempban`, `?tempban` | Temporarily ban a member | `/tempban <member> <duration> [reason]` | Ban Members |
-| `/mute`, `?mute` | Timeout a member temporarily | `/mute <member> <duration> [reason]` | Moderate Members |
 | `/unmute`, `?unmute` | Remove a timeout from a member | `/unmute <member> [reason]` | Moderate Members |
 | `?hide` | Hide a channel from @everyone (prefix only) | `?hide [channel]` | Manage Channels |
 | `?unhide` | Unhide a channel for @everyone (prefix only) | `?unhide [channel]` | Manage Channels |

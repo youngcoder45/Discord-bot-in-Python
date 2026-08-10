@@ -5,10 +5,7 @@ import asyncio
 import time
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-import sqlite3
-from typing import Optional, List
-import re
+from typing import Optional
 
 from utils.helpers import register_mod_action, discard_mod_action
 
@@ -106,58 +103,6 @@ class AdvancedModeration(commands.Cog):
             pass  # Member may have been manually unbanned
         except Exception as e:
             logger.warning("Auto-unban failed for %s in guild %s: %s", member, guild.id, e)
-
-    @commands.hybrid_command(name="mute")
-    @commands.has_permissions(moderate_members=True)
-    @app_commands.describe(
-        member="Member to mute",
-        duration="Mute duration in minutes (max 40320 = 28 days)",
-        reason="Reason for the mute"
-    )
-    async def mute(self, ctx, member: discord.Member, duration: int, *, reason: str = "No reason provided"):
-        """Mute a member using timeout (max 28 days)"""
-        # Safety checks
-        if not self._check_rate_limit(ctx.author.id, "mute", 5, 300):  # 5 mutes per 5 minutes
-            await ctx.send("❌ Rate limit: You can only use mute 5 times per 5 minutes.", ephemeral=True)
-            return
-            
-        if duration > 40320:  # Max 28 days
-            await ctx.send("❌ Maximum mute duration is 28 days (40320 minutes)", ephemeral=True)
-            return
-            
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
-            await ctx.send("❌ You cannot mute someone with equal or higher role", ephemeral=True)
-            return
-
-        try:
-            until = datetime.now(timezone.utc) + timedelta(minutes=duration)
-            # Add moderator info to reason for logging
-            audit_reason = f"{reason} | By: {ctx.author} ({ctx.author.id})"
-            # Register the actual invoker so the logging system attributes the
-            # mute to the moderator instead of the bot.
-            register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_APPLIED")
-            await member.timeout(until, reason=audit_reason)
-            
-            embed = discord.Embed(
-                title="🔇 Member Muted",
-                description=f"**{member}** has been muted",
-                color=0xf39c12
-            )
-            embed.add_field(name="Duration", value=f"{duration} minutes", inline=True)
-            embed.add_field(name="Moderator", value=ctx.author.mention, inline=True)
-            embed.add_field(name="Reason", value=reason, inline=False)
-            embed.add_field(name="Until", value=f"<t:{int(until.timestamp())}:F>", inline=False)
-            
-            await ctx.send(embed=embed)
-            
-            # Log to designated channel handled by LoggingCog (via audit logs)
-            
-        except discord.Forbidden:
-            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
-            await ctx.send("❌ I don't have permission to timeout this member", ephemeral=True)
-        except Exception as e:
-            discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
-            await ctx.send(f"❌ Error occurred: {str(e)}", ephemeral=True)
 
     @commands.hybrid_command(name="unmute")
     @commands.has_permissions(moderate_members=True)

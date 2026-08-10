@@ -400,7 +400,7 @@ class ModCog(commands.Cog):
             discard_mod_action(self.bot, ctx.guild.id, user.id, "ROLE_ADD")
             await ctx.send(f"❌ Failed to promote user: {str(e)}")
 
-    @commands.hybrid_command(name="timeout", help="Timeout a member for a specified duration")
+    @commands.hybrid_command(name="timeout", aliases=["mute"], help="Timeout a member for a specified duration")
     @app_commands.describe(
         member="Member to timeout",
         duration="Duration (e.g., 10m, 2h, 1d)",
@@ -446,7 +446,10 @@ class ModCog(commands.Cog):
         try:
             timeout_until = datetime.now(timezone.utc) + timedelta(seconds=total_seconds)
             register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_APPLIED")
-            await member.timeout(timeout_until, reason=reason)
+            # Include the invoker in the audit-log reason (Discord audit logs show
+            # the bot application otherwise, since the action is API-performed).
+            audit_reason = f"{reason} | By: {ctx.author} ({ctx.author.id})"
+            await member.timeout(timeout_until, reason=audit_reason)
             
             embed = discord.Embed(
                 title="Member Timed Out",
