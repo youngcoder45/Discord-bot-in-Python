@@ -9,6 +9,7 @@ from discord.ext import commands
 
 from utils.database import DATABASE_NAME
 from utils.embeds import create_error_embed, create_success_embed
+from config import STAFF_ROLE_ID, ADMIN_BYPASS_ROLE_ID
 
 
 class ThreadCloser(commands.Cog):
@@ -88,7 +89,7 @@ class ThreadCloser(commands.Cog):
         # Check permissions (ticket owner or staff)
         has_permission = False
         if isinstance(ctx.author, discord.Member):
-            allowed_role_ids = {1417900662053671073, 1403059755001577543}
+            allowed_role_ids = {STAFF_ROLE_ID, ADMIN_BYPASS_ROLE_ID}
             tickets_cog = self.bot.get_cog("Tickets")
             if tickets_cog and ctx.guild:
                 for role_getter in (
@@ -201,7 +202,7 @@ class ThreadCloser(commands.Cog):
                     # Permission check: ticket owner, staff role, or admin
                     has_perm = False
                     if isinstance(ctx.author, discord.Member):
-                        allowed_role_ids = {1417900662053671073, 1403059755001577543}
+                        allowed_role_ids = {STAFF_ROLE_ID, ADMIN_BYPASS_ROLE_ID}
                         # Include configured roles from Tickets cog if available
                         if tickets_cog and ctx.guild:
                             for role_getter in (

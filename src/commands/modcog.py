@@ -13,9 +13,15 @@ from typing import Optional, Union, Any, cast
 from collections.abc import Awaitable, Callable
 from utils.embeds import create_success_embed, create_error_embed, create_info_embed
 from utils.helpers import log_action, safe_send, register_mod_action, discard_mod_action
-
-# Bot owner ID for restricted commands
-BOT_OWNER_ID = 955695820999639120
+from config import (
+    BOT_OWNER_ID,
+    MODERATION_ROLE_ID,
+    ADMIN_BYPASS_ROLE_ID,
+    VERIFY_STREAM_ROLE_ID,
+    VERIFY_VOICE_ROLE_ID,
+    VERIFY_EMBED_ROLE_ID,
+    VERIFY_JOIN_VC_ROLE_ID,
+)
 
 # SAM Module imports for warnings
 try:
@@ -363,7 +369,7 @@ class ModCog(commands.Cog):
         if ctx.guild is None:
              return await ctx.send("This command can only be used in a server.")
 
-        MOD_ROLE_ID = 1403059755001577543
+        MOD_ROLE_ID = MODERATION_ROLE_ID
         role = ctx.guild.get_role(MOD_ROLE_ID)
         
         if not role:
@@ -1181,7 +1187,7 @@ class ModCog(commands.Cog):
     async def verify(self, interaction: discord.Interaction, user: discord.User):
         """Verify a user by assigning a verification role."""
         # Check if invoker has the required admin/bypass role
-        admin_bypass_role_id = 1403059755001577543
+        admin_bypass_role_id = ADMIN_BYPASS_ROLE_ID
         
         if not isinstance(interaction.user, discord.Member):
             await interaction.response.send_message(
@@ -1246,22 +1252,22 @@ class VerificationView(discord.ui.View):
     VERIFICATION_ROLES = {
         "stream_verify": {
             "label": "Stream Verify",
-            "role_id": 1417578146407911455,
+            "role_id": VERIFY_STREAM_ROLE_ID,
             "value": "stream_verify"
         },
         "voice_verification": {
             "label": "Voice Verification",
-            "role_id": 1414651719995883560,
+            "role_id": VERIFY_VOICE_ROLE_ID,
             "value": "voice_verification"
         },
         "embed_verification": {
             "label": "Embed Verification",
-            "role_id": 1486406987091677315,
+            "role_id": VERIFY_EMBED_ROLE_ID,
             "value": "embed_verification"
         },
         "join_vc_verification": {
             "label": "Join VC Verification",
-            "role_id": 1345308261133455430,
+            "role_id": VERIFY_JOIN_VC_ROLE_ID,
             "value": "join_vc_verification"
         },
     }

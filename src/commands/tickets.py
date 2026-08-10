@@ -12,6 +12,7 @@ from discord.ext import commands
 from utils.database import DATABASE_NAME
 from utils.embeds import create_error_embed, create_info_embed, create_success_embed
 from utils.helpers import safe_interaction_reply
+from config import STAFF_ROLE_ID, ADMIN_BYPASS_ROLE_ID, TICKET_LOGS_CHANNEL_ID
 
 logger = logging.getLogger("codeverse.tickets")
 
@@ -232,8 +233,8 @@ class Tickets(commands.Cog):
         self.ticket_channel_id: Optional[int] = (
             None  # Panel channel id (where the panel lives)
         )
-        self.staff_role_id: int = 1417900662053671073
-        self.admin_bypass_role_id: int = 1403059755001577543
+        self.staff_role_id: int = STAFF_ROLE_ID
+        self.admin_bypass_role_id: int = ADMIN_BYPASS_ROLE_ID
 
         self.ticket_counter = self._get_ticket_counter()
 
@@ -525,7 +526,7 @@ class Tickets(commands.Cog):
         self, guild: discord.Guild
     ) -> Optional[discord.TextChannel]:
         # Your existing hardcoded fallback
-        TICKET_LOGS_CHANNEL = 1438487366305190018
+        TICKET_LOGS_CHANNEL = TICKET_LOGS_CHANNEL_ID
         channel = guild.get_channel(TICKET_LOGS_CHANNEL)
         if channel and isinstance(channel, discord.TextChannel):
             return channel

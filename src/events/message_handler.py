@@ -3,10 +3,11 @@ import asyncio
 import logging, discord, os, re
 from datetime import datetime, timezone
 
+from config import INTRODUCTION_CHANNEL_ID
+
 logger = logging.getLogger(__name__)
 
-# Channel that should get automatic intro reactions
-INTRODUCTION_CHANNEL_ID = 1263070188589547541
+# Channel that should get automatic intro reactions (configured in .env)
 INTRO_REACTIONS = ["👋🏻", "🔥", "❤️"]
 
 class MessageHandler(commands.Cog):

@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from commands.modules.sam import bridge as sam_bridge
 from utils.json_store import get_guild_prefix
 from utils.helpers import safe_interaction_reply
+from config import AUTHORIZED_GUILD_IDS
 import atexit
 
 # Load environment variables once at startup
@@ -24,10 +25,8 @@ INSTANCE_ID = os.getenv('INSTANCE_ID', f"pid-{os.getpid()}")
 LOCK_FILE = os.getenv('BOT_LOCK_FILE', '.bot_instance.lock')
 
 # Authorized servers - Bot will only work in these servers
-AUTHORIZED_SERVERS = [
-    1410939321812258928,  # Server 1
-    1263067254153805905   # Server 2 (Original guild ID)
-]
+# (configured via AUTHORIZED_GUILD_IDS in .env)
+AUTHORIZED_SERVERS = AUTHORIZED_GUILD_IDS
 
 # Default prefix (can be overridden per-guild via /prefix)
 DEFAULT_PREFIX = '?'

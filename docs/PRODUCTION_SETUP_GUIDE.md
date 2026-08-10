@@ -114,13 +114,13 @@ Replace `YOUR_BOT_CLIENT_ID` with your bot's Client ID from the General Informat
 ```
 
 ### 3. **Staff Role Configuration**
-Update your `config.py`:
-```python
+All Discord IDs (roles, channels, users, guilds) are now configured in the root `.env` file (see `.env.example` for the full list). Update the ones relevant to your server:
+```dotenv
 # Your main moderation role
-MODERATION_ROLE_ID = 123456789  # Replace with your mod role ID
+MODERATION_ROLE_ID=your_mod_role_id_here
 
-# Alert channels
-STAFF_ALERT_CHANNEL = "staff-alerts"  # Channel name for raid alerts
+# Authorized guilds (comma-separated)
+AUTHORIZED_GUILD_IDS=your_guild_id_here
 ```
 
 ---
@@ -189,7 +189,7 @@ Create these channels for proper monitoring:
 - `#automod-logs` - Automatic moderation actions
 - `#mod-logs` - Manual moderation actions  
 - `#staff-alerts` - Raid/nuke detection alerts
-- `#appeals` - Appeal notifications (ID: 1396353386429026304)
+- `#appeals` - Appeal notifications (channel ID goes in `.env`, e.g. `APPEALS_LOG_CHANNEL_IDS` / `LOG_CHANNEL_WARNINGS_ID`)
 
 ---
 

@@ -80,7 +80,7 @@ class MemberLogMixin(commands.Cog):
                 if added_roles:
                     added_text = ", ".join(role.mention for role in added_roles)
                     await self.log_event(
-                        event_type="ROLE_ADD", # Mapped to 1460207115082661984
+                        event_type="ROLE_ADD",  # Routed via LOG_CHANNEL_MAP
                         user_id=after.id,
                         guild_id=after.guild.id,
                         moderator_id=moderator_id,
@@ -90,7 +90,7 @@ class MemberLogMixin(commands.Cog):
                 if removed_roles:
                     removed_text = ", ".join(role.mention for role in removed_roles)
                     await self.log_event(
-                        event_type="ROLE_REMOVE", # Mapped to 1460207115082661984
+                        event_type="ROLE_REMOVE",  # Routed via LOG_CHANNEL_MAP
                         user_id=after.id,
                         guild_id=after.guild.id,
                         moderator_id=moderator_id,

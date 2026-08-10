@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any
 from utils.database import DATABASE_NAME
 from utils.webhook_manager import WebhookManager
 from utils.embeds import create_success_embed, create_error_embed, create_info_embed
+from config import MAIN_GUILD_ID
 from .config import LOG_CHANNEL_MAP
 from .formatter import LogFormatter
 
@@ -105,8 +106,8 @@ class LoggingCog(MemberLogMixin, ChannelLogMixin, RoleLogMixin, ModerationLogMix
         if db_channel:
             return db_channel
 
-        # Fallback: hardcoded map for The CodeVerse Hub (or main server)
-        if guild_id == 1263067254153805905 and event_type in LOG_CHANNEL_MAP:
+        # Fallback: default map for the main server (MAIN_GUILD_ID from .env)
+        if guild_id == MAIN_GUILD_ID and event_type in LOG_CHANNEL_MAP:
             return LOG_CHANNEL_MAP[event_type]
 
         return None

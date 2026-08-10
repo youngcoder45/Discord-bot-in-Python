@@ -32,11 +32,8 @@ If you’re trying to trim the bot, jump to **Classification (important / ok-to-
 ### Configuration & hard-coded IDs (important)
 - **Environment variables:** `DISCORD_TOKEN` (required), `GUILD_ID` (optional), `INSTANCE_ID` (optional), `BOT_LOCK_FILE` (optional).
 - **Single-instance guard:** uses a lock file (`.bot_instance.lock` by default) to reduce accidental double-running.
-- **Authorized guilds:** hard-coded in `src/bot.py` (`AUTHORIZED_SERVERS`).
-- **Hard-coded channel IDs:** several modules embed channel IDs directly in code/strings, including:
-  - Welcome DM content in `events.member_events`.
-  - Report target channel in `commands.core` (`REPORT_CHANNEL_ID`).
-  - Logging routing map in `src/commands/logging/config.py` (`LOG_CHANNEL_MAP`).
+- **Authorized guilds:** configured via `AUTHORIZED_GUILD_IDS` in `.env` (loaded through `config.py`).
+- **Discord IDs (channels/roles/users/guilds):** centralized in root `config.py` and overridable via `.env` — including welcome-DM channels used by `events.member_events`, the report channel in `commands.core`, and the logging routing map in `src/commands/logging/config.py` (`LOG_CHANNEL_MAP`). No IDs are hardcoded in feature modules anymore.
 - **Config mismatch note:** root `config.py` contains some defaults like `COMMAND_PREFIX='!'`, but the bot’s actual prefix is set in `src/bot.py` to `?`.
 
 ---
