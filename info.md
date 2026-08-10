@@ -32,11 +32,8 @@ If you’re trying to trim the bot, jump to **Classification (important / ok-to-
 ### Configuration & hard-coded IDs (important)
 - **Environment variables:** `DISCORD_TOKEN` (required), `GUILD_ID` (optional), `INSTANCE_ID` (optional), `BOT_LOCK_FILE` (optional).
 - **Single-instance guard:** uses a lock file (`.bot_instance.lock` by default) to reduce accidental double-running.
-- **Authorized guilds:** hard-coded in `src/bot.py` (`AUTHORIZED_SERVERS`).
-- **Hard-coded channel IDs:** several modules embed channel IDs directly in code/strings, including:
-  - Welcome DM content in `events.member_events`.
-  - Report target channel in `commands.core` (`REPORT_CHANNEL_ID`).
-  - Logging routing map in `src/commands/logging/config.py` (`LOG_CHANNEL_MAP`).
+- **Authorized guilds:** configured via `AUTHORIZED_GUILD_IDS` in `.env` (loaded through `config.py`).
+- **Discord IDs (channels/roles/users/guilds):** centralized in root `config.py` and overridable via `.env` — including welcome-DM channels used by `events.member_events`, the report channel in `commands.core`, and the logging routing map in `src/commands/logging/config.py` (`LOG_CHANNEL_MAP`). No IDs are hardcoded in feature modules anymore.
 - **Config mismatch note:** root `config.py` contains some defaults like `COMMAND_PREFIX='!'`, but the bot’s actual prefix is set in `src/bot.py` to `?`.
 
 ---
@@ -71,9 +68,8 @@ These are the extensions the bot tries to load on startup:
   - Advanced actions like tempban and mute/unmute, plus some “safety” / anti-abuse guardrails.
 
 ### Protection / Anti-abuse
-- `commands.protection`
-  - Anti-spam / anti-raid / anti-nuke style controls.
-  - Anti-raid join-flood detection and anti-nuke rate limiting.
+- `commands.protection` (exists in the repo but is **not** in `COGS_TO_LOAD`)
+  - Anti-spam / anti-raid / anti-nuke style controls (unused at runtime).
 - `commands.spam_catch`
   - Channel-level spam catching (e.g., auto-timeout for posting in protected channels).
 
@@ -90,11 +86,9 @@ These are the extensions the bot tries to load on startup:
 - `commands.reaction_roles`
   - Reaction-role configuration stored in a database.
 
-### Staff aura points
-- `commands.staff_points`
-  - “Aura” point tracking stored in `data/staff_points.db`.
-  - Commands for add/remove/set/reset + history + leaderboard.
-  - Also supports “auto-award” flow via the message handler (see Events).
+### Staff aura points (not loaded)
+- `commands.staff_points` exists in the repo but is **not** in `COGS_TO_LOAD` (removed).
+  - “Aura” point tracking stored in `data/staff_points.db` (unused at runtime).
 
 ### Permits
 - `commands.permits`
@@ -136,7 +130,7 @@ There are multiple join listeners:
   - Sends a **welcome DM embed** to every joining member (if DMs are open).
   - Message contains several hard-coded channel mentions (channel IDs baked into the string).
 
-- `commands.protection` also has a join listener
+- `commands.protection` also has a join listener (not loaded — `commands.protection` is not in `COGS_TO_LOAD`)
   - Tracks join bursts for raid detection (does not DM).
 
 - `events.message_handler:on_member_join`
@@ -273,10 +267,13 @@ Extracted from decorators in `src/commands/**` and `src/events/**`.
 | `mute` | hybrid | src/commands/advanced_moderation.py:115 |
 | `nickname` | hybrid | src/commands/modcog.py:879 |
 | `nuke` | hybrid | src/commands/modcog.py:757 |
-| `permit_group add` | slash | src/commands/permits.py:107 |
-| `permit_group check` | slash | src/commands/permits.py:147 |
-| `permit_group list` | slash | src/commands/permits.py:129 |
-| `permit_group new` | slash | src/commands/permits.py:98 |
+| `permit_group add` | slash | src/commands/permits.py:228 |
+| `permit_group check` | slash | src/commands/permits.py:268 |
+| `permit_group check-all` | slash | src/commands/permits.py:444 |
+| `permit_group delete` | slash | src/commands/permits.py:321 |
+| `permit_group list` | slash | src/commands/permits.py:250 |
+| `permit_group new` | slash | src/commands/permits.py:219 |
+| `permit_group rename` | slash | src/commands/permits.py:364 |
 | `pin` | prefix | src/commands/thread.py:187 |
 | `ping` | hybrid | src/commands/core.py:93 |
 | `purge` | hybrid | src/commands/modcog.py:97 |

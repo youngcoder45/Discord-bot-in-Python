@@ -3,46 +3,44 @@
 This document outlines the configuration of the logging system, specifically focusing on the Channel Mapping which routes different event types to specific Discord channels.
 
 ## 📁 Source Configuration
-The configuration is defined in `src/commands/logging/config.py`. 
+The configuration is defined in `src/commands/logging/config.py`, which builds
+the event → channel mapping from environment variables. All channel IDs now live
+in the root `.env` file (see `config.py` for the fallback defaults).
 
 ## 📍 Channel Mapping (The CodeVerse Hub)
 
-| Event Category | Log Channel ID | Discord Channel | Description |
+| Event Category | .env Variable | Discord Channel | Description |
 | :--- | :--- | :--- | :--- |
-| **Join / Leave** | `1460213277333389412` | `#join-leave-logs` | Member joins, leaves, and bot additions. |
-| **Member Roles** | `1460207115082661984` | `#member-role-logs` | Roles added or removed from a member. |
-| **Member Misc** | `1263434413581008956` | `#member-logs` | Nickname changes, Username updates. |
-| **Channel Config** | `1460207608119038034` | `#channel-updates` | Permission updates, Topic changes, Name changes. |
-| **Channel Lifecycle**| `1460207206736724181` | `#channel-lifecycle` | Channel creation and deletion events. |
-| **Role Lifecycle** | `1460207477248495716` | `#role-logs` | Role creation and deletion in the server. |
-| **Moderation** | `1460207055745978611` | `#mod-logs` | Kicks, Bans, and Unbans. |
-| **Warnings** | `1460207507703070813` | `#warning-logs` | Manual warnings issued by staff. |
-| **Timeouts** | `1460207558605275188` | `#timeout-logs` | Timeout applied, removed, or expired. |
-| **Voice Logs** | `1460207532814503986` | `#voice-logs` | Server Mute/Deafen, Voice Disconnects, Moves. |
-| **Tickets** | `1438487366305190018` | `#ticket-logs` | Ticket creation, closing, transcripts (Webhook Text Only). |
+| **Join / Leave** | `LOG_CHANNEL_MEMBERS_ID` | `#join-leave-logs` | Member joins, leaves, and bot additions. |
+| **Member Roles** | `LOG_CHANNEL_MEMBER_ROLE_CHANGES_ID` | `#member-role-logs` | Roles added or removed from a member. |
+| **Member Misc** | `LOG_CHANNEL_MEMBER_ROLE_CHANGES_ID` | `#member-logs` | Nickname changes, Username updates. |
+| **Channel Config** | `LOG_CHANNEL_CHANNELS_ID` | `#channel-updates` | Permission updates, Topic changes, Name changes. |
+| **Channel Lifecycle**| `LOG_CHANNEL_CHANNELS_ID` | `#channel-lifecycle` | Channel creation and deletion events. |
+| **Role Lifecycle** | `LOG_CHANNEL_ROLES_ID` | `#role-logs` | Role creation and deletion in the server. |
+| **Moderation** | `LOG_CHANNEL_MODERATION_ID` | `#mod-logs` | Kicks, Bans, and Unbans. |
+| **Warnings** | `LOG_CHANNEL_WARNINGS_ID` | `#warning-logs` | Manual warnings issued by staff. |
+| **Timeouts** | `LOG_CHANNEL_TIMEOUTS_ID` | `#timeout-logs` | Timeout applied, removed, or expired. |
+| **Voice Logs** | `LOG_CHANNEL_VOICE_ID` | `#voice-logs` | Server Mute/Deafen, Voice Disconnects, Moves. |
+| **Tickets** | `LOG_CHANNEL_TICKETS_ID` | `#ticket-logs` | Ticket creation, closing, transcripts (Webhook Text Only). |
 
 ## ⚙️ How to Change Channels
 
 To update the logging channels:
 
-1.  Open `src/commands/logging/config.py`.
-2.  Locate the `LOG_CHANNEL_MAP` dictionary.
-3.  Update the ID corresponding to the event you wish to re-route.
+1.  Open the root `.env` file.
+2.  Locate the `LOG_CHANNEL_*_ID` variable for the event you wish to re-route (see table above).
+3.  Update the ID.
 4.  Restart the bot for changes to take effect.
 
-```python
+```dotenv
 # Example: Changing the Ban Log Channel
-LOG_CHANNEL_MAP = {
-    # ...
-    "BAN": 123456789012345678, # <-- New ID Here
-    # ...
-}
+LOG_CHANNEL_MODERATION_ID=123456789012345678
 ```
 
 ## 🔌 Default Fallback
 
-The system currently uses a hardcoded map optimized for "The CodeVerse Hub". If you deploy this bot to another server, you may need to:
-1.  Extend `config.py` to support multiple Guild IDs.
+The map defaults are optimized for "The CodeVerse Hub". If you deploy this bot to another server, you may need to:
+1.  Update the `LOG_CHANNEL_*_ID` variables in `.env` (and `MAIN_GUILD_ID`).
 2.  Or rely on the database configuration (Legacy table `guild_log_channels`) which is still checked as a fallback if an event isn't found in `LOG_CHANNEL_MAP`.
 
 ## 🔄 Webhook Management

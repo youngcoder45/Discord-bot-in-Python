@@ -5,6 +5,7 @@ Merges functionality from moderation.py, moderation_extended.py, and sam warning
 
 import discord  # type: ignore[import-not-found]
 import asyncio
+import re
 import sqlite3
 from discord.ext import commands  # type: ignore[import-not-found]
 from discord import app_commands  # type: ignore[import-not-found]
@@ -13,9 +14,15 @@ from typing import Optional, Union, Any, cast
 from collections.abc import Awaitable, Callable
 from utils.embeds import create_success_embed, create_error_embed, create_info_embed
 from utils.helpers import log_action, safe_send, register_mod_action, discard_mod_action
-
-# Bot owner ID for restricted commands
-BOT_OWNER_ID = 955695820999639120
+from config import (
+    BOT_OWNER_ID,
+    MODERATION_ROLE_ID,
+    ADMIN_BYPASS_ROLE_ID,
+    VERIFY_STREAM_ROLE_ID,
+    VERIFY_VOICE_ROLE_ID,
+    VERIFY_EMBED_ROLE_ID,
+    VERIFY_JOIN_VC_ROLE_ID,
+)
 
 # SAM Module imports for warnings
 try:
@@ -363,7 +370,7 @@ class ModCog(commands.Cog):
         if ctx.guild is None:
              return await ctx.send("This command can only be used in a server.")
 
-        MOD_ROLE_ID = 1403059755001577543
+        MOD_ROLE_ID = MODERATION_ROLE_ID
         role = ctx.guild.get_role(MOD_ROLE_ID)
         
         if not role:
@@ -394,7 +401,7 @@ class ModCog(commands.Cog):
             discard_mod_action(self.bot, ctx.guild.id, user.id, "ROLE_ADD")
             await ctx.send(f"❌ Failed to promote user: {str(e)}")
 
-    @commands.hybrid_command(name="timeout", help="Timeout a member for a specified duration")
+    @commands.hybrid_command(name="timeout", aliases=["mute"], help="Timeout a member for a specified duration")
     @app_commands.describe(
         member="Member to timeout",
         duration="Duration (e.g., 10m, 2h, 1d)",
@@ -440,7 +447,10 @@ class ModCog(commands.Cog):
         try:
             timeout_until = datetime.now(timezone.utc) + timedelta(seconds=total_seconds)
             register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_APPLIED")
-            await member.timeout(timeout_until, reason=reason)
+            # Include the invoker in the audit-log reason (Discord audit logs show
+            # the bot application otherwise, since the action is API-performed).
+            audit_reason = f"{reason} | By: {ctx.author} ({ctx.author.id})"
+            await member.timeout(timeout_until, reason=audit_reason)
             
             embed = discord.Embed(
                 title="Member Timed Out",
@@ -460,7 +470,7 @@ class ModCog(commands.Cog):
             discard_mod_action(self.bot, ctx.guild.id, member.id, "TIMEOUT_APPLIED")
             await ctx.send(f"❌ Failed to timeout: {str(e)}")
 
-    @commands.hybrid_command(name="untimeout", help="Remove timeout from a member")
+    @commands.hybrid_command(name="untimeout", aliases=["unmute"], help="Remove timeout from a member")
     @app_commands.describe(member="Member to remove timeout from", reason="Reason for removing timeout")
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
@@ -472,7 +482,10 @@ class ModCog(commands.Cog):
         
         try:
             register_mod_action(self.bot, ctx.guild.id, member.id, ctx.author.id, reason, "TIMEOUT_REMOVED")
-            await member.timeout(None, reason=reason)
+            # Include the invoker in the audit-log reason (Discord audit logs show
+            # the bot application otherwise, since the action is API-performed).
+            audit_reason = f"{reason} | By: {ctx.author} ({ctx.author.id})"
+            await member.timeout(None, reason=audit_reason)
             
             embed = discord.Embed(
                 title="✅ Timeout Removed",
@@ -1181,7 +1194,7 @@ class ModCog(commands.Cog):
     async def verify(self, interaction: discord.Interaction, user: discord.User):
         """Verify a user by assigning a verification role."""
         # Check if invoker has the required admin/bypass role
-        admin_bypass_role_id = 1403059755001577543
+        admin_bypass_role_id = ADMIN_BYPASS_ROLE_ID
         
         if not isinstance(interaction.user, discord.Member):
             await interaction.response.send_message(
@@ -1246,22 +1259,22 @@ class VerificationView(discord.ui.View):
     VERIFICATION_ROLES = {
         "stream_verify": {
             "label": "Stream Verify",
-            "role_id": 1417578146407911455,
+            "role_id": VERIFY_STREAM_ROLE_ID,
             "value": "stream_verify"
         },
         "voice_verification": {
             "label": "Voice Verification",
-            "role_id": 1414651719995883560,
+            "role_id": VERIFY_VOICE_ROLE_ID,
             "value": "voice_verification"
         },
         "embed_verification": {
             "label": "Embed Verification",
-            "role_id": 1486406987091677315,
+            "role_id": VERIFY_EMBED_ROLE_ID,
             "value": "embed_verification"
         },
         "join_vc_verification": {
             "label": "Join VC Verification",
-            "role_id": 1345308261133455430,
+            "role_id": VERIFY_JOIN_VC_ROLE_ID,
             "value": "join_vc_verification"
         },
     }

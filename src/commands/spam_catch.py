@@ -16,7 +16,7 @@ try:
     # Configure a logger for this module - the bot's main app should configure handlers.
     logger = logging.getLogger("codeverse.spam_catch")
 
-    PROTECTED_CHANNEL_ID = 1430566219643228210
+    from config import PROTECTED_CHANNEL_ID
     TIMEOUT_DAYS = 10  # Use a 10-day timeout instead of a ban
 
     class AutoBanChannel(commands.Cog):

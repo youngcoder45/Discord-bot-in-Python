@@ -4,17 +4,25 @@ import logging
 import discord
 from discord.ext import commands
 
+from config import (
+    HELP_FORUM_ID,
+    HELP_NOTIFY_TARGET_CHANNEL_ID,
+    HELP_MODERATOR_ROLE_ID,
+    MAIN_GUILD_ID,
+    HELP_GUIDE_CHANNEL_ID,
+)
+
 logger = logging.getLogger(__name__)
 
 
 class HelpThreadNotification(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.source_forum_id = 1388169643234955354
-        self.target_channel_id = 1456979344504258570
+        self.source_forum_id = HELP_FORUM_ID
+        self.target_channel_id = HELP_NOTIFY_TARGET_CHANNEL_ID
 
         # Only members with this role can manually trigger notifications.
-        self.moderator_role_id = 1403059755001577543
+        self.moderator_role_id = HELP_MODERATOR_ROLE_ID
 
     async def _get_starter_message(self, thread: discord.Thread) -> discord.Message | None:
         # Slight delay to ensure message is fully committed/available via API
@@ -156,7 +164,7 @@ class HelpThreadNotification(commands.Cog):
             await thread.send(
                 "Thanks For Using our Help Forums."
                 f"I have pinged help for you in <#{self.target_channel_id}> ! Please wait a few minutes. "
-                "Make sure to check https://discord.com/channels/1263067254153805905/1419678687103680522 to know more about how to ask good questions and get help easily."
+                f"Make sure to check https://discord.com/channels/{MAIN_GUILD_ID}/{HELP_GUIDE_CHANNEL_ID} to know more about how to ask good questions and get help easily."
             )
 
         except Exception as e:

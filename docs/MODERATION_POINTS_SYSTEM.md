@@ -1,6 +1,7 @@
 # Moderation Points System
 
-A structured monthly point-based moderation escalation with two-step ban approval.
+> ⚠️ **ARCHIVED — REMOVED**
+> The point-based moderation system (`/addpoints`, `/points`, `/pendingbans`, `/approveban`, `/declineban`) has been **removed** from the bot and is no longer loaded. The warnings system (SAM module) replaced it as the primary escalation tool. This document is kept for historical reference only.
 
 ## Core Rules
 - Each user has 0–100 moderation points per month (period = YYYY-MM).

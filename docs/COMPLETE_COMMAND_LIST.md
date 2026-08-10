@@ -1,796 +1,245 @@
 # CodeVerse Bot - Complete Command List
 
-**Last Updated:** December 26, 2025
+**Last Updated:** August 2026
 
-Complete reference of all bot commands organized by category.
+Complete reference of all bot commands, grouped by category.
+Commands are hybrid unless marked **(prefix only)** or **(slash only)**.
 
 ---
 
 ## Table of Contents
 - [Core Commands](#core-commands)
-- [Moderation Commands](#moderation-commands)
+- [Moderation](#moderation)
 - [Advanced Moderation](#advanced-moderation)
-- [Warning System](#warning-system)
-- [Ticket System](#ticket-system)
-- [Staff Management](#staff-management)
-- [Channel Management](#channel-management)
-- [Message Management](#message-management)
-- [User Information](#user-information)
-- [Utility Commands](#utility-commands)
-- [Thread Management](#thread-management)
-- [AFK System](#afk-system)
+- [Information](#information)
+- [Warnings](#warnings)
+- [Permits](#permits)
+- [Tickets](#tickets)
+- [Appeals](#appeals)
+- [Reaction Roles](#reaction-roles)
+- [Sticky Messages](#sticky-messages)
+- [Threads](#threads)
+- [Logging](#logging)
+- [Utility & Embed Builder](#utility--embed-builder)
+- [Server Listing](#server-listing-prefix-only)
+- [Rules](#rules-prefix-only)
+- [Diagnostics & Owner](#diagnostics--owner)
 
 ---
 
 ## Core Commands
+**Source:** `src/commands/core.py`
 
-### `/help` • `?help`
-**Permission:** None  
-**Description:** Display the interactive help menu with all command categories.
-
-**Usage:**
-```
-/help
-/help <command_name>
-?help
-?help <command_name>
-```
-
-**Examples:**
-- `/help` - Show main help menu
-- `/help ban` - Show detailed help for ban command
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/help` • `?help` | Interactive categorized help menu (`/help <command>` for details) | None |
+| `/ping` | Check bot latency | None |
+| `/info` • `?info` | Detailed user information (alias `userinfo`) | None |
+| `/get-user-id` | Get a Discord ID from a mention | None |
+| `/prefix` | View or change the per-guild prefix | Manage Server (to change) |
+| `/report` • `?report` | Report a message (ID or link) to moderators | None |
+| *Report Message* (context menu) | Right-click → Apps → Report Message | None |
 
 ---
 
-### `/ping` • `?ping`
-**Permission:** None  
-**Description:** Check bot latency and responsiveness.
+## Moderation
+**Source:** `src/commands/modcog.py`
 
-**Usage:**
-```
-/ping
-?ping
-```
-
-**Response:** Shows WebSocket latency in milliseconds.
-
----
-
-### `/get-user-id` • `?get-user-id`
-**Permission:** None  
-**Description:** Get the Discord ID of a user. (Prefix alias: `getuserid`)
-
-**Usage:**
-```
-/get-user-id user:@user
-?get-user-id @user
-```
-
-**Response:** Shows the numeric user ID in an ephemeral message, e.g. "user id is `123456789012345678`".
-
----
-
-### `/info` • `?info`
-**Permission:** None  
-**Description:** Get detailed information about a user or yourself.
-
-**Usage:**
-```
-/info [@user]
-?info [@user]
-```
-
-**Shows:**
-- Account creation date
-- Server join date
-- Warning history
-- Permissions
-- Staff status
-- Dangerous user flags
-
----
-
-## Moderation Commands
-
-### `/ban` • `?ban`
-**Permission:** Ban Members  
-**Description:** Permanently ban a user from the server.
-
-**Usage:**
-```
-/ban <@user> [reason]
-?ban <@user> [reason]
-```
-
-**Parameters:**
-- `@user` - The user to ban (required)
-- `reason` - Reason for ban (optional but recommended)
-
-**Example:**
-```
-/ban @spammer Repeated spam after multiple warnings
-```
-
----
-
-### `/unban` • `?unban`
-**Permission:** Ban Members  
-**Description:** Remove a ban from a user.
-
-**Usage:**
-```
-/unban <user_id> [reason]
-?unban <user_id> [reason]
-```
-
-**Parameters:**
-- `user_id` - Discord ID of banned user (required)
-- `reason` - Reason for unban (optional)
-
-**Example:**
-```
-/unban 123456789012345678 Appeal approved
-```
-
----
-
-### `/kick` • `?kick`
-**Permission:** Kick Members  
-**Description:** Remove a user from the server (they can rejoin).
-
-**Usage:**
-```
-/kick <@user> [reason]
-?kick <@user> [reason]
-```
-
-**Example:**
-```
-/kick @troublemaker First offense warning
-```
-
----
-
-### `/timeout` • `?timeout`
-**Permission:** Moderate Members  
-**Description:** Temporarily mute a user for a specified duration.
-
-**Usage:**
-```
-/timeout <@user> <duration> [reason]
-?timeout <@user> <duration> [reason]
-```
-
-**Duration Format:**
-- `m` - Minutes (e.g., `30m`)
-- `h` - Hours (e.g., `2h`)
-- `d` - Days (e.g., `7d`)
-- `w` - Weeks (e.g., `1w`)
-
-**Examples:**
-```
-/timeout @user 30m Spamming
-/timeout @user 2h Inappropriate behavior
-/timeout @user 1d Repeated violations
-```
-
----
-
-### `/untimeout` • `?untimeout`
-**Permission:** Moderate Members  
-**Description:** Remove timeout from a user early.
-
-**Usage:**
-```
-/untimeout <@user> [reason]
-?untimeout <@user> [reason]
-```
-
-**Example:**
-```
-/untimeout @user Apologized and understood rules
-```
-
----
-
-### `/softban` • `?softban`
-**Permission:** Ban Members  
-**Description:** Ban then immediately unban to delete user's messages.
-
-**Usage:**
-```
-/softban <@user> [reason]
-?softban <@user> [reason]
-```
-
-**Use Case:** Clean up spam without permanent ban.
-
----
-
-### `/nickname` • `?nickname`
-**Permission:** Manage Nicknames  
-**Description:** Change a member's nickname.
-
-**Usage:**
-```
-/nickname <@user> <new_nickname>
-?nickname <@user> <new_nickname>
-```
-
-**Example:**
-```
-/nickname @user Appropriate Name
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/purge` • `?purge` | Delete 1–100 messages (channels & threads) | Manage Messages |
+| `/clean` • `?clean` | Delete bot messages & command invocations | Manage Messages |
+| `/kick` • `?kick` | Kick a member | Kick Members **or** `kick_members` permit |
+| `/ban` • `?ban` | Ban a member | Ban Members **or** `ban_members` permit |
+| `/unban` • `?unban` | Unban a user by ID | Ban Members |
+| `/softban` • `?softban` | Ban + unban to delete messages | Ban Members |
+| `/role` • `?role` | Add/remove a role on a member | Manage Roles |
+| `/addmod` • `?addmod` | Promote a member to the moderator role | Administrator |
+| `/timeout` • `?timeout` (`?mute` alias) | Timeout a member (`10m`, `2h`, `1d`); `?mute` is prefix-only | Moderate Members |
+| `/untimeout` • `?untimeout` (`?unmute` alias) | Remove a timeout; `?unmute` is prefix-only | Moderate Members |
+| `/slowmode` • `?slowmode` | View/set slowmode (0–21600s) | Manage Channels |
+| `/lock` • `?lock` | Lock a channel or thread | Manage Channels |
+| `/unlock` • `?unlock` | Unlock a channel or thread | Manage Channels |
+| `/lockdown` • `?lockdown` | Lock all channels | Administrator |
+| `/unlockdown` • `?unlockdown` | Unlock all channels | Administrator |
+| `/nuke` • `?nuke` | Clone + delete a channel (clears messages) | Bot Owner |
+| `/massban` • `?massban` | Ban multiple users by ID | Bot Owner |
+| `/nickname` • `?nickname` | Change a member's nickname | Manage Nicknames |
+| `/verify` | Verification panel with role selection | Admin bypass role / Administrator |
 
 ---
 
 ## Advanced Moderation
+**Source:** `src/commands/advanced_moderation.py`
 
-### `/lockdown` • `?lockdown`
-**Permission:** Administrator  
-**Description:** Lock ALL channels in the server simultaneously.
-
-**Usage:**
-```
-/lockdown [reason]
-?lockdown [reason]
-```
-
-**When to use:** Server-wide emergencies, raids
-
-**Example:**
-```
-/lockdown Raid in progress
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/tempban` • `?tempban` | Temporarily ban a member | Ban Members |
+| `?hide` **(prefix only)** | Hide a channel from @everyone | Manage Channels |
+| `?unhide` **(prefix only)** | Unhide a channel | Manage Channels |
 
 ---
 
-### `/unlockdown` • `?unlockdown`
-**Permission:** Administrator  
-**Description:** Unlock all locked channels.
+## Information
+**Source:** `src/commands/modcog.py`
 
-**Usage:**
-```
-/unlockdown [reason]
-?unlockdown [reason]
-```
-
----
-
-### `/massban` • `?massban`
-**Permission:** Server Owner  
-**Description:** Ban multiple users by ID at once.
-
-**Usage:**
-```
-/massban <user_id1> <user_id2> <user_id3> ... [reason]
-?massban <user_id1> <user_id2> <user_id3> ... [reason]
-```
-
-**Example:**
-```
-/massban 123456 789012 345678 Raid bots
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/serverinfo` • `?serverinfo` | Server statistics and info | None |
+| `/roleinfo` • `?roleinfo` | Role information | None |
+| `/avatar` • `?avatar` | View a user's avatar | None |
 
 ---
 
-### `/nuke` • `?nuke`
-**Permission:** Server Owner  
-**Description:** Clone and delete a channel to clear all messages.
+## Warnings
+**Source:** `src/commands/modules/sam/features/warnings/cogs.py`
 
-**Usage:**
-```
-/nuke [reason]
-?nuke [reason]
-```
-
-**Warning:** Deletes entire channel history permanently.
-
----
-
-## Warning System
-
-### `/warn` • `?warn`
-**Permission:** Manage Messages  
-**Description:** Issue an official warning to a user.
-
-**Usage:**
-```
-/warn <@user> <reason>
-?warn <@user> <reason>
-```
-
-**Example:**
-```
-/warn @user Please stay on topic in general chat
-```
-
-**What happens:**
-- User receives DM notification
-- Warning saved to database
-- Logged to mod channel
-- Shows in warning history
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/warn` • `?warn` | Issue a warning | Kick Members |
+| `/unwarn` • `?unwarn` | Remove a warning by ID | Kick Members |
+| `/warnings view` | View a user's warning history | Kick Members |
+| `/warnings modify` | Revoke a warning by case ID | Kick Members |
+| `/warnings clear` | Clear all warnings for a user | Administrator |
 
 ---
 
-### `/warnings` • `?warnings`
-**Permission:** None  
-**Description:** Show the server warnings leaderboard. Run with no arguments.
+## Permits
+**Source:** `src/commands/permits.py`
 
-**Usage:**
-```
-/warnings
-?warnings
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/permit new <name>` | Create a permit role with permissions | Administrator |
+| `/permit add <member> <role>` | Assign a permit role to a member | Administrator |
+| `/permit list` | List all permit roles | None |
+| `/permit check <member>` | Check a member's permits | None |
+| `/permit delete <role>` | Delete a permit role (confirmation) | Administrator |
+| `/permit rename <role> <new>` | Rename a permit role | Administrator |
+| `/permit check-all` | List every user with permits (paginated) | None |
 
-**Shows:**
-- Top warned users (ranked)
-- Warning count per user
-
----
-
-### `/warnings view` • `?warnings view`
-**Permission:** None  
-**Description:** View all warnings for a specific user (total, history, moderator, date, reason).
-
-**Usage:**
-```
-/warnings view user:@user
-?warnings view @user
-```
-
-**Shows:**
-- Total active/revoked warnings
-- Case ID
-- Date issued
-- Moderator
-- Reason
-- Current status
+**Permit permissions:** `kick_members`, `ban_members`, `moderate_members`, `manage_messages`, `manage_nicknames`, `warn_members`
 
 ---
 
-### `/removewarn` • `?removewarn`
-**Permission:** Manage Messages  
-**Description:** Remove a warning by case ID.
+## Tickets
+**Source:** `src/commands/tickets.py`
 
-**Usage:**
-```
-/removewarn <case_id>
-?removewarn <case_id>
-```
-
-**Example:**
-```
-/removewarn 42
-```
-
----
-
-## Ticket System
-
-### `/ticket panel`
-**Permission:** Administrator  
-**Description:** Create a ticket panel in a channel.
-
-**Usage:**
-```
-/ticket panel [channel] [support_role] [report_role] [partner_role] [color]
-```
-
-**Example:**
-```
-/ticket panel channel:#support support_role:@Support
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/ticket panel` | Create a persistent ticket panel | Administrator |
+| `/ticket list` | View/filter tickets | Manage Messages |
+| `/ticket stats` | Ticket statistics | Manage Messages |
+| `/ticket forceclose` | Force-close a ticket | Manage Messages |
+| `/ticket log` / `log-disable` | Set / clear ticket log channel | Administrator |
+| `/ticket support` / `support-disable` | Set / clear support role | Administrator |
+| `/ticket report` / `report-disable` | Set / clear report role | Administrator |
+| `/ticket partner` / `partner-disable` | Set / clear partner role | Administrator |
+| `/ticket category` / `category-disable` | Set / clear ticket category channel | Administrator |
 
 ---
 
-### `/ticket list`
-**Permission:** Manage Messages  
-**Description:** View and filter all tickets.
+## Appeals
+**Source:** `src/commands/appeals.py`
 
-**Usage:**
-```
-/ticket list [status] [user]
-?ticket list [status] [user]
-```
-
-**Status Options:** `open`, `closed`, `all`
-
-**Examples:**
-```
-/ticket list
-/ticket list open
-/ticket list closed @user
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/appeals` • `?appeals` | View appeals by status | Administrator |
+| `/appealinfo` • `?appealinfo` | View appeal details | Administrator |
+| `/appealcancel` • `?appealcancel` | Cancel a pending appeal | User (own appeal) |
 
 ---
 
-### `/ticket stats`
-**Permission:** Manage Messages  
-**Description:** View ticket system statistics.
+## Reaction Roles
+**Source:** `src/commands/reaction_roles.py`
 
-**Usage:**
-```
-/ticket stats
-?ticket stats
-```
-
----
-
-### `/ticket forceclose`
-**Permission:** Manage Messages  
-**Description:** Force close a ticket by ID.
-
-**Usage:**
-```
-/ticket forceclose <ticket_id> [reason]
-?forceclose <ticket_id> [reason]
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/rr` | Create a reaction-role message (up to 10 roles) | Manage Roles |
+| `/rrlist` | List reaction-role setups | Manage Roles |
+| `/rrremove` | Remove a reaction-role setup | Manage Roles |
 
 ---
 
-### `/ticket log`
-**Permission:** Administrator  
-**Description:** Set or view ticket log channel.
+## Sticky Messages
+**Source:** `src/commands/sticky_message.py`
 
-**Usage:**
-```
-/ticket log [channel]
-?ticket log [channel]
-```
-
----
-
-### `/ticket support`
-**Permission:** Administrator  
-**Description:** Set support team role for tickets.
-
-**Usage:**
-```
-/ticket support [role]
-?ticket support [role]
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/stickymessage` | Set a sticky message in a channel | Manage Messages |
+| `/removesticky` | Remove a sticky message | Manage Messages |
+| `/liststicky` | List sticky messages | Manage Messages |
 
 ---
 
-## Staff Management
+## Threads
+**Source:** `src/commands/thread.py` **(prefix only)**
 
-### `/staffpoints` • `?staffpoints`
-**Permission:** Manage Messages (to view others)  
-**Description:** View staff points leaderboard or specific user.
-
-**Usage:**
-```
-/staffpoints [@user]
-?staffpoints [@user]
-```
-
-**How it works:**
-- Staff gain points when thanked
-- Keywords: "thanks", "thank you", "ty"
-- Leaderboard tracks top helpers
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `?close` | Archive a thread / close a ticket | Mods / Thread Creator |
+| `?pin` | Pin a message | Manage Messages |
+| `?unpin` | Unpin a message | Manage Messages |
 
 ---
 
+## Logging
+**Source:** `src/commands/logging/core.py`
 
-
----
-
-## Channel Management
-
-### `/lock` • `?lock`
-**Permission:** Manage Channels  
-**Description:** Lock a channel to prevent messages.
-
-**Usage:**
-```
-/lock [reason]
-?lock [reason]
-```
-
-**Example:**
-```
-/lock Cleaning up spam
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/setlogchannels` | Configure per-guild log channels | Administrator |
+| `/setlogchannels-disable` | Clear a manual log channel | Administrator |
 
 ---
 
-### `/unlock` • `?unlock`
-**Permission:** Manage Channels  
-**Description:** Unlock a locked channel.
+## Utility & Embed Builder
+**Source:** `src/commands/utility.py`
 
-**Usage:**
-```
-/unlock [reason]
-?unlock [reason]
-```
+| Command | Description | Permission |
+|---------|-------------|-----------|
+| `/embed` | Create an embed via interactive form | Manage Messages |
+| `/editembed` | Edit an existing bot embed | Manage Messages |
 
 ---
 
-### `/slowmode` • `?slowmode`
-**Permission:** Manage Channels  
-**Description:** Set slowmode delay.
+## Server Listing **(prefix only)**
+**Source:** `src/commands/utility.py`
 
-**Usage:**
-```
-/slowmode <seconds>
-?slowmode <seconds>
-```
-
-**Range:** 0-21600 seconds (0 to disable)
-
-**Examples:**
-```
-/slowmode 5 - 5 second delay
-/slowmode 0 - Disable slowmode
-```
+| Command | Description |
+|---------|-------------|
+| `?ls role <role>` | Role details & permissions |
+| `?ls members <role>` | Members with a role |
+| `?ls perm <permission>` | Roles with a permission |
+| `?ls perms [role]` | Functional roles / role permissions |
+| `?ls noperms` | Cosmetic roles |
+| `?ls channels [?w Target Perm]` | Channels (optionally filtered) |
+| `?ls categories [?w Target Perm]` | Categories (optionally filtered) |
+| `?ls bots` | All bots |
+| `?ls boosters` | Server boosters |
 
 ---
 
-## Message Management
+## Rules **(prefix only)**
+**Source:** `src/commands/rules.py`
 
-### `/purge` • `?purge`
-**Permission:** Manage Messages  
-**Description:** Delete multiple messages at once.
-
-**Usage:**
-```
-/purge <amount>
-?purge <amount>
-```
-
-**Range:** 1-100 messages
-
-**Example:**
-```
-/purge 50
-```
+| Command | Description |
+|---------|-------------|
+| `?r1` … `?r12` | Post a specific server rule |
+| `?r34` | Post the extra rule |
+| `?tldr` | TL;DR of the rules |
 
 ---
 
-### `/clean` • `?clean`
-**Permission:** Manage Messages  
-**Description:** Delete bot messages and command invocations.
+## Diagnostics & Owner
 
-**Usage:**
-```
-/clean [amount]
-?clean [amount]
-```
-
-**Default:** 100 messages
-
----
-
-## User Information
-
-### `/avatar` • `?avatar`
-**Permission:** None  
-**Description:** View user's avatar in full size.
-
-**Usage:**
-```
-/avatar [@user]
-?avatar [@user]
-```
-
----
-
-### `/serverinfo` • `?serverinfo`
-**Permission:** None  
-**Description:** Get detailed server information.
-
-**Usage:**
-```
-/serverinfo
-?serverinfo
-```
-
-**Shows:**
-- Server creation date
-- Member count
-- Channel count
-- Role count
-- Server owner
-- Boost status
-
----
-
-### `/roleinfo` • `?roleinfo`
-**Permission:** None  
-**Description:** Get information about a role.
-
-**Usage:**
-```
-/roleinfo <@role>
-?roleinfo <@role>
-```
-
----
-
-## Utility Commands
-
-### `/embed` • `?embed`
-**Permission:** Manage Messages  
-**Description:** Create a professional embed with popup form.
-
-**Usage:**
-```
-/embed
-?embed
-```
-
-**Interactive form for:**
-- Title
-- Description
-- Color
-- Footer
-- Images
-
----
-
-### `/editembed` • `?editembed`
-**Permission:** Manage Messages  
-**Description:** Edit an existing bot embed.
-
-**Usage:**
-```
-/editembed <message_id>
-?editembed <message_id>
-```
-
----
-
-### `?ls`
-**Permission:** None (Public)
-**Description:** Advanced role listing and permission auditing tool. (Prefix only)
-
-**Usage:**
-```
-?ls role <@role/ID>
-?ls perm <PermissionName>
-?ls perms
-?ls noperms
-```
-
-**Subcommands:**
-- **`role`**: View detailed info, key permissions, and raw stats for a role.
-- **`perm`**: List all roles that have a specific permission (e.g., `ManageMessages`).
-- **`perms`**: List all functional roles (roles with >0 permissions).
-- **`noperms`**: List cosmetic roles (roles with 0 permissions).
-
-**Examples:**
-- `?ls role @Admin` - Inspect Admin role
-- `?ls perm AddReactions` - See who can add reactions
-- `?ls perm Administrator` - Find all admin roles
-
----
-
-## Thread Management
-
-### `/close` • `?close`
-**Permission:** Manage Threads  
-**Description:** Close/archive a thread.
-
-**Usage:**
-```
-/close [reason]
-?close [reason]
-```
-
----
-
-### `/pin` • `?pin`
-**Permission:** Manage Messages  
-**Description:** Pin a message in thread or channel.
-
-**Usage:**
-```
-/pin [message_id]
-?pin [message_id]
-```
-
-**Note:** Reply to message or provide ID
-
----
-
-### `/unpin` • `?unpin`
-**Permission:** Manage Messages  
-**Description:** Unpin a message.
-
-**Usage:**
-```
-/unpin [message_id]
-?unpin [message_id]
-```
-
----
-
-## AFK System
-
-### `/afk` • `?afk`
-**Permission:** None  
-**Description:** Set yourself as away from keyboard.
-
-**Usage:**
-```
-/afk [reason]
-?afk [reason]
-```
-
-**Example:**
-```
-/afk Going to sleep
-```
-
-**What happens:**
-- Status shown when mentioned
-- Auto-return when you send message
-- Reason displayed to others
-
----
-
-### `/afklist` • `?afklist`
-**Permission:** None  
-**Description:** List all AFK users in server.
-
-**Usage:**
-```
-/afklist
-?afklist
-```
-
----
-
-## Owner-Only Commands
-
-### `?sync`
-**Permission:** Bot Owner  
-**Description:** Sync slash commands globally.
-
-**Usage:**
-```
-?sync
-```
-
----
-
-### `?load`
-**Permission:** Bot Owner  
-**Description:** Load or reload a cog.
-
-**Usage:**
-```
-?load <cog_name>
-```
-
-**Examples:**
-```
-?load help
-?load tickets
-?load mod
-```
-
----
-
-## Command Permissions Quick Reference
-
-| Permission Level | Commands Available |
-|-----------------|-------------------|
-| **None** | help, ping, info, get-user-id, avatar, serverinfo, afk |
-| **Manage Messages** | warn, warnings, purge, clean, embed, pin, unpin |
-| **Kick Members** | kick |
-| **Ban Members** | ban, unban, softban |
-| **Moderate Members** | timeout, untimeout |
-| **Manage Channels** | lock, unlock, slowmode |
-| **Administrator** | lockdown, unlockdown, ticket panel, data commands |
-| **Server Owner** | massban, nuke |
-| **Bot Owner** | sync, load |
+| Command | Description | Source | Permission |
+|---------|-------------|--------|-----------|
+| `?diag` **(prefix only)** | Bot diagnostics | `src/commands/diagnostics.py` | None |
+| `?sync` **(prefix only)** | Sync slash commands | `src/commands/core.py` | Bot Owner |
+| `?load <cog>` **(prefix only)** | Load/reload a cog | `src/commands/core.py` | Bot Owner |
 
 ---
 
 ## Need Help?
 
-Use `/help` for interactive command help or create a ticket for support!
-
-**Last Updated:** December 26, 2025
+Use `/help` for the interactive menu, or open a ticket in the server for support.

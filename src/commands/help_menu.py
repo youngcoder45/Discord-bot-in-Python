@@ -34,7 +34,7 @@ COG_CATEGORIES: dict[str, str] = {
     "AdvancedModeration": "Moderation",
     "Warnings": "Moderation",
     # AutoMod & Protection covers the anti-abuse systems.
-    "SpamCatch": "AutoMod & Protection",
+    "AutoBanChannel": "AutoMod & Protection",
     "Appeals": "Appeals",
     "ReactionRoles": "Reaction Roles",
     "LoggingCog": "Logging",

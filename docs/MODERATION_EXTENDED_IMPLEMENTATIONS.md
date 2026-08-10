@@ -1,6 +1,10 @@
 # Moderation Extended - Placeholder Implementations
+
+> ⚠️ **ARCHIVED — REMOVED**
+> The `moderation_extended.py` module no longer exists. Its commands were consolidated into `src/commands/modcog.py` and `src/commands/advanced_moderation.py`. This document is kept for historical reference only.
+
 **Date**: October 2, 2025  
-**File**: `src/commands/moderation_extended.py`
+**File**: `src/commands/moderation_extended.py` (removed)
 
 ## Overview
 Completed implementation of all placeholder commands in the moderation_extended cog. Removed out-of-scope features and enhanced existing commands with proper embeds and error handling.

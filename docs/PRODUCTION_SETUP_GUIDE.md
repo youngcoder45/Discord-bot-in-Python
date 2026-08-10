@@ -10,7 +10,6 @@
 
 ### 1. **Rate Limiting Protection**
 - **Tempban**: Max 3 uses per 5 minutes per user
-- **Mute**: Max 5 uses per 5 minutes per user
 - **Point System**: 2-moderator approval required for bans
 - **Mass Actions**: Built-in limits (max 20 users for massban)
 
@@ -22,7 +21,7 @@
 
 ### 3. **Command Limits & Safeguards**
 - **Tempban**: Maximum 7 days (10,080 minutes)
-- **Mute**: Maximum 28 days (40,320 minutes) 
+- **Timeout**: Maximum 28 days (40,320 minutes) 
 - **Slowmode**: Maximum 6 hours (21,600 seconds)
 - **Point System**: 100-point monthly cap with resets
 - **Auto-timeout**: Commands that could cause server damage require confirmation
@@ -114,13 +113,13 @@ Replace `YOUR_BOT_CLIENT_ID` with your bot's Client ID from the General Informat
 ```
 
 ### 3. **Staff Role Configuration**
-Update your `config.py`:
-```python
+All Discord IDs (roles, channels, users, guilds) are now configured in the root `.env` file (see `.env.example` for the full list). Update the ones relevant to your server:
+```dotenv
 # Your main moderation role
-MODERATION_ROLE_ID = 123456789  # Replace with your mod role ID
+MODERATION_ROLE_ID=your_mod_role_id_here
 
-# Alert channels
-STAFF_ALERT_CHANNEL = "staff-alerts"  # Channel name for raid alerts
+# Authorized guilds (comma-separated)
+AUTHORIZED_GUILD_IDS=your_guild_id_here
 ```
 
 ---
@@ -189,7 +188,7 @@ Create these channels for proper monitoring:
 - `#automod-logs` - Automatic moderation actions
 - `#mod-logs` - Manual moderation actions  
 - `#staff-alerts` - Raid/nuke detection alerts
-- `#appeals` - Appeal notifications (ID: 1396353386429026304)
+- `#appeals` - Appeal notifications (channel ID goes in `.env`, e.g. `APPEALS_LOG_CHANNEL_IDS` / `LOG_CHANNEL_WARNINGS_ID`)
 
 ---
 

@@ -5,10 +5,9 @@ from datetime import datetime, timezone
 from typing import Optional
 from utils.json_store import get_guild_prefix, set_guild_prefix
 from commands.help_menu import send_help_menu
+from config import REPORT_CHANNEL_ID
 
 DEFAULT_PREFIX = '?'
-
-REPORT_CHANNEL_ID = 1418492683277570109
 
 class Core(commands.Cog):
     """Core hybrid commands: ping, info, help menu."""
